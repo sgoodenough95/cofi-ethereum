@@ -22,7 +22,7 @@ contract ExchangeFacet is Modifiers {
     ///
     /// @param  amount      The amount of inputAssets to deposit.
     /// @param  inputAsset  The address of the inputAsset.
-    /// @param  activeAsset The activeAsset to receive.
+    /// @param  activeAsset The activeAsset to receive. Must choose one from potential 1+ options (e.g., USDFI, USDSTA).
     /// @param  depositFrom The address to deposit inputAssets from.
     /// @param  recipient   The recipient of the activeAssets.
     function inputToActive(
@@ -33,9 +33,9 @@ contract ExchangeFacet is Modifiers {
         address recipient
     ) external minDeposit(amount, inputAsset) returns (uint256 mintAfterFee) {
 
-        require(LibToken._isValidInput(inputAsset, activeAsset) != 1, "ExchangeFacet: Invalid input");
+        require(LibToken._isValidActiveInput(inputAsset, activeAsset) == 1, "ExchangeFacet: Invalid input");
 
-        require(LibToken._isMintEnabled(activeAsset) != 1, "ExchangeFacet: Mint disabled");
+        require(LibToken._isMintEnabled(activeAsset) == 1, "ExchangeFacet: Mint disabled");
 
         LibToken._transferFrom(inputAsset, amount, depositFrom, s.inputStore[inputAsset]);
 
@@ -53,22 +53,23 @@ contract ExchangeFacet is Modifiers {
     /// @notice Converts an accepted inputAsset into an activeAsset (e.g., USDC to USDSTA).
     /// @notice Mints a backing asset to Stoa (e.g., USDSTA).
     ///
+    /// @dev    Only ONE unactiveAsset available given the inputAsset param.
+    ///
     /// @param  amount          The amount of inputAssets to deposit.
     /// @param  inputAsset      The address of the inputAsset.
-    /// @param  unactiveAsset   The unactiveAsset to receive.
     /// @param  depositFrom     The account to deposit inputAssets from.
     /// @param  recipient       The recipient of the unactiveAssets.
     function inputToUnactive(
         uint256 amount,
         address inputAsset,
-        address unactiveAsset,
         address depositFrom,
         address recipient
     ) external minDeposit(amount, inputAsset) returns (uint256 mintAfterFee) {
+        // Returns address(0) if no unactiveAsset set.
+        address unactiveAsset = s.inputToUnactive[inputAsset];
 
-        require(LibToken._isValidInput(inputAsset, unactiveAsset) != 1, "Exchange Facet: Invalid input");
-
-        require(LibToken._isMintEnabled(unactiveAsset) != 1, "ExchangeFacet: Mint disabled");
+        // Consequently, will fail here if no unactiveAsset set.
+        require(LibToken._isMintEnabled(unactiveAsset) == 1, "ExchangeFacet: Mint disabled");
 
         LibToken._transferFrom(inputAsset, amount, depositFrom, s.inputStore[inputAsset]);
 
@@ -110,9 +111,11 @@ contract ExchangeFacet is Modifiers {
         address depositFrom,
         address recipient
     ) external minDeposit(amount, activeAsset) {
+        // Returns address(0) if no unactiveAsset set (i.e., convert is NOT enabled).
         address unactiveAsset = s.convertEnabled[activeAsset];
 
-        require(LibToken._isMintEnabled(unactiveAsset) != 1, "ExchangeFacet: Mint disabled");
+        // Consequently, will fail here if disabled.
+        require(LibToken._isMintEnabled(unactiveAsset) == 1, "ExchangeFacet: Mint disabled");
 
         LibToken._transferFrom(activeAsset, amount, depositFrom, address(this));
 
@@ -143,8 +146,11 @@ contract ExchangeFacet is Modifiers {
         address depositFrom,
         address recipient
     ) external minDeposit(amount, unactiveAsset) {
+        // Returns address(0) if no activeAsset set (i.e., convert is NOT enabled).
         address activeAsset = s.convertEnabled[unactiveAsset];
 
+        // Consequently, will fail here if disabled. "Mint" can be thought of as bringing into circulation
+        // (as the token is already minted, and resides in backing reserves).
         require(LibToken._isMintEnabled(activeAsset) != 1, "ExchangeFacet: Mint disabled");
 
         require(

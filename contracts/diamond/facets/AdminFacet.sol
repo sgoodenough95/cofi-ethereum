@@ -55,6 +55,14 @@ contract AdminFacet is Modifiers {
         s.redeemFee[asset] = amount;
     }
 
+    function setRedeemEnabled(
+        address asset,
+        uint8   enabled
+    ) external onlyAdmin() {
+
+        s.redeemEnabled[asset] = enabled;
+    }
+
     function addInput(
         address activeAsset,
         address inputAsset

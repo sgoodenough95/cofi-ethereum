@@ -39,7 +39,7 @@ library LibToken {
     /// @param  amount  The fee amount captured.
     event MintFeeCaptured(address asset, uint256 amount);
 
-    /// @notice Emitted when a redeem fee is captured.
+    /// @notice Emitted when a redemption fee is captured.
     ///
     /// @param  asset   The asset submitted for redemption.
     /// @param  amount  The fee amount captured.
@@ -165,6 +165,17 @@ library LibToken {
         return s.mintEnabled[asset];
     }
 
+    /// @notice Indicates if an asset is available for minting.
+    ///
+    /// @param  asset   The asset to mint.
+    function _isRedeemEnabled(
+        address asset
+    ) internal view returns (uint8) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        return s.mintEnabled[asset];
+    }
+
     /// @notice Returns the mint fee for a given asset.
     ///
     /// @param  asset   The asset to mint.
@@ -194,40 +205,53 @@ library LibToken {
     /// @notice Indicates if the input token is accepted to mint a specific asset for in return.
     ///
     /// @param  inputAsset  The asset to input (e.g., USDC).
-    /// @param  asset       The asset to be returned for the input asset (e.g., USDSTA).
-    function _isValidInput(
+    /// @param  activeAsset       The asset to be returned for the input asset (e.g., USDSTA).
+    function _isValidActiveInput(
         address inputAsset,
-        address asset
+        address activeAsset   // (?)
     ) internal view returns (uint8) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        for (uint i = 0; i < s.inputs[asset].length; i++) {
-            if (s.inputs[asset][i] == inputAsset) return 1;
+        for (uint i = 0; i < s.activeInputs[inputAsset].length; i++) {
+            if (s.activeInputs[activeAsset][i] == inputAsset) return 1;
         }
         return 0;
     }
 
     /// @notice Returns an array of accepted input assets for a given asset (e.g., [DAI, USDC]).
     ///
-    /// @param  asset   The asset to enquire for.
-    function _getInputs(
-        address asset
+    /// @param  activeAsset The inputAsset to enquire for.
+    function _getActiveInputs(
+        address activeAsset
     ) internal view returns (address[] memory) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        return s.inputs[asset];
+        return s.activeInputs[activeAsset];
+    }
+
+    /// @notice Returns the unactiveAsset for a given inputAsset (returns address(0) if no unactiveAsset set).
+    ///
+    /// @dev    May use in AdminFacet.
+    ///
+    /// @param  inputAsset  The inputAsset to enquire for.
+    function _getUnactiveFromInput(
+        address inputAsset
+    ) internal view returns (address) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        return s.inputToUnactive[inputAsset];
     }
 
     /// @notice Returns the inputAsset to service a redemption.
     /// @dev    MVP will only provide first asset in inputs array.
     /// @dev    Will later expand with more custom logic.
     ///
-    /// @param  asset   The asset to submit for redemption.
+    /// @param  activeAsset The asset to submit for redemption.
     function _getRedeemAsset(
-        address asset
+        address activeAsset
     ) internal view returns (address) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        return s.inputs[asset][0];
+        return s.activeInputs[activeAsset][0];
     }
 }

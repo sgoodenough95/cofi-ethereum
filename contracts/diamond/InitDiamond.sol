@@ -55,6 +55,10 @@ contract InitDiamond {
         s.mintFee[_args.USDFI]  = 100;
         s.mintFee[_args.USDST]  = 100;
 
+        s.redeemEnabled[_args.USDSTA] = 1;
+        s.redeemEnabled[_args.USDFI]  = 1;
+        s.redeemEnabled[_args.USDST]  = 1;
+
         s.redeemFee[_args.USDSTA]   = 100;
         s.redeemFee[_args.USDFI]    = 100;
         s.redeemFee[_args.USDST]    = 100;
@@ -66,6 +70,9 @@ contract InitDiamond {
 
         s.convertEnabled[_args.USDSTA]  = _args.USDST;
         s.convertEnabled[_args.USDST]   = _args.USDSTA;
+
+        s.convertFee[_args.USDSTA]  = 10;
+        s.convertFee[_args.USDST]   = 10;
 
         s.isAdmin[msg.sender] = 1;
 

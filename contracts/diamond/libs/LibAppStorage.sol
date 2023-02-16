@@ -40,7 +40,10 @@ enum SafeStatus {
 struct AppStorage {
 
     // E.g., USDSTA => [USDC, DAI].
-    mapping(address => address[])   inputs;
+    mapping(address => address[])   activeInputs;
+
+    // E.g., USDC => USDST; DAI => USDST. Only ONE available unactiveAsset for a given inputAsset.
+    mapping(address => address)     inputToUnactive;
 
     // E.g., USDC => 50; USDSTA => 50.
     mapping(address => uint256)     minDeposit;
@@ -54,8 +57,14 @@ struct AppStorage {
     // E.g., USDSTA => 50bps.
     mapping(address => uint256)     mintFee;
 
+    // E.g., USDSTA => 1; USDST => 1; USDFI => 1.
+    mapping(address => uint256)     redeemEnabled;
+
     // E.g., USDSTA => 100bps.
     mapping(address => uint256)     redeemFee;
+
+    // E.g., USDSTA <=> USDST. Returns address(0) if conversions are disabled. Only 1 convert asset.
+    mapping(address => address)     convertEnabled;
 
     mapping(address => uint256)     mgmtFee;
 
@@ -73,9 +82,6 @@ struct AppStorage {
 
     // E.g., account => USDST => allowance.
     mapping(address => mapping(address => int256)) unactiveRedemptionAllowance;
-
-    // E.g., USDSTA <=> USDST. Returns address(0) if conversions are disabled. Only 1 convert asset.
-    mapping(address => address) convertEnabled;
 
     mapping(address => VaultParams) vaultParams;
 
