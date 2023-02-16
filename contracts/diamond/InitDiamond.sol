@@ -36,7 +36,7 @@ contract InitDiamond {
         // Loans are not enabled, so leave unactive empty.
         s.vaultParams[_args.vUSDC].enabled  = 1;
 
-        s.inputs[_args.USDSTA] = [_args.USDC, _args.DAI];
+        s.activeInputs[_args.USDSTA] = [_args.USDC, _args.DAI];
 
         s.minDeposit[_args.USDC]    = 50 * 10**18;
         s.minDeposit[_args.DAI]     = 50 * 10**18;
@@ -70,9 +70,6 @@ contract InitDiamond {
 
         s.convertEnabled[_args.USDSTA]  = _args.USDST;
         s.convertEnabled[_args.USDST]   = _args.USDSTA;
-
-        s.convertFee[_args.USDSTA]  = 10;
-        s.convertFee[_args.USDST]   = 10;
 
         s.isAdmin[msg.sender] = 1;
 

@@ -5,11 +5,14 @@ import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { PercentageMath } from "./external/PercentageMath.sol";
 import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import { GPv2SafeERC20 } from "./external/GPv2SafeERC20.sol";
+import { IPermit2 } from "./../interfaces/IPermit2.sol";
 import { IStoaToken } from ".././interfaces/IStoaToken.sol";
 
 library LibToken {
     using PercentageMath for uint256;
     using GPv2SafeERC20 for IERC20;
+
+    IPermit2 constant PERMIT2 = IPermit2(0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B);
 
     /// @notice Emitted when a transfer is executed.
     ///
@@ -88,6 +91,33 @@ library LibToken {
             amount
         );
         emit Transfer(asset, amount, transferFrom, recipient);
+    }
+
+    function _permitTransferFrom(
+        uint256 amount,
+        IPermit2.PermitTransferFrom calldata permit,
+        address transferFrom,
+        address recipient
+    ) internal {
+
+        PERMIT2.permitTransferFrom(
+            permit,
+            IPermit2.SignatureTransferDetails({
+                to: recipient,
+                requestedAmount: amount
+            }),
+            transferFrom,
+            abi.encode(
+                keccak256(
+                    "_permitTransferFrom(uint256 amount,struct IPermit2.PermitTransferFrom permit,address transferFrom,address recipient)"
+                ),
+                amount,
+                permit,
+                transferFrom,
+                recipient
+            )
+        );
+        emit Transfer(address(permit.permitted.token), amount, transferFrom, recipient);
     }
 
     /// @notice Executes a transfer operation in the context of Stoa.

@@ -31,6 +31,14 @@ contract AdminFacet is Modifiers {
         s.minDeposit[asset] = amount;
     }
 
+    function setMinWithdraw(
+        address asset,
+        uint256 amount
+    ) external onlyAdmin() {
+
+        s.minWithdraw[asset] = amount;
+    }
+
     function setMintFee(
         address asset,
         uint256 amount
@@ -63,28 +71,45 @@ contract AdminFacet is Modifiers {
         s.redeemEnabled[asset] = enabled;
     }
 
-    function addInput(
+    /// @dev    For non-vault/exchange interactions only.
+    function setInputStore(
+        address inputStore,
+        address inputAsset
+    ) external onlyAdmin() {
+
+        s.inputStore[inputAsset] = inputStore;
+    }
+
+    function setUnactiveInput(
+        address unactiveAsset,
+        address inputAsset
+    ) external onlyAdmin() {
+
+        s.inputToUnactive[inputAsset] = unactiveAsset;
+    }
+
+    function addActiveInput(
         address activeAsset,
         address inputAsset
     ) external onlyAdmin() {
 
-        for (uint i = 0; i < s.inputs[activeAsset].length; i++) {
+        for (uint i = 0; i < s.activeInputs[activeAsset].length; i++) {
 
             // Check if the inputAsset is not yet added.
-            if (s.inputs[activeAsset][i] == inputAsset) return;
+            if (s.activeInputs[activeAsset][i] == inputAsset) return;
         }
-        s.inputs[activeAsset].push(inputAsset);
+        s.activeInputs[activeAsset].push(inputAsset);
     }
 
     /// @dev    delete will leave a gap - address(0) - in the array. Negligible effect.
-    function revokeInput(
+    function revokeActiveInput(
         address activeAsset,
         address inputAsset
     ) external onlyAdmin() {
 
-        for (uint i = 0; i < s.inputs[activeAsset].length; i++) {
-            if (s.inputs[activeAsset][i] == inputAsset) {
-                delete s.inputs[activeAsset][i];
+        for (uint i = 0; i < s.activeInputs[activeAsset].length; i++) {
+            if (s.activeInputs[activeAsset][i] == inputAsset) {
+                delete s.activeInputs[activeAsset][i];
                 return;
             }
         }
@@ -172,5 +197,12 @@ contract AdminFacet is Modifiers {
     ) external onlyAdmin() {
 
         s.feeCollector = feeCollector;
+    }
+
+    function getBackingReserve(
+        address unactiveAsset
+    ) external view returns (int256) {
+
+        return s.backingReserve[unactiveAsset];
     }
 }

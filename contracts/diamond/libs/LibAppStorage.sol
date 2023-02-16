@@ -118,12 +118,12 @@ contract Modifiers is IStoa {
     // }
 
     modifier minDeposit(uint256 amount, address asset) {
-        require(amount < s.minDeposit[asset], "Invalid deposit");
+        require(amount > s.minDeposit[asset], "Invalid deposit");
         _;
     }
 
     modifier minWithdraw(uint256 amount, address asset) {
-        require(amount < s.minDeposit[asset], "Invalid withdrawal");
+        require(amount > s.minWithdraw[asset], "Invalid withdrawal");
         _;
     }
 

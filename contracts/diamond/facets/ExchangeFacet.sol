@@ -15,29 +15,47 @@ import { Modifiers } from "../libs/LibAppStorage.sol";
 import { LibToken } from "../libs/LibToken.sol";
 import { LibTreasury } from "../libs/LibTreasury.sol";
 import { IStoa } from "../interfaces/IStoa.sol";
+import { IPermit2, IERC20 } from "../interfaces/IPermit2.sol";
 
 contract ExchangeFacet is Modifiers {
 
     /// @notice Converts an accepted inputAsset into an activeAsset (e.g., USDC to USDSTA).
+    /// @dev    inputAsset derived from permit.
     ///
     /// @param  amount      The amount of inputAssets to deposit.
-    /// @param  inputAsset  The address of the inputAsset.
     /// @param  activeAsset The activeAsset to receive. Must choose one from potential 1+ options (e.g., USDFI, USDSTA).
     /// @param  depositFrom The address to deposit inputAssets from.
     /// @param  recipient   The recipient of the activeAssets.
     function inputToActive(
         uint256 amount,
-        address inputAsset,
+        IPermit2.PermitTransferFrom calldata permit,
         address activeAsset,
         address depositFrom,
         address recipient
-    ) external minDeposit(amount, inputAsset) returns (uint256 mintAfterFee) {
+    )   external
+        minDeposit(amount, address(permit.permitted.token))
+        returns (uint256 mintAfterFee)
+    {
+        address inputAsset = address(permit.permitted.token);
 
-        require(LibToken._isValidActiveInput(inputAsset, activeAsset) == 1, "ExchangeFacet: Invalid input");
+        require(
+            LibToken._isValidActiveInput(inputAsset, activeAsset) == 1,
+            "ExchangeFacet: Invalid input"
+        );
 
-        require(LibToken._isMintEnabled(activeAsset) == 1, "ExchangeFacet: Mint disabled");
+        require(
+            LibToken._isMintEnabled(activeAsset) == 1,
+            "ExchangeFacet: Mint disabled"
+        );
 
-        LibToken._transferFrom(inputAsset, amount, depositFrom, s.inputStore[inputAsset]);
+        // LibToken._transferFrom(inputAsset, amount, depositFrom, s.inputStore[inputAsset]);
+
+        LibToken._permitTransferFrom(
+            amount,
+            permit,
+            depositFrom,
+            recipient
+        );
 
         uint256 fee = LibToken._getMintFee(activeAsset, amount);
         mintAfterFee = amount - fee;
@@ -188,11 +206,13 @@ contract ExchangeFacet is Modifiers {
         address recipient
     ) external minWithdraw(amount, activeAsset) returns (uint256 burnAfterFee) {
 
+        // Need to perform a transferFrom operation to capture fee.
         LibToken._transferFrom(activeAsset, amount, depositFrom, s.feeCollector);
 
         uint256 fee = LibToken._getRedeemFee(activeAsset, amount);
         burnAfterFee = amount - fee;
 
+        // Burn the amount for which is not captured as a fee.
         LibToken._burn(activeAsset, s.feeCollector, burnAfterFee);
         if (fee > 0) {
             emit LibToken.RedeemFeeCaptured(activeAsset, fee);
