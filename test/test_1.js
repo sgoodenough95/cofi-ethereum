@@ -80,11 +80,15 @@ describe('First test', function() {
             'AdminFacet'
         ]
         const cut = []
+        let exchangeFacet;
         for (const FacetName of FacetNames) {
             const Facet = await ethers.getContractFactory(FacetName)
             const facet = await Facet.deploy()
             await facet.deployed()
             console.log(`${FacetName} deployed: ${facet.address}`)
+            if (FacetName == 'ExchangeFacet') {
+                exchangeFacet = facet.address
+            }
             cut.push({
             facetAddress: facet.address,
             action: FacetCutAction.Add,
@@ -98,7 +102,8 @@ describe('First test', function() {
             USDST:  USDST.address,
             USDC:   usdc.address,
             DAI:    dai.address,
-            vUSDC:  vaultUSDC.address
+            vUSDC:  vaultUSDC.address,
+            exchangeFacet: exchangeFacet
         }]
     
         // upgrade diamond with facets
@@ -135,14 +140,16 @@ describe('First test', function() {
 
             signer = await ethers.provider.getSigner(owner.address)
 
-            const exchangeFacet = (await ethers.getContractAt('ExchangeFacet', diamond.address)).connect(signer)
-            const adminFacet = (await ethers.getContractAt('AdminFacet', diamond.address)).connect(signer)
+            const stoa = (await ethers.getContractAt('Stoa-Diamond', diamond.address)).connect(signer)
 
-            await exchangeFacet.inputToUnactive('1000000000000000000000', usdc.address, owner.address, owner.address)
+            await stoa.inputToUnactive('1000000000000000000000', usdc.address, owner.address, owner.address)
 
             console.log('Diamond USDSTA bal: ' + await USDSTA.balanceOf(diamond.address))
             console.log('User USDST bal: ' + await USDST.balanceOf(owner.address))
-            console.log('USDST backing reserve of USDSTA: ' + await adminFacet.getBackingReserve(USDST.address))
+            console.log('USDST backing reserve of USDSTA: ' + await stoa.getBackingReserve(USDST.address))
+            console.log('Redemption allowance: ' + await stoa.getUnactiveRedemptionAllowance(owner.address, USDST.address))
         })
+
+
     })
 })

@@ -205,4 +205,12 @@ contract AdminFacet is Modifiers {
 
         return s.backingReserve[unactiveAsset];
     }
+
+    function getUnactiveRedemptionAllowance(
+        address account,
+        address unactiveAsset
+    ) external view returns (int256) {
+
+        return s.unactiveRedemptionAllowance[account][unactiveAsset];
+    }
 }

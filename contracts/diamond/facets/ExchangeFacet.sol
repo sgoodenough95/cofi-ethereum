@@ -16,6 +16,7 @@ import { LibToken } from "../libs/LibToken.sol";
 import { LibTreasury } from "../libs/LibTreasury.sol";
 import { IStoa } from "../interfaces/IStoa.sol";
 import { IPermit2, IERC20 } from "../interfaces/IPermit2.sol";
+import "hardhat/console.sol";
 
 contract ExchangeFacet is Modifiers {
 
@@ -86,6 +87,10 @@ contract ExchangeFacet is Modifiers {
         // Returns address(0) if no unactiveAsset set.
         address unactiveAsset = s.inputToUnactive[inputAsset];
 
+        console.log("unactiveAsset: %s", unactiveAsset);
+        console.log(s.mintEnabled[unactiveAsset]);
+        console.log("Mint enabled: %s", LibToken._isMintEnabled(unactiveAsset));
+
         // Consequently, will fail here if no unactiveAsset set.
         require(LibToken._isMintEnabled(unactiveAsset) == 1, "ExchangeFacet: Mint disabled");
 
@@ -94,10 +99,14 @@ contract ExchangeFacet is Modifiers {
         uint256 fee = LibToken._getMintFee(unactiveAsset, amount);
         mintAfterFee = amount - fee;
 
-        LibToken._mint(s.backingAsset[unactiveAsset], address(this), mintAfterFee);
+        LibToken._mint(s.backingAsset[unactiveAsset], address(this), amount);
+
+        // Capture 'fee' amount of USDSTA (as amount - fee is serving as backing).
+        // Admin can claim at a future point to redeem fees.
+        emit LibToken.MintFeeCaptured(s.backingAsset[unactiveAsset], fee);
 
         LibTreasury._adjustBackingReserve(
-            s.backingAsset[unactiveAsset],
+            unactiveAsset,
             int256(mintAfterFee)
         );
 
@@ -106,13 +115,8 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustUnactiveRedemptionAllowance(
             unactiveAsset,
             depositFrom,
-            int256(amount)
+            int256(mintAfterFee)
         );
-
-        if (fee > 0) {
-           LibToken._mint(s.backingAsset[unactiveAsset], s.feeCollector, fee);
-            emit LibToken.MintFeeCaptured(s.backingAsset[unactiveAsset], fee); 
-        }
     }
 
     /// @notice Converts an activeAsset to its unactiveAsset counterpart (e.g., USDSTA to USDST).
