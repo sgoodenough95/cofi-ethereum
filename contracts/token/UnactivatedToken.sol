@@ -15,7 +15,7 @@ contract UnactivatedToken is ERC20 {
     }
 
     function burn(address _from, uint _amount) external {
-        _mint(_from, _amount);
+        _burn(_from, _amount);
     }
 
     function sendToPool() external {}

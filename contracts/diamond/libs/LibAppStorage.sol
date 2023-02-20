@@ -69,7 +69,8 @@ struct AppStorage {
     mapping(address => uint256)     mgmtFee;
 
     // Used when manual movement of inputAssets is required.
-    mapping(address => address)     inputStore;
+    // (At least to start with) consider the diamond as the inputStore.
+    // mapping(address => address)     inputStore;
 
     // Fees accrue to this address. Not necessarily Admin.
     address feeCollector;
@@ -116,6 +117,16 @@ contract Modifiers is IStoa {
     //         _;
     //     }
     // }
+
+    uint8 private _reentrancyGuard;
+
+    // Prevents reentrancy attacks via tokens with callback mechanisms. 
+    modifier nonReentrant() {
+        require(_reentrancyGuard == 0, 'No reentrancy');
+        _reentrancyGuard = 1;
+        _;
+        _reentrancyGuard = 0;
+    }
 
     modifier minDeposit(uint256 amount, address asset) {
         require(amount >= s.minDeposit[asset], "Invalid deposit");

@@ -71,14 +71,14 @@ contract AdminFacet is Modifiers {
         s.redeemEnabled[asset] = enabled;
     }
 
-    /// @dev    For non-vault/exchange interactions only.
-    function setInputStore(
-        address inputStore,
-        address inputAsset
-    ) external onlyAdmin() {
+    // /// @dev    For non-vault/exchange interactions only.
+    // function setInputStore(
+    //     address inputStore,
+    //     address inputAsset
+    // ) external onlyAdmin() {
 
-        s.inputStore[inputAsset] = inputStore;
-    }
+    //     s.inputStore[inputAsset] = inputStore;
+    // }
 
     function setUnactiveInput(
         address unactiveAsset,

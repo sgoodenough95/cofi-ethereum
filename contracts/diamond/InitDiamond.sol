@@ -5,6 +5,7 @@ import { AppStorage } from "./libs/LibAppStorage.sol";
 import { LibDiamond } from "./core/libs/LibDiamond.sol";
 import { LibToken } from "./libs/LibToken.sol";
 import { IERC165 } from "./core/interfaces/IERC165.sol";
+import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import { IDiamondCut } from "./core/interfaces/IDiamondCut.sol";
 import { IDiamondLoupe } from "./core/interfaces/IDiamondLoupe.sol";
 import { IERC173 } from "./core/interfaces/IERC173.sol";
@@ -19,7 +20,7 @@ contract InitDiamond {
         address USDC;       // underlyingToken
         address DAI;
         address vUSDC;      // vaultToken
-        address exchangeFacet;  // inputStore for inputAssets.
+        address exchangeFacet;  // feeCollector.
     }
     
     function init(Args memory _args) external {
@@ -27,10 +28,10 @@ contract InitDiamond {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
         // adding ERC165 data
-        ds.supportedInterfaces[type(IERC165).interfaceId] = true;
-        ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
+        ds.supportedInterfaces[type(IERC165).interfaceId]       = true;
+        ds.supportedInterfaces[type(IDiamondCut).interfaceId]   = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
-        ds.supportedInterfaces[type(IERC173).interfaceId] = true;
+        ds.supportedInterfaces[type(IERC173).interfaceId]       = true;
 
         // Rebase opt-in
         LibToken._rebaseOptIn(_args.USDSTA);
@@ -45,9 +46,6 @@ contract InitDiamond {
 
         s.inputToUnactive[_args.USDC]   = _args.USDST;
         s.inputToUnactive[_args.DAI]    = _args.USDST;
-
-        s.inputStore[_args.USDC]    = _args.exchangeFacet;
-        s.inputStore[_args.DAI]     = _args.exchangeFacet;
 
         s.minDeposit[_args.USDC]    = 50 * 10**18;
         s.minDeposit[_args.DAI]     = 50 * 10**18;
@@ -84,6 +82,7 @@ contract InitDiamond {
 
         s.isAdmin[msg.sender] = 1;
 
-        s.feeCollector = msg.sender;
+        // Set ExchangeFacet as feeCollector for now.
+        s.feeCollector = _args.exchangeFacet;
     }
 }

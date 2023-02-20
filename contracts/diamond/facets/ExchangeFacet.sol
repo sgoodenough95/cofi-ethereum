@@ -15,29 +15,37 @@ import { Modifiers } from "../libs/LibAppStorage.sol";
 import { LibToken } from "../libs/LibToken.sol";
 import { LibTreasury } from "../libs/LibTreasury.sol";
 import { IStoa } from "../interfaces/IStoa.sol";
-import { IPermit2, IERC20 } from "../interfaces/IPermit2.sol";
+// import { IPermit2, IERC20 } from "../interfaces/IPermit2.sol";
 import "hardhat/console.sol";
 
 contract ExchangeFacet is Modifiers {
 
     /// @notice Converts an accepted inputAsset into an activeAsset (e.g., USDC to USDSTA).
+    /// @dev    Permit2 functionality left for reference.
     /// @dev    inputAsset derived from permit.
     ///
     /// @param  amount      The amount of inputAssets to deposit.
+    /// @param  inputAsset  The address of the inputAsset.
     /// @param  activeAsset The activeAsset to receive. Must choose one from potential 1+ options (e.g., USDFI, USDSTA).
     /// @param  depositFrom The address to deposit inputAssets from.
     /// @param  recipient   The recipient of the activeAssets.
     function inputToActive(
         uint256 amount,
-        IPermit2.PermitTransferFrom calldata permit,
+        // IPermit2.PermitTransferFrom calldata permit,
+        address inputAsset,
         address activeAsset,
         address depositFrom,
         address recipient
     )   external
-        minDeposit(amount, address(permit.permitted.token))
+        minDeposit(
+            amount,
+            // address(permit.permitted.token)
+            inputAsset
+        )
+        nonReentrant()
         returns (uint256 mintAfterFee)
     {
-        address inputAsset = address(permit.permitted.token);
+        // address inputAsset = address(permit.permitted.token);
 
         require(
             LibToken._isValidActiveInput(inputAsset, activeAsset) == 1,
@@ -49,14 +57,14 @@ contract ExchangeFacet is Modifiers {
             "ExchangeFacet: Mint disabled"
         );
 
-        // LibToken._transferFrom(inputAsset, amount, depositFrom, s.inputStore[inputAsset]);
+        LibToken._transferFrom(inputAsset, amount, depositFrom, address(this));
 
-        LibToken._permitTransferFrom(
-            amount,
-            permit,
-            depositFrom,
-            recipient
-        );
+        // LibToken._permitTransferFrom(
+        //     amount,
+        //     permit,
+        //     depositFrom,
+        //     recipient
+        // );
 
         uint256 fee = LibToken._getMintFee(activeAsset, amount);
         mintAfterFee = amount - fee;
@@ -94,7 +102,7 @@ contract ExchangeFacet is Modifiers {
         // Consequently, will fail here if no unactiveAsset set.
         require(LibToken._isMintEnabled(unactiveAsset) == 1, "ExchangeFacet: Mint disabled");
 
-        LibToken._transferFrom(inputAsset, amount, depositFrom, s.inputStore[inputAsset]);
+        LibToken._transferFrom(inputAsset, amount, depositFrom, address(this));
 
         uint256 fee = LibToken._getMintFee(unactiveAsset, amount);
         mintAfterFee = amount - fee;
@@ -173,10 +181,10 @@ contract ExchangeFacet is Modifiers {
 
         // Consequently, will fail here if disabled. "Mint" can be thought of as bringing into circulation
         // (as the token is already minted, and resides in backing reserves).
-        require(LibToken._isMintEnabled(activeAsset) != 1, "ExchangeFacet: Mint disabled");
+        require(LibToken._isMintEnabled(activeAsset) == 1, "ExchangeFacet: Mint disabled");
 
         require(
-            int256(amount) > s.unactiveRedemptionAllowance[depositFrom][unactiveAsset],
+            int256(amount) >= s.unactiveRedemptionAllowance[depositFrom][unactiveAsset],
             "ExchangeFacet: Invalid unactive redemption allowance"
         );
 
@@ -224,10 +232,10 @@ contract ExchangeFacet is Modifiers {
 
         address inputAsset = LibToken._getRedeemAsset(activeAsset);
 
-        LibToken._transferFrom(
+        // Need to approve diamond spend for inputAsset.
+        LibToken._transfer(
             inputAsset,
             burnAfterFee,
-            s.inputStore[inputAsset],
             recipient
         );
     }
@@ -257,10 +265,9 @@ contract ExchangeFacet is Modifiers {
 
         address inputAsset = LibToken._getRedeemAsset(activeAsset);
 
-        LibToken._transferFrom(
+        LibToken._transfer(
             inputAsset,
             burnAfterFee,
-            s.inputStore[inputAsset],
             recipient
         );
 

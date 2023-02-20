@@ -30,6 +30,9 @@ import { StableMath } from "../utils/StableMath.sol";
  * rebasing design. Any integrations with OUSD should be aware.
  */
 
+
+// Add Permit.
+
 contract ActivatedToken is ERC20 {
     using SafeMath for uint256;
     using StableMath for uint256;

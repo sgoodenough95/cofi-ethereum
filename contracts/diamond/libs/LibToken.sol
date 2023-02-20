@@ -7,6 +7,7 @@ import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import { GPv2SafeERC20 } from "./external/GPv2SafeERC20.sol";
 import { IPermit2 } from "./../interfaces/IPermit2.sol";
 import { IStoaToken } from ".././interfaces/IStoaToken.sol";
+import 'hardhat/console.sol';
 
 library LibToken {
     using PercentageMath for uint256;
@@ -93,32 +94,32 @@ library LibToken {
         emit Transfer(asset, amount, transferFrom, recipient);
     }
 
-    function _permitTransferFrom(
-        uint256 amount,
-        IPermit2.PermitTransferFrom calldata permit,
-        address transferFrom,
-        address recipient
-    ) internal {
+    // function _permitTransferFrom(
+    //     uint256 amount,
+    //     IPermit2.PermitTransferFrom calldata permit,
+    //     address transferFrom,
+    //     address recipient
+    // ) internal {
 
-        PERMIT2.permitTransferFrom(
-            permit,
-            IPermit2.SignatureTransferDetails({
-                to: recipient,
-                requestedAmount: amount
-            }),
-            transferFrom,
-            abi.encode(
-                keccak256(
-                    "_permitTransferFrom(uint256 amount,struct IPermit2.PermitTransferFrom permit,address transferFrom,address recipient)"
-                ),
-                amount,
-                permit,
-                transferFrom,
-                recipient
-            )
-        );
-        emit Transfer(address(permit.permitted.token), amount, transferFrom, recipient);
-    }
+    //     PERMIT2.permitTransferFrom(
+    //         permit,
+    //         IPermit2.SignatureTransferDetails({
+    //             to: recipient,
+    //             requestedAmount: amount
+    //         }),
+    //         transferFrom,
+    //         abi.encode(
+    //             keccak256(
+    //                 "_permitTransferFrom(uint256 amount,struct IPermit2.PermitTransferFrom permit,address transferFrom,address recipient)"
+    //             ),
+    //             amount,
+    //             permit,
+    //             transferFrom,
+    //             recipient
+    //         )
+    //     );
+    //     emit Transfer(address(permit.permitted.token), amount, transferFrom, recipient);
+    // }
 
     /// @notice Executes a transfer operation in the context of Stoa.
     ///
@@ -242,7 +243,8 @@ library LibToken {
     ) internal view returns (uint8) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        for (uint i = 0; i < s.activeInputs[inputAsset].length; i++) {
+        for (uint i = 0; i <= s.activeInputs[inputAsset].length; i++) {
+
             if (s.activeInputs[activeAsset][i] == inputAsset) return 1;
         }
         return 0;
