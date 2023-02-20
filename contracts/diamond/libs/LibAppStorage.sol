@@ -78,10 +78,10 @@ struct AppStorage {
     mapping(address => address)     backingAsset;
 
     // E.g., USDST => backing amount. The amount held as backing.
-    mapping(address => int256)      backingReserve;
+    mapping(address => uint256)     backingReserve;
 
     // E.g., account => USDSC => allowance.
-    mapping(address => mapping(address => int256)) creditRedeemAllowance;
+    mapping(address => mapping(address => uint256)) creditRedeemAllowance;
 
     mapping(address => VaultParams) vaultParams;
 

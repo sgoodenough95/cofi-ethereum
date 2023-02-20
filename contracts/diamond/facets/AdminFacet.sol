@@ -187,7 +187,7 @@ contract AdminFacet is Modifiers {
 
     function getBackingReserve(
         address asset
-    ) external view returns (int256) {
+    ) external view returns (uint256) {
 
         return s.backingReserve[asset];
     }
@@ -195,7 +195,7 @@ contract AdminFacet is Modifiers {
     function getCreditRedeemAllowance(
         address account,
         address creditAsset
-    ) external view returns (int256) {
+    ) external view returns (uint256) {
 
         return s.creditRedeemAllowance[account][creditAsset];
     }

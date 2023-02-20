@@ -84,7 +84,8 @@ contract VaultFacet is Modifiers {
 
         LibTreasury._adjustBackingReserve(
             s.backingAsset[_vault.credit],
-            int256(mintAfterFee)
+            mintAfterFee,
+            1
         );
 
         LibToken._mint(_vault.credit, recipient, mintAfterFee);
@@ -92,7 +93,8 @@ contract VaultFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             _vault.credit,
             depositFrom,
-            int256(mintAfterFee)
+            mintAfterFee,
+            1
         );
 
         // If available, capture fee in activeAsset (e.g., USDFI).
@@ -161,12 +163,14 @@ contract VaultFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             _vault.credit,
             depositFrom,
-            int256(amount) * -1
+            amount,
+            0
         );
 
         LibTreasury._adjustBackingReserve(
             s.backingAsset[_vault.credit],
-            int256(amount) * -1
+            amount,
+            0
         );
         if (fee > 0) {
             // Redeem fee captured in the (previously backing) activeAsset.

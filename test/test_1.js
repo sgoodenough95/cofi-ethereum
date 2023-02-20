@@ -13,37 +13,37 @@ describe('First test', function() {
         const accounts = await ethers.getSigners()
         const owner = accounts[0]
     
-        // deploy Stoa Activated Dollar
-        const StoaActiveDollar = await ethers.getContractFactory('ActivatedToken')
-        const USDST = await StoaActiveDollar.deploy('Stoa Activated Dollar', 'USDST')
+        // deploy Stoa Active Dollar
+        const StoaActiveDollar = await ethers.getContractFactory('ActiveToken')
+        const USDST = await StoaActiveDollar.deploy('Stoa Active Dollar', 'USDST')
         await USDST.deployed()
-        console.log('Stoa Activated Dollar deployed:', USDST.address)
+        console.log('Stoa Active Dollar deployed:', USDST.address)
     
-        // deploy Stoa Activated Dollar
-        const StoaDeFiActiveDollar = await ethers.getContractFactory('ActivatedToken')
-        const USDFI = await StoaDeFiActiveDollar.deploy('Stoa DeFi-Activated Dollar', 'USDFI')
+        // deploy Stoa DeFi-Active Dollar
+        const StoaDeFiActiveDollar = await ethers.getContractFactory('ActiveToken')
+        const USDFI = await StoaDeFiActiveDollar.deploy('Stoa DeFi-Active Dollar', 'USDFI')
         await USDFI.deployed()
-        console.log('Stoa DeFi-Activated Dollar deployed:', USDFI.address)
+        console.log('Stoa DeFi-Active Dollar deployed:', USDFI.address)
     
-        // deploy Stoa Activated Dollar
+        // deploy Stoa Dollar Credit
         const StoaDollarCredit = await ethers.getContractFactory('CreditToken')
-        const USDSC = await StoaDollarCredit.deploy('Stoa Dollar', 'USDSC')
+        const USDSC = await StoaDollarCredit.deploy('Stoa Dollar Credit', 'USDSC')
         await USDSC.deployed()
         console.log('Stoa Dollar deployed:', USDSC.address)
     
-        // deploy Stoa Activated Dollar
+        // deploy USDC
         const USDC = await ethers.getContractFactory('CreditToken')
         const usdc = await USDC.deploy('USD Coin', 'USDC')
         await usdc.deployed()
         console.log('USDC deployed:', usdc.address)
     
-        // deploy Stoa Activated Dollar
+        // deploy DAI
         const DAI = await ethers.getContractFactory('CreditToken')
         const dai = await DAI.deploy('Dai', 'DAI')
         await dai.deployed()
         console.log('Dai deployed:', dai.address)
     
-        // deploy Stoa Activated Dollar
+        // deploy Vault
         const VaultUSDC = await ethers.getContractFactory('CreditToken')
         const vaultUSDC = await VaultUSDC.deploy('Vault USDC', 'vUSDC')
         await vaultUSDC.deployed()
@@ -242,7 +242,7 @@ describe('First test', function() {
 
         it('Should redeem creditAsset', async function() {
 
-            const { owner, USDST, usdc, diamond, exchangeFacet } = await loadFixture(deployDiamond)
+            const { owner, USDST, USDSC, usdc, diamond, exchangeFacet } = await loadFixture(deployDiamond)
 
             await usdc.mint(owner.address, '1000000000000000000000')
 
@@ -252,25 +252,36 @@ describe('First test', function() {
 
             const stoa = (await ethers.getContractAt('Stoa-Diamond', diamond.address)).connect(signer)
 
+            // Start Point 1
+            console.log('Start Point 1: User USDC bal: ' + await usdc.balanceOf(owner.address))
+
             await stoa.inputToCredit('1000000000000000000000', usdc.address, owner.address, owner.address)
 
-            console.log('User USDST bal: ' + await USDST.balanceOf(owner.address))
-
-            await USDST.approve(diamond.address, MAX_UINT)
+            // End Point 1
+            console.log('End Point 1: User USDC bal: ' + await usdc.balanceOf(owner.address))
+            console.log('End Point 1: Stoa USDST backing + fee: ' + await USDST.balanceOf(diamond.address))
+            console.log('End Point 1: User USDSC bal: ' + await USDSC.balanceOf(owner.address))
+            const reserve = await stoa.getBackingReserve(USDSC.address)
+            console.log('End Point 1: Stoa USDST backing: ' + reserve)
 
             // Simulate rebase
             // 10% increase in [User] USDC holdings.
-            await usdc.mint(diamond.address, '100000000000000000000')
-            await USDST.changeSupply('1100000000000000000000')
-            console.log("USDST new supply: " + await USDST.totalSupply())
-            const userBal = await USDST.balanceOf(owner.address)
-            console.log(userBal)
+            // await usdc.mint(diamond.address, '100000000000000000000')
+            // await USDST.changeSupply('1100000000000000000000')
 
-            await stoa.redeemActive(userBal.toString(), USDST.address, owner.address, owner.address)
+            // Point 2
+            // console.log("USDST new supply: " + await USDST.totalSupply())
+            // const userBal = await USDST.balanceOf(diamond.address)
+            // console.log(userBal)
+
+            await USDSC.approve(diamond.address, MAX_UINT)
+            await stoa.redeemCredit('990000000000000000000', USDSC.address, owner.address, owner.address)
             console.log('User USDC bal: ' + await usdc.balanceOf(owner.address))
             // Should be 0.1% * 1,000 + 0.1% * 1,100
-            console.log('Fees collected: ' + await USDST.balanceOf(exchangeFacet))
+            console.log('Fees collected: ' + await USDST.balanceOf(diamond.address))
             console.log('Stoa USDC bal: ' + await usdc.balanceOf(diamond.address))
+            const reserve2 = await stoa.getBackingReserve(USDSC.address)
+            console.log('End Point 1: Stoa USDST backing: ' + reserve2)
         })
     })
 })

@@ -106,12 +106,14 @@ contract ExchangeFacet is Modifiers {
         LibToken._mint(s.backingAsset[creditAsset], address(this), amount);
 
         // Capture 'fee' amount of USDST (as amount - fee is serving as backing).
-        // Admin can claim at a future point to redeem fees.
+        // Admin can claim at a future point to redeem fees [activeAssets].
         emit LibToken.MintFeeCaptured(s.backingAsset[creditAsset], fee);
 
+        // Consequently, do not include fee in backing reserve.
         LibTreasury._adjustBackingReserve(
             creditAsset,
-            int256(mintAfterFee)
+            mintAfterFee,
+            1
         );
 
         LibToken._mint(creditAsset, recipient, mintAfterFee);
@@ -119,7 +121,8 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             creditAsset,
             depositFrom,
-            int256(mintAfterFee)
+            mintAfterFee,
+            1
         );
     }
 
@@ -147,7 +150,8 @@ contract ExchangeFacet is Modifiers {
 
         LibTreasury._adjustBackingReserve(
             s.backingAsset[creditAsset],
-            int256(amount)
+            amount,
+            1
         );
 
         LibToken._mint(creditAsset, recipient, amount);
@@ -155,7 +159,8 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             creditAsset,
             depositFrom,
-            int256(amount)
+            amount,
+            1
         );
     }
 
@@ -180,7 +185,7 @@ contract ExchangeFacet is Modifiers {
         require(LibToken._isMintEnabled(activeAsset) == 1, "ExchangeFacet: Mint disabled");
 
         require(
-            int256(amount) >= s.creditRedeemAllowance[depositFrom][creditAsset],
+            amount >= s.creditRedeemAllowance[depositFrom][creditAsset],
             "ExchangeFacet: Invalid credit redemption allowance"
         );
 
@@ -188,7 +193,8 @@ contract ExchangeFacet is Modifiers {
 
         LibTreasury._adjustBackingReserve(
             s.backingAsset[creditAsset],
-            int256(amount) * -1
+            amount,
+            0
         );
 
         LibToken._transfer(activeAsset, amount, recipient);
@@ -196,7 +202,8 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             creditAsset,
             depositFrom,
-            int256(amount) * -1
+            amount,
+            0
         );
     }
 
@@ -257,7 +264,12 @@ contract ExchangeFacet is Modifiers {
         uint256 fee = LibToken._getRedeemFee(activeAsset, amount);
         burnAfterFee = amount - fee;
 
-        LibToken._burn(activeAsset, address(this), amount);
+        // Retain 'fee' amount of activeAsset backing
+        LibToken._burn(activeAsset, address(this), burnAfterFee);
+        if (fee > 0) {
+            // Redeem fee captured in the (previously backing) activeAsset.
+            emit LibToken.RedeemFeeCaptured(activeAsset, fee);
+        }
 
         address inputAsset = LibToken._getRedeemAsset(activeAsset);
 
@@ -270,16 +282,14 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             creditAsset,
             depositFrom,
-            int256(amount) * -1
+            amount,
+            0
         );
 
         LibTreasury._adjustBackingReserve(
-            s.backingAsset[creditAsset],
-            int256(amount) * -1
+            creditAsset,
+            amount,
+            0
         );
-        if (fee > 0) {
-            // Redeem fee captured in the (previously backing) activeAsset.
-            emit LibToken.RedeemFeeCaptured(activeAsset, fee);
-        }
     }
 }
