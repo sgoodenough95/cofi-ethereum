@@ -77,128 +77,124 @@ contract ExchangeFacet is Modifiers {
         }
     }
 
-    /// @notice Converts an accepted inputAsset into an activeAsset (e.g., USDC to USDSTA).
-    /// @notice Mints a backing asset to Stoa (e.g., USDSTA).
+    /// @notice Converts an accepted inputAsset into a creditAsset (e.g., USDC to USDSC).
+    /// @notice Mints a backing asset to Stoa (e.g., USDST).
     ///
-    /// @dev    Only ONE unactiveAsset available given the inputAsset param.
+    /// @dev    Only ONE creditAsset available given the inputAsset param.
     ///
     /// @param  amount          The amount of inputAssets to deposit.
     /// @param  inputAsset      The address of the inputAsset.
     /// @param  depositFrom     The account to deposit inputAssets from.
-    /// @param  recipient       The recipient of the unactiveAssets.
-    function inputToUnactive(
+    /// @param  recipient       The recipient of the creditAssets.
+    function inputToCredit(
         uint256 amount,
         address inputAsset,
         address depositFrom,
         address recipient
     ) external minDeposit(amount, inputAsset) returns (uint256 mintAfterFee) {
-        // Returns address(0) if no unactiveAsset set.
-        address unactiveAsset = s.inputToUnactive[inputAsset];
+        // Returns address(0) if no creditAsset set.
+        address creditAsset = s.inputToCredit[inputAsset];
 
-        console.log("unactiveAsset: %s", unactiveAsset);
-        console.log(s.mintEnabled[unactiveAsset]);
-        console.log("Mint enabled: %s", LibToken._isMintEnabled(unactiveAsset));
-
-        // Consequently, will fail here if no unactiveAsset set.
-        require(LibToken._isMintEnabled(unactiveAsset) == 1, "ExchangeFacet: Mint disabled");
+        // Consequently, will fail here if no creditAsset set.
+        require(LibToken._isMintEnabled(creditAsset) == 1, "ExchangeFacet: Mint disabled");
 
         LibToken._transferFrom(inputAsset, amount, depositFrom, address(this));
 
-        uint256 fee = LibToken._getMintFee(unactiveAsset, amount);
+        uint256 fee = LibToken._getMintFee(creditAsset, amount);
         mintAfterFee = amount - fee;
 
-        LibToken._mint(s.backingAsset[unactiveAsset], address(this), amount);
+        LibToken._mint(s.backingAsset[creditAsset], address(this), amount);
 
-        // Capture 'fee' amount of USDSTA (as amount - fee is serving as backing).
+        // Capture 'fee' amount of USDST (as amount - fee is serving as backing).
         // Admin can claim at a future point to redeem fees.
-        emit LibToken.MintFeeCaptured(s.backingAsset[unactiveAsset], fee);
+        emit LibToken.MintFeeCaptured(s.backingAsset[creditAsset], fee);
 
         LibTreasury._adjustBackingReserve(
-            unactiveAsset,
+            creditAsset,
             int256(mintAfterFee)
         );
 
-        LibToken._mint(unactiveAsset, recipient, mintAfterFee);
+        LibToken._mint(creditAsset, recipient, mintAfterFee);
 
-        LibTreasury._adjustUnactiveRedemptionAllowance(
-            unactiveAsset,
+        LibTreasury._adjustCreditRedeemAllowance(
+            creditAsset,
             depositFrom,
             int256(mintAfterFee)
         );
     }
 
-    /// @notice Converts an activeAsset to its unactiveAsset counterpart (e.g., USDSTA to USDST).
-    /// @notice Increases the unactive redemption allowance of the recipient account.
-    /// @notice Only consider the risk-free activeAsset (e.g., USDSTA, not USDFI).
+    /// @notice Converts an activeAsset to its creditAsset counterpart (e.g., USDST to USDSC).
+    /// @notice Increases the creditRedeemAllowance of the recipient account.
+    /// @notice Only consider the risk-free activeAsset (e.g., USDST, not USDFI).
     ///
     /// @param  amount      The amount of activeAssets to convert.
     /// @param  activeAsset The activeAsset to convert.
     /// @param  depositFrom The account to deposit the activeAssets from.
-    /// @param  recipient   The recipient of the unactiveAssets.
-    function activeToUnactive(
+    /// @param  recipient   The recipient of the creditAssets.
+    function activeToCredit(
         uint256 amount,
         address activeAsset,
         address depositFrom,
         address recipient
     ) external minDeposit(amount, activeAsset) {
-        // Returns address(0) if no unactiveAsset set (i.e., convert is NOT enabled).
-        address unactiveAsset = s.convertEnabled[activeAsset];
+        // Returns address(0) if no creditAsset set (i.e., convert is NOT enabled).
+        address creditAsset = s.convertEnabled[activeAsset];
 
         // Consequently, will fail here if disabled.
-        require(LibToken._isMintEnabled(unactiveAsset) == 1, "ExchangeFacet: Mint disabled");
+        require(LibToken._isMintEnabled(creditAsset) == 1, "ExchangeFacet: Mint disabled");
 
         LibToken._transferFrom(activeAsset, amount, depositFrom, address(this));
 
         LibTreasury._adjustBackingReserve(
-            s.backingAsset[unactiveAsset],
+            s.backingAsset[creditAsset],
             int256(amount)
         );
 
-        LibToken._mint(unactiveAsset, recipient, amount);
+        LibToken._mint(creditAsset, recipient, amount);
 
-        LibTreasury._adjustUnactiveRedemptionAllowance(
-            unactiveAsset,
+        LibTreasury._adjustCreditRedeemAllowance(
+            creditAsset,
             depositFrom,
             int256(amount)
         );
     }
 
-    /// @notice Converts an unactiveAsset to its activeAsset counterpart (e.g., USDST to USDSTA).
-    /// @notice Caller must have a sufficient unactive redemption allowance.
+    /// @notice Converts a creditAsset to its activeAsset counterpart (e.g., USDSC to USDST).
+    /// @notice Caller must have a sufficient creditRedeemAllowance.
     ///
-    /// @param  amount          The amount of unactiveAssets to convert.
-    /// @param  unactiveAsset   The unactiveAsset to convert.
-    /// @param  depositFrom     The account to deposit unactiveAssets from.
+    /// @param  amount          The amount of creditAssets to convert.
+    /// @param  creditAsset     The creditAsset to convert.
+    /// @param  depositFrom     The account to deposit creditAssets from.
     /// @param  recipient       The recipient of the activeAssets.
-    function unactiveToActive(
+    function creditToActive(
         uint256 amount,
-        address unactiveAsset,
+        address creditAsset,
         address depositFrom,
         address recipient
-    ) external minDeposit(amount, unactiveAsset) {
+    ) external minDeposit(amount, creditAsset) {
         // Returns address(0) if no activeAsset set (i.e., convert is NOT enabled).
-        address activeAsset = s.convertEnabled[unactiveAsset];
+        address activeAsset = s.convertEnabled[creditAsset];
 
         // Consequently, will fail here if disabled. "Mint" can be thought of as bringing into circulation
         // (as the token is already minted, and resides in backing reserves).
         require(LibToken._isMintEnabled(activeAsset) == 1, "ExchangeFacet: Mint disabled");
 
         require(
-            int256(amount) >= s.unactiveRedemptionAllowance[depositFrom][unactiveAsset],
-            "ExchangeFacet: Invalid unactive redemption allowance"
+            int256(amount) >= s.creditRedeemAllowance[depositFrom][creditAsset],
+            "ExchangeFacet: Invalid credit redemption allowance"
         );
 
-        LibToken._burn(unactiveAsset, depositFrom, amount);
+        LibToken._burn(creditAsset, depositFrom, amount);
 
         LibTreasury._adjustBackingReserve(
-            s.backingAsset[unactiveAsset],
+            s.backingAsset[creditAsset],
             int256(amount) * -1
         );
 
         LibToken._transfer(activeAsset, amount, recipient);
 
-        LibTreasury._adjustUnactiveRedemptionAllowance(
-            unactiveAsset,
+        LibTreasury._adjustCreditRedeemAllowance(
+            creditAsset,
             depositFrom,
             int256(amount) * -1
         );
@@ -240,23 +236,23 @@ contract ExchangeFacet is Modifiers {
         );
     }
 
-    /// @notice Redeems an unactiveAsset for an inputAsset.
+    /// @notice Redeems a creditAsset for an inputAsset.
     /// @dev    Caller does not get to select inputAsset.
     ///
     /// @param  amount          The amount of activeAssets to redeem.
-    /// @param  unactiveAsset   The activeAsset to redeem.
+    /// @param  creditAsset     The creditAsset to redeem.
     /// @param  depositFrom     The account to deposit activeAssets from.
     /// @param  recipient       The recipient of the inputAssets.
-    function redeemUnactive(
+    function redeemCredit(
         uint256 amount,
-        address unactiveAsset,
+        address creditAsset,
         address depositFrom,
         address recipient
-    ) external minWithdraw(amount, unactiveAsset) returns (uint256 burnAfterFee) {
+    ) external minWithdraw(amount, creditAsset) returns (uint256 burnAfterFee) {
 
-        LibToken._burn(unactiveAsset, depositFrom, amount);
+        LibToken._burn(creditAsset, depositFrom, amount);
 
-        address activeAsset = s.convertEnabled[unactiveAsset];
+        address activeAsset = s.convertEnabled[creditAsset];
 
         uint256 fee = LibToken._getRedeemFee(activeAsset, amount);
         burnAfterFee = amount - fee;
@@ -271,14 +267,14 @@ contract ExchangeFacet is Modifiers {
             recipient
         );
 
-        LibTreasury._adjustUnactiveRedemptionAllowance(
-            unactiveAsset,
+        LibTreasury._adjustCreditRedeemAllowance(
+            creditAsset,
             depositFrom,
             int256(amount) * -1
         );
 
         LibTreasury._adjustBackingReserve(
-            s.backingAsset[unactiveAsset],
+            s.backingAsset[creditAsset],
             int256(amount) * -1
         );
         if (fee > 0) {

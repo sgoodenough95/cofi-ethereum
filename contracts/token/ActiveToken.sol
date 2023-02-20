@@ -33,7 +33,7 @@ import { StableMath } from "../utils/StableMath.sol";
 
 // Add Permit.
 
-contract ActivatedToken is ERC20 {
+contract ActiveToken is ERC20 {
     using SafeMath for uint256;
     using StableMath for uint256;
 

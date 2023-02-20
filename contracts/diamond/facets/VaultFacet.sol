@@ -19,7 +19,7 @@ import { IStoa } from "../interfaces/IStoa.sol";
 
 contract VaultFacet is Modifiers {
 
-    /// @notice Converts an accepted inputAsset into an activeAsset (e.g., USDC to USDSTA).
+    /// @notice Converts an accepted inputAsset into an activeAsset (e.g., USDC to USDFI).
     ///
     /// @param  amount      The amount of inputAssets to deposit.
     /// @param  vault       The address of the vault.
@@ -53,14 +53,14 @@ contract VaultFacet is Modifiers {
         }
     }
 
-    /// @notice Converts an accepted inputAsset into an activeAsset (e.g., USDC to USDSTA).
-    /// @notice Mints a backing asset to Stoa (e.g., USDSTA).
+    /// @notice Converts an accepted inputAsset into a creditAsset (e.g., USDC to USDSC).
+    /// @notice Mints a backing asset to Stoa (e.g., USDFI).
     ///
     /// @param  amount      The amount of inputAssets to deposit.
     /// @param  vault       The address of the vault.
     /// @param  depositFrom The account to deposit inputAssets from.
-    /// @param  recipient   The recipient of the unactiveAssets.
-    function inputToUnactiveVault(
+    /// @param  recipient   The recipient of the creditAssets.
+    function inputToCreditVault(
         uint256 amount,
         address vault,
         address depositFrom,
@@ -69,35 +69,36 @@ contract VaultFacet is Modifiers {
 
         VaultParams memory _vault = s.vaultParams[vault];
 
-        require(_vault.enabled != 1, "VaultFacet: Vault disabled");
+        require(_vault.enabled == 1, "VaultFacet: Vault disabled");
 
-        require(LibToken._isMintEnabled(_vault.unactive) != 1, "VaultFacet: Mint disabled");
+        require(LibToken._isMintEnabled(_vault.credit) == 1, "VaultFacet: Mint disabled");
 
         uint256 shares = LibVault._wrap(amount, vault, depositFrom);
 
         uint256 assets = LibVault._getAssets(shares, vault);
 
-        uint256 fee = LibToken._getMintFee(_vault.unactive, assets);
+        uint256 fee = LibToken._getMintFee(_vault.credit, assets);
         mintAfterFee = assets - fee;
 
-        LibToken._mint(s.backingAsset[_vault.unactive], address(this), mintAfterFee);
+        LibToken._mint(s.backingAsset[_vault.credit], address(this), mintAfterFee);
 
         LibTreasury._adjustBackingReserve(
-            s.backingAsset[_vault.unactive],
+            s.backingAsset[_vault.credit],
             int256(mintAfterFee)
         );
 
-        LibToken._mint(_vault.unactive, recipient, mintAfterFee);
+        LibToken._mint(_vault.credit, recipient, mintAfterFee);
 
-        LibTreasury._adjustUnactiveRedemptionAllowance(
-            _vault.unactive,
+        LibTreasury._adjustCreditRedeemAllowance(
+            _vault.credit,
             depositFrom,
             int256(mintAfterFee)
         );
 
+        // If available, capture fee in activeAsset (e.g., USDFI).
         if (fee > 0) {
-           LibToken._mint(s.backingAsset[_vault.unactive], s.feeCollector, fee);
-            emit LibToken.MintFeeCaptured(s.backingAsset[_vault.unactive], fee); 
+           LibToken._mint(s.backingAsset[_vault.credit], s.feeCollector, fee);
+            emit LibToken.MintFeeCaptured(s.backingAsset[_vault.credit], fee); 
         }
     }
 
@@ -116,7 +117,7 @@ contract VaultFacet is Modifiers {
 
         VaultParams memory _vault = s.vaultParams[vault];
 
-        require(_vault.enabled != 1, "VaultFacet: Vault disabled");
+        require(_vault.enabled == 1, "VaultFacet: Vault disabled");
 
         LibToken._transferFrom(_vault.active, amount, depositFrom, s.feeCollector);
 
@@ -131,13 +132,13 @@ contract VaultFacet is Modifiers {
         LibVault._unwrap(amount, vault, recipient);
     }
 
-    /// @notice Redeems an unactiveAsset for an inputAsset.
+    /// @notice Redeems a creditAsset for an inputAsset.
     ///
-    /// @param  amount      The amount of unactiveAssets to redeem.
+    /// @param  amount      The amount of creditAssets to redeem.
     /// @param  vault       The address of the vault.
-    /// @param  depositFrom The account to deposit unactiveAssets from.
+    /// @param  depositFrom The account to deposit creditAssets from.
     /// @param  recipient   The recipient of the inputAssets.
-    function redeemUnactiveVault(
+    function redeemCreditVault(
         uint256 amount,
         address vault,
         address depositFrom,
@@ -146,25 +147,25 @@ contract VaultFacet is Modifiers {
 
         VaultParams memory _vault = s.vaultParams[vault];
 
-        require(_vault.enabled != 1, "VaultFacet: Vault disabled");
+        require(_vault.enabled == 1, "VaultFacet: Vault disabled");
 
-        LibToken._burn(_vault.unactive, depositFrom, amount);
+        LibToken._burn(_vault.credit, depositFrom, amount);
 
-        uint256 fee = LibToken._getRedeemFee(_vault.unactive, amount);
+        uint256 fee = LibToken._getRedeemFee(_vault.credit, amount);
         burnAfterFee = amount - fee;
 
         LibToken._burn(_vault.active, address(this), amount);
 
         LibVault._unwrap(amount, vault, recipient);
 
-        LibTreasury._adjustUnactiveRedemptionAllowance(
-            _vault.unactive,
+        LibTreasury._adjustCreditRedeemAllowance(
+            _vault.credit,
             depositFrom,
             int256(amount) * -1
         );
 
         LibTreasury._adjustBackingReserve(
-            s.backingAsset[_vault.unactive],
+            s.backingAsset[_vault.credit],
             int256(amount) * -1
         );
         if (fee > 0) {

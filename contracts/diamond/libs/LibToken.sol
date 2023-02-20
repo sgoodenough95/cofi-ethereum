@@ -66,12 +66,12 @@ library LibToken {
     // /// @param  asset   The asset to mint.
     // error MintDisabled(address asset);
 
-    // /// @notice Indicates if an operation failed because the account has an inavlid unactive redemption allowance.
+    // /// @notice Indicates if an operation failed because the account has an inavlid credit redemption allowance.
     // ///
     // /// @param  account The account attempting to redeem for.
-    // /// @param  asset   The unactiveAsset to be redeemed.
-    // /// @param  amount  The amount of unactiveAssets.
-    // error InvalidUnactiveRedemptionAllowance(address account, address asset, uint256 amount);
+    // /// @param  asset   The creditAsset to be redeemed.
+    // /// @param  amount  The amount of creditAssets.
+    // error InvalidCreditRedeemAllowance(address account, address asset, uint256 amount);
 
     /// @notice Executes a transferFrom operation in the context of Stoa.
     ///
@@ -261,17 +261,17 @@ library LibToken {
         return s.activeInputs[activeAsset];
     }
 
-    /// @notice Returns the unactiveAsset for a given inputAsset (returns address(0) if no unactiveAsset set).
+    /// @notice Returns the creditAsset for a given inputAsset (returns address(0) if no creditAsset set).
     ///
     /// @dev    May use in AdminFacet.
     ///
     /// @param  inputAsset  The inputAsset to enquire for.
-    function _getUnactiveFromInput(
+    function _getCreditFromInput(
         address inputAsset
     ) internal view returns (address) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        return s.inputToUnactive[inputAsset];
+        return s.inputToCredit[inputAsset];
     }
 
     /// @notice Returns the inputAsset to service a redemption.

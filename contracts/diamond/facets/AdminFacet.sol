@@ -71,6 +71,7 @@ contract AdminFacet is Modifiers {
         s.redeemEnabled[asset] = enabled;
     }
 
+    // Only consider diamond as the inputStore for now.
     // /// @dev    For non-vault/exchange interactions only.
     // function setInputStore(
     //     address inputStore,
@@ -80,12 +81,12 @@ contract AdminFacet is Modifiers {
     //     s.inputStore[inputAsset] = inputStore;
     // }
 
-    function setUnactiveInput(
-        address unactiveAsset,
+    function setCreditInput(
+        address creditAsset,
         address inputAsset
     ) external onlyAdmin() {
 
-        s.inputToUnactive[inputAsset] = unactiveAsset;
+        s.inputToCredit[inputAsset] = creditAsset;
     }
 
     function addActiveInput(
@@ -101,7 +102,7 @@ contract AdminFacet is Modifiers {
         s.activeInputs[activeAsset].push(inputAsset);
     }
 
-    /// @dev    delete will leave a gap - address(0) - in the array. Negligible effect.
+    /// @dev    delete will leave a gap - address(0) - in the array. Can later remove.
     function revokeActiveInput(
         address activeAsset,
         address inputAsset
@@ -121,13 +122,13 @@ contract AdminFacet is Modifiers {
         address vault,
         address input,
         address active,
-        address unactive,
+        address credit, // Leaving this blank means credit cannot be minted against vault.
         uint8   enabled
     ) external onlyAdmin() {
 
         s.vaultParams[vault].input      = input;
         s.vaultParams[vault].active     = active;
-        s.vaultParams[vault].unactive   = unactive;
+        s.vaultParams[vault].credit     = credit;
         s.vaultParams[vault].enabled    = enabled;
     }
 
@@ -142,7 +143,7 @@ contract AdminFacet is Modifiers {
 
         s.vaultParams[newVault].input       = s.vaultParams[vault].input;
         s.vaultParams[newVault].active      = s.vaultParams[vault].active;
-        s.vaultParams[newVault].unactive    = s.vaultParams[vault].unactive;
+        s.vaultParams[newVault].credit      = s.vaultParams[vault].credit;
 
         uint256 assets = LibVault._unwrapShares(
             IERC20(vault).balanceOf(address(this)),
@@ -159,21 +160,6 @@ contract AdminFacet is Modifiers {
         require(assets > newAssets, "AdminFacet: Vault migration failed");
 
         // To finalise migration, re-enable vault and call rebase.
-    }
-
-    /// @dev    Set 'activeAsset' to address(0) to disassociate activeAsset from vault.
-    function setVaultParams(
-        address vault,
-        address input,
-        address active,
-        address unactive,
-        uint8   enabled
-    ) external onlyAdmin() {
-
-        s.vaultParams[vault].input      = input;
-        s.vaultParams[vault].active     = active;
-        s.vaultParams[vault].unactive   = unactive;
-        s.vaultParams[vault].enabled    = enabled;
     }
 
     /// @dev    Set 'convertTo' to address(0) to disable conversions.
@@ -200,17 +186,17 @@ contract AdminFacet is Modifiers {
     }
 
     function getBackingReserve(
-        address unactiveAsset
+        address asset
     ) external view returns (int256) {
 
-        return s.backingReserve[unactiveAsset];
+        return s.backingReserve[asset];
     }
 
-    function getUnactiveRedemptionAllowance(
+    function getCreditRedeemAllowance(
         address account,
-        address unactiveAsset
+        address creditAsset
     ) external view returns (int256) {
 
-        return s.unactiveRedemptionAllowance[account][unactiveAsset];
+        return s.creditRedeemAllowance[account][creditAsset];
     }
 }

@@ -14,13 +14,13 @@ library LibTreasury {
     /// @param  amount          The amount of backing assets.
     event BackingReserveUpdated(address asset, int256 amount);
 
-    /// @notice Emitted when the unactive redemption allowance of an account is updated.
-    /// @notice Accounts that request to mint unactive tokens directly can freely convert back.
+    /// @notice Emitted when the creditRedeemAllowance of an account is updated.
+    /// @notice Accounts that request to mint creditAssets directly can freely convert back.
     ///
     /// @param  account The updated account.
     /// @param  asset   The asset that is being backed.
     /// @param  amount  The amount the asset is being backed by.
-    event UnactiveRedemptionAllowanceUpdated(address account, address asset, int256 amount);
+    event CreditRedeemAllowanceUpdated(address account, address asset, int256 amount);
 
     /// @notice Emitted when an amount of reserve surplus is claimed of a backing asset.
     ///
@@ -44,22 +44,22 @@ library LibTreasury {
         return s.backingReserve[asset];
     }
 
-    /// @notice Adjusts the unactive redemption allowance of a given account for a particular asset.
+    /// @notice Adjusts the creditRedeemAllowance of a given account for a particular asset.
     ///
-    /// @param  asset   The asset which has the allowance (e.g., USDST).
+    /// @param  asset   The creditAsset which has the allowance (e.g., cUSDST).
     /// @param  account The account which has the allowance updated.
     /// @param  amount  The added allowance amount.
-    function _adjustUnactiveRedemptionAllowance(
+    function _adjustCreditRedeemAllowance(
         address asset,
         address account,
         int256  amount
     ) internal returns (int256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        s.unactiveRedemptionAllowance[account][asset] += amount;
-        emit UnactiveRedemptionAllowanceUpdated(account, asset, amount);
+        s.creditRedeemAllowance[account][asset] += amount;
+        emit CreditRedeemAllowanceUpdated(account, asset, amount);
 
-        return s.unactiveRedemptionAllowance[account][asset];
+        return s.creditRedeemAllowance[account][asset];
     }
 
     function _claimReserveSurplus(

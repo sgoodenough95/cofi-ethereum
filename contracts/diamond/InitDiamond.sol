@@ -14,13 +14,13 @@ contract InitDiamond {
     AppStorage internal s;
 
     struct Args {
-        address USDSTA;     // activeToken
-        address USDFI;      // activeToken
-        address USDST;      // debtToken
-        address USDC;       // underlyingToken
-        address DAI;
-        address vUSDC;      // vaultToken
-        address exchangeFacet;  // feeCollector.
+        address USDST;          // activeAsset
+        address USDFI;          // activeAsset [vault]
+        address USDSC;          // creditAsset
+        address USDC;           // inputAsset
+        address DAI;            // inputAsset
+        address vUSDC;          // shareToken [vault]
+        address exchangeFacet;  // feeCollector
     }
     
     function init(Args memory _args) external {
@@ -34,51 +34,51 @@ contract InitDiamond {
         ds.supportedInterfaces[type(IERC173).interfaceId]       = true;
 
         // Rebase opt-in
-        LibToken._rebaseOptIn(_args.USDSTA);
+        LibToken._rebaseOptIn(_args.USDST);
         LibToken._rebaseOptIn(_args.USDFI);
 
         s.vaultParams[_args.vUSDC].input    = _args.USDC;
         s.vaultParams[_args.vUSDC].active   = _args.USDFI;
-        // Loans are not enabled, so leave unactive empty.
+        // Loans are not enabled, so leave credit param empty.
         s.vaultParams[_args.vUSDC].enabled  = 1;
 
-        s.activeInputs[_args.USDSTA] = [_args.USDC, _args.DAI];
+        s.activeInputs[_args.USDST] = [_args.USDC, _args.DAI];
 
-        s.inputToUnactive[_args.USDC]   = _args.USDST;
-        s.inputToUnactive[_args.DAI]    = _args.USDST;
+        s.inputToCredit[_args.USDC] = _args.USDSC;
+        s.inputToCredit[_args.DAI]  = _args.USDSC;
 
         s.minDeposit[_args.USDC]    = 50 * 10**18;
         s.minDeposit[_args.DAI]     = 50 * 10**18;
-        s.minDeposit[_args.USDSTA]  = 50 * 10**18;
-        s.minDeposit[_args.USDFI]   = 50 * 10**18;
         s.minDeposit[_args.USDST]   = 50 * 10**18;
-        s.minWithdraw[_args.USDSTA] = 50 * 10**18;
-        s.minWithdraw[_args.USDFI]  = 50 * 10**18;
+        s.minDeposit[_args.USDFI]   = 50 * 10**18;
+        s.minDeposit[_args.USDSC]   = 50 * 10**18;
         s.minWithdraw[_args.USDST]  = 50 * 10**18;
+        s.minWithdraw[_args.USDFI]  = 50 * 10**18;
+        s.minWithdraw[_args.USDSC]  = 50 * 10**18;
 
-        s.mintEnabled[_args.USDSTA] = 1;
-        s.mintEnabled[_args.USDFI]  = 1;
         s.mintEnabled[_args.USDST]  = 1;
+        s.mintEnabled[_args.USDFI]  = 1;
+        s.mintEnabled[_args.USDSC]  = 1;
 
-        s.mintFee[_args.USDSTA] = 100;
-        s.mintFee[_args.USDFI]  = 100;
         s.mintFee[_args.USDST]  = 100;
+        s.mintFee[_args.USDFI]  = 100;
+        s.mintFee[_args.USDSC]  = 100;
 
-        s.redeemEnabled[_args.USDSTA] = 1;
-        s.redeemEnabled[_args.USDFI]  = 1;
-        s.redeemEnabled[_args.USDST]  = 1;
+        s.redeemEnabled[_args.USDST]    = 1;
+        s.redeemEnabled[_args.USDFI]    = 1;
+        s.redeemEnabled[_args.USDSC]    = 1;
 
-        s.redeemFee[_args.USDSTA]   = 100;
-        s.redeemFee[_args.USDFI]    = 100;
         s.redeemFee[_args.USDST]    = 100;
+        s.redeemFee[_args.USDFI]    = 100;
+        s.redeemFee[_args.USDSC]    = 100;
 
         s.mgmtFee[_args.USDFI] = 1_000;
-        // Apply mgmtFee manually for USDSTA / off-chain yields.
+        // Apply mgmtFee manually for USDST / off-chain yields.
 
-        s.backingAsset[_args.USDST] = _args.USDSTA;
+        s.backingAsset[_args.USDSC] = _args.USDST;
 
-        s.convertEnabled[_args.USDSTA]  = _args.USDST;
-        s.convertEnabled[_args.USDST]   = _args.USDSTA;
+        s.convertEnabled[_args.USDST]   = _args.USDSC;
+        s.convertEnabled[_args.USDSC]   = _args.USDST;
 
         s.isAdmin[msg.sender] = 1;
 
