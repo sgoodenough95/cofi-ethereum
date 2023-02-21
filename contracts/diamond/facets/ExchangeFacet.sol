@@ -267,6 +267,7 @@ contract ExchangeFacet is Modifiers {
             emit LibToken.RedeemFeeCaptured(activeAsset, fee);
         }
 
+        // Will fail here if attempting to redeem activeAsset originating from vault.
         address inputAsset = LibToken._getRedeemAsset(activeAsset);
 
         // Need to approve diamond spend for inputAsset.

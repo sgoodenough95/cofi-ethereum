@@ -31,8 +31,11 @@ contract VaultFacet is Modifiers {
         address vault,
         address depositFrom,
         address recipient
-    ) external minDeposit(amount, vault) returns (uint256 mintAfterFee) {
-
+    )
+        external
+        minDeposit(amount, s.vaultParams[vault].input)
+        returns (uint256 mintAfterFee)
+    {
         VaultParams memory _vault = s.vaultParams[vault];
 
         require(_vault.enabled == 1, "VaultFacet: Vault disabled");
@@ -58,6 +61,7 @@ contract VaultFacet is Modifiers {
     /// @notice Mints a backing asset to Stoa (e.g., USDFI).
     /// @notice Recall caller does not get yield exposure to activeAsset.
     /// @notice Motivation therefore is to offer credit on vault to begin with.
+    /// @dev    May later remove when direct minting of credit via Exchange is live.
     ///
     /// @param  amount      The amount of inputAssets to deposit.
     /// @param  vault       The address of the vault.
@@ -68,8 +72,11 @@ contract VaultFacet is Modifiers {
         address vault,
         address depositFrom,
         address recipient
-    ) external minDeposit(amount, vault) returns (uint256 mintAfterFee) {
-
+    )
+        external
+        minDeposit(amount, s.vaultParams[vault].input)
+        returns (uint256 mintAfterFee)
+    {
         VaultParams memory _vault = s.vaultParams[vault];
 
         require(_vault.enabled == 1, "VaultFacet: Vault disabled");
@@ -129,8 +136,11 @@ contract VaultFacet is Modifiers {
         address vault,
         address depositFrom,
         address recipient
-    ) external minDeposit(amount, vault) returns (uint256 burnAfterFee) {
-
+    )
+        external
+        minWithdraw(amount, s.vaultParams[vault].active)
+        returns (uint256 burnAfterFee) 
+    {
         VaultParams memory _vault = s.vaultParams[vault];
 
         require(_vault.enabled == 1, "VaultFacet: Vault disabled");

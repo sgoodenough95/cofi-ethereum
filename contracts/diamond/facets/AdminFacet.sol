@@ -196,17 +196,17 @@ contract AdminFacet is Modifiers {
     }
 
     function getBackingReserve(
-        address asset
+        address backingAsset
     ) external view returns (uint256) {
 
-        return s.backingReserve[asset];
+        return s.backingReserve[backingAsset];
     }
 
     function getCreditRedeemAllowance(
         address account,
-        address creditAsset
+        address backingAsset
     ) external view returns (uint256) {
 
-        return s.creditRedeemAllowance[account][creditAsset];
+        return s.creditRedeemAllowance[account][backingAsset];
     }
 }
