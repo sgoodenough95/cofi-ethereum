@@ -39,7 +39,7 @@ library LibTreasury {
         address asset,
         uint256 amount,
         uint8   add
-    ) internal returns (uint256) {
+    ) internal returns (uint256) {  // (?) USDSC -> USDST -> 1,000.
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         if (add == 1) s.backingReserve[asset] += amount;

@@ -38,6 +38,20 @@ contract Vault is ERC4626 {
     //     OUSD(address(asset())).rebaseOptIn();
     // }
 
+    /**
+     * @dev Added additional argument: depositor.
+     */
+    function deposit(uint256 assets, address receiver, address depositor)
+        public
+        returns (uint256 shares)
+    {
+        shares = previewDeposit(assets);
+
+        _deposit(depositor, receiver, assets, shares);
+
+        emit Deposit(depositor, receiver, assets, shares);
+    }
+
     function rebaseOptIn() public {
         ActiveToken(address(asset())).rebaseOptIn();
     }

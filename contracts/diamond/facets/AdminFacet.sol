@@ -163,12 +163,22 @@ contract AdminFacet is Modifiers {
     }
 
     /// @dev    Set 'convertTo' to address(0) to disable conversions.
-    function setConvert(
-        address asset,
-        address convertTo
+    function setActiveConvert(
+        address activeAsset,
+        address creditAsset
     ) external onlyAdmin() {
 
-        s.convertEnabled[asset] = convertTo;
+        s.activeConvertEnabled[activeAsset] = creditAsset;
+    }
+
+    /// @dev    Set 'convertTo' to address(0) to disable conversions.
+    function setCreditConvert(
+        address creditAsset,
+        address activeAsset,
+        uint8   enabled
+    ) external onlyAdmin() {
+
+        s.creditConvertEnabled[creditAsset][activeAsset] = enabled;
     }
 
     // function freezeSafe(

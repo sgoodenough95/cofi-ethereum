@@ -33,7 +33,6 @@ enum SafeStatus {
     closedByAdmin           // 5
 }
 
-
 /// @dev    Stores variables used by two or more Facets.
 struct AppStorage {
 
@@ -61,8 +60,13 @@ struct AppStorage {
     // E.g., USDSTA => 100bps.
     mapping(address => uint256)     redeemFee;
 
-    // E.g., USDST <=> USDSC. Returns address(0) if conversions are disabled. Only 1 convert asset.
-    mapping(address => address)     convertEnabled;
+    // Retrieves creditAsset address if converting activeAsset is enabled.
+    // Only ONE creditAsset available per currency denomination (e.g., USD => USDST).
+    mapping(address => address)     activeConvertEnabled;
+
+    // E.g., USDSC => USDST => 1; USDSC => USDFI => 0.
+    // creditAssets can originate from 2+ activeAssets, hence the need for a double-mapping.
+    mapping(address => mapping(address => uint8)) creditConvertEnabled;
 
     mapping(address => uint256)     mgmtFee;
 
@@ -74,13 +78,17 @@ struct AppStorage {
     // Only collects fees in activeAssets for now, which are backed by inputAssets held in diamond.
     address feeCollector;
 
-    // E.g., USDSC => USDST. For creditAssets only. Only consider 1 backing asset.
-    mapping(address => address)     backingAsset;
+    // E.g., USDSC => USDST. The go-to Exchange backing asset of a creditAsset.
+    mapping(address => address)     primeBacking;
+
+    // E.g., USDSC => USDFI. The go-to Vault backing asset of a creditAsset.
+    mapping(address => address)     primeVaultBacking;
 
     // E.g., USDST => backing amount. The amount held as backing.
+    // Only consider USDSC as the token being backed for now (to avoid double-mapping).
     mapping(address => uint256)     backingReserve;
 
-    // E.g., account => USDSC => allowance.
+    // E.g., account => USDST => allowance.
     mapping(address => mapping(address => uint256)) creditRedeemAllowance;
 
     mapping(address => VaultParams) vaultParams;

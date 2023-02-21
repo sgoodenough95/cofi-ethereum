@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import { VaultParams, AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { IERC4626 } from ".././interfaces/IERC4626.sol";
+import 'hardhat/console.sol';
 
 library LibVault {
 
@@ -44,8 +45,9 @@ library LibVault {
         address vault,
         address depositFrom
     ) internal returns (uint256 shares) {
-
+        console.log(amount);
         shares = IERC4626(vault).deposit(amount, address(this), depositFrom);
+        console.log(amount);
         emit Wrap(amount, depositFrom, vault, shares);
     }
 

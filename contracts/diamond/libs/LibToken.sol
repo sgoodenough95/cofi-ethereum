@@ -275,6 +275,7 @@ library LibToken {
     }
 
     /// @notice Returns the inputAsset to service a redemption.
+    /// @dev    Used only w.r.t. ExchangeFacet, as asset can be identified in vault.
     /// @dev    MVP will only provide first asset in inputs array.
     /// @dev    Will later expand with more custom logic.
     ///

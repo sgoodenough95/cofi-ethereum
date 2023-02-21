@@ -39,7 +39,7 @@ contract InitDiamond {
 
         s.vaultParams[_args.vUSDC].input    = _args.USDC;
         s.vaultParams[_args.vUSDC].active   = _args.USDFI;
-        // Loans are not enabled, so leave credit param empty.
+        s.vaultParams[_args.vUSDC].credit   = _args.USDSC;
         s.vaultParams[_args.vUSDC].enabled  = 1;
 
         s.activeInputs[_args.USDST] = [_args.USDC, _args.DAI];
@@ -75,10 +75,14 @@ contract InitDiamond {
         s.mgmtFee[_args.USDFI] = 1_000;
         // Apply mgmtFee manually for USDST / off-chain yields.
 
-        s.backingAsset[_args.USDSC] = _args.USDST;
+        s.primeBacking[_args.USDSC]         = _args.USDST;
+        s.primeVaultBacking[_args.USDSC]    = _args.USDFI;
 
-        s.convertEnabled[_args.USDST]   = _args.USDSC;
-        s.convertEnabled[_args.USDSC]   = _args.USDST;
+        s.activeConvertEnabled[_args.USDST] = _args.USDSC;
+        s.activeConvertEnabled[_args.USDFI] = _args.USDSC;
+        
+        s.creditConvertEnabled[_args.USDSC][_args.USDST] = 1;
+        s.creditConvertEnabled[_args.USDSC][_args.USDFI] = 1;
 
         s.isAdmin[msg.sender] = 1;
 
