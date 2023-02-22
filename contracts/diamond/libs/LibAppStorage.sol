@@ -76,7 +76,7 @@ struct AppStorage {
 
     // Fees accrue to this address. Not necessarily Admin.
     // Only collects fees in activeAssets for now, which are backed by inputAssets held in diamond.
-    address feeCollector;
+    // address feeCollector;
 
     // E.g., USDSC => USDST. The go-to Exchange backing asset of a creditAsset.
     mapping(address => address)     primeBacking;
@@ -146,7 +146,7 @@ contract Modifiers is IStoa {
     }
 
     modifier onlyAdmin() {
-        require(s.isAdmin[msg.sender] != 1, "Not Admin");
+        require(s.isAdmin[msg.sender] == 1, "Not Admin");
         _;
     }
 }

@@ -23,14 +23,14 @@ contract RebaseFacet is Modifiers {
     /// @notice Function for manually changing the supply of an activeAsset.
     /// @notice Stoa can transform its yield earnings into activeAssets by minting normally.
     ///
-    /// @param  asset       The activeAsset to change supply for.
+    /// @param  activeAsset The activeAsset to change supply for.
     /// @param  newSupply   The new supply of activeAssets (not accounting for Stoa's yield share).
     function changeSupply(
-        address asset,
+        address activeAsset,
         uint256 newSupply
     ) external onlyAdmin() {
 
-        IStoaToken(asset).changeSupply(newSupply);
+        IStoaToken(activeAsset).changeSupply(newSupply);
     }
 
     /// @notice Function for updating activeAssets originating from vaults.
@@ -59,5 +59,19 @@ contract RebaseFacet is Modifiers {
             if (yield - shareYield > 0)
             IStoaToken(_vault.active).mint(address(this), yield - shareYield);
         }
+    }
+
+    function rebaseOptIn(
+        address activeAsset
+    ) external onlyAdmin() {
+
+        IStoaToken(activeAsset).rebaseOptIn();
+    }
+
+    function rebaseOptOut(
+        address activeAsset
+    ) external onlyAdmin() {
+
+        IStoaToken(activeAsset).rebaseOptOut();
     }
 }

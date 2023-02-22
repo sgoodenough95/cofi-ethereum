@@ -22,6 +22,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // import { Initializable } from "../utils/Initializable.sol";
 // import { InitializableERC20Detailed } from "../utils/InitializableERC20Detailed.sol";
 import { StableMath } from "../utils/StableMath.sol";
+import 'hardhat/console.sol';
 // import { Governable } from "../governance/Governable.sol";
 
 /**
@@ -545,6 +546,7 @@ contract ActiveToken is ERC20 {
      * to upside and downside.
      */
     function rebaseOptIn() public nonReentrant {
+        console.log(msg.sender);
         require(_isNonRebasingAccount(msg.sender), "ActivatedToken: Account has not opted out");
         // require(whitelisted[msg.sender], "ActivatedToken: Account not whitelisted");
 

@@ -52,7 +52,7 @@ contract VaultFacet is Modifiers {
         LibToken._mint(_vault.active, recipient, mintAfterFee);
 
         if (fee > 0) {
-           LibToken._mint(_vault.active, s.feeCollector, fee);
+           LibToken._mint(_vault.active, address(this), fee);
             emit LibToken.MintFeeCaptured(_vault.active, fee); 
         }
     }
@@ -145,12 +145,12 @@ contract VaultFacet is Modifiers {
 
         require(_vault.enabled == 1, "VaultFacet: Vault disabled");
 
-        LibToken._transferFrom(_vault.active, amount, depositFrom, s.feeCollector);
+        LibToken._transferFrom(_vault.active, amount, depositFrom, address(this));
 
         uint256 fee = LibToken._getRedeemFee(_vault.active, amount);
         burnAfterFee = amount - fee;
 
-        LibToken._burn(_vault.active, s.feeCollector, burnAfterFee);
+        LibToken._burn(_vault.active, address(this), burnAfterFee);
         if (fee > 0) {
             emit LibToken.RedeemFeeCaptured(_vault.active, fee);
         }

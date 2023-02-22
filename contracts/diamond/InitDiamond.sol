@@ -85,8 +85,5 @@ contract InitDiamond {
         s.creditConvertEnabled[_args.USDSC][_args.USDFI] = 1;
 
         s.isAdmin[msg.sender] = 1;
-
-        // Set ExchangeFacet as feeCollector for now.
-        s.feeCollector = _args.exchangeFacet;
     }
 }

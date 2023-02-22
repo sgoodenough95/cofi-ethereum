@@ -72,7 +72,7 @@ contract ExchangeFacet is Modifiers {
         LibToken._mint(activeAsset, recipient, mintAfterFee);
 
         if (fee > 0) {
-           LibToken._mint(activeAsset, s.feeCollector, fee);
+           LibToken._mint(activeAsset, address(this), fee);
             emit LibToken.MintFeeCaptured(activeAsset, fee); 
         }
     }
@@ -256,13 +256,13 @@ contract ExchangeFacet is Modifiers {
     ) external minWithdraw(amount, activeAsset) returns (uint256 burnAfterFee) {
 
         // Need to perform a transferFrom operation to capture fee.
-        LibToken._transferFrom(activeAsset, amount, depositFrom, s.feeCollector);
+        LibToken._transferFrom(activeAsset, amount, depositFrom, address(this));
 
         uint256 fee = LibToken._getRedeemFee(activeAsset, amount);
         burnAfterFee = amount - fee;
 
         // Burn the amount for which is not captured as a fee.
-        LibToken._burn(activeAsset, s.feeCollector, burnAfterFee);
+        LibToken._burn(activeAsset, address(this), burnAfterFee);
         if (fee > 0) {
             emit LibToken.RedeemFeeCaptured(activeAsset, fee);
         }

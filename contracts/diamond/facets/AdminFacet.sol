@@ -188,12 +188,12 @@ contract AdminFacet is Modifiers {
 
     // }
 
-    function setFeeCollector(
-        address feeCollector
-    ) external onlyAdmin() {
+    // function setFeeCollector(
+    //     address feeCollector
+    // ) external onlyAdmin() {
 
-        s.feeCollector = feeCollector;
-    }
+    //     s.feeCollector = feeCollector;
+    // }
 
     function getBackingReserve(
         address backingAsset
