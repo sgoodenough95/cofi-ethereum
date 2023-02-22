@@ -81,12 +81,12 @@ contract AdminFacet is Modifiers {
     //     s.inputStore[inputAsset] = inputStore;
     // }
 
-    function setCreditInput(
-        address creditAsset,
-        address inputAsset
+    function setCreditAsset(
+        address asset,
+        address creditAsset
     ) external onlyAdmin() {
 
-        s.inputToCredit[inputAsset] = creditAsset;
+        s.creditAsset[asset] = creditAsset;
     }
 
     function addActiveInput(

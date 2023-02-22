@@ -16,7 +16,6 @@ import { VaultParams, Modifiers } from "../libs/LibAppStorage.sol";
 import { LibToken } from "../libs/LibToken.sol";
 import { LibVault } from "../libs/LibVault.sol";
 import { LibTreasury } from "../libs/LibTreasury.sol";
-import { IStoa } from "../interfaces/IStoa.sol";
 
 contract VaultFacet is Modifiers {
 

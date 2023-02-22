@@ -6,11 +6,11 @@ import { IStoa } from "./../interfaces/IStoa.sol";
 
 /// @dev    A Safe supports one activeAsset [vault] and one creditAsset.
 struct Safe {
-    address owner;
-    uint256 index;              // Identifier for the Safe.
-    address collateralAsset;    // Ethereum can be address(1) (?)
-    // Might not necessarily know this when opening a Safe.
-    address debtAsset;          // E.g., USDSC.
+    // address owner;
+    // uint256 index;              // Identifier for the Safe.
+    // safeStore token (4626).
+    address store;    // Ethereum can be address(1) (?)
+    address credit;          // E.g., USDSC.
     uint256 bal;                // Either tokens or shares, depending on the asset.
     uint256 debt;               // [tokens].
     uint8   status;
@@ -39,8 +39,8 @@ struct AppStorage {
     // E.g., USDST => [USDC, DAI].
     mapping(address => address[])   activeInputs;
 
-    // E.g., USDC => USDSC; DAI => USDSC. Only ONE available creditAsset for a given inputAsset.
-    mapping(address => address)     inputToCredit;
+    // E.g., USDC => USDSC; DAI => USDSC; USDST => USDSC; USDFI => USDSC; saUSDST => USDSC.
+    mapping(address => address)     creditAsset;
 
     // E.g., USDC => 50; USDST => 50. Applies to whichever asset is being provided by the user.
     mapping(address => uint256)     minDeposit;
@@ -83,6 +83,19 @@ struct AppStorage {
 
     // E.g., USDSC => USDFI. The go-to Vault backing asset of a creditAsset.
     mapping(address => address)     primeVaultBacking;
+
+    // E.g., USDST => saUSDST.
+    mapping(address => address) primeStore;
+
+    // mapping(address => address) primeActive;
+
+    // account => safeIndex => Safe. uint32 allows for circa 4.3m Safes created per address.
+    mapping(address => mapping(uint32 => Safe)) safe;
+
+    mapping(address => uint32) safeIndex;
+
+    // Enables transfers to non-active accounts that can later be claimed.
+    mapping(address => mapping(address => uint256)) pendingClaim;
 
     // E.g., USDST => backing amount. The amount held as backing.
     // Only consider USDSC as the token being backed for now (to avoid double-mapping).

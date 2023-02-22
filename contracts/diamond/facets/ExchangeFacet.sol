@@ -92,7 +92,7 @@ contract ExchangeFacet is Modifiers {
         address recipient
     ) external minDeposit(amount, inputAsset) returns (uint256 mintAfterFee) {
         // Returns address(0) if no creditAsset set.
-        address creditAsset = s.inputToCredit[inputAsset];
+        address creditAsset = s.creditAsset[inputAsset];
 
         // Consequently, will fail here if no creditAsset set.
         require(LibToken._isMintEnabled(creditAsset) == 1, "ExchangeFacet: Mint disabled");

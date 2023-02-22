@@ -265,13 +265,13 @@ library LibToken {
     ///
     /// @dev    May use in AdminFacet.
     ///
-    /// @param  inputAsset  The inputAsset to enquire for.
-    function _getCreditFromInput(
-        address inputAsset
+    /// @param  asset   The asset to enquire for.
+    function _getCreditAsset(
+        address asset
     ) internal view returns (address) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        return s.inputToCredit[inputAsset];
+        return s.creditAsset[asset];
     }
 
     /// @notice Returns the inputAsset to service a redemption.

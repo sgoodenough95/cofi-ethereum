@@ -44,8 +44,9 @@ contract InitDiamond {
 
         s.activeInputs[_args.USDST] = [_args.USDC, _args.DAI];
 
-        s.inputToCredit[_args.USDC] = _args.USDSC;
-        s.inputToCredit[_args.DAI]  = _args.USDSC;
+        s.creditAsset[_args.USDC] = _args.USDSC;
+        s.creditAsset[_args.DAI]  = _args.USDSC;
+        // Can add more.
 
         s.minDeposit[_args.USDC]    = 50 * 10**18;
         s.minDeposit[_args.DAI]     = 50 * 10**18;
