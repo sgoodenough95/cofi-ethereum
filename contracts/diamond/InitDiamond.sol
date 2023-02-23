@@ -76,6 +76,9 @@ contract InitDiamond {
         s.mgmtFee[_args.USDFI] = 1_000;
         // Apply mgmtFee manually for USDST / off-chain yields.
 
+        s.LTV[_args.USDST]  = 2_500;
+        s.LTV[_args.USDFI]  = 2_500;
+
         s.primeBacking[_args.USDSC]         = _args.USDST;
         s.primeVaultBacking[_args.USDSC]    = _args.USDFI;
 

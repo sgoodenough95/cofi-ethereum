@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import { VaultParams, AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { IERC4626 } from ".././interfaces/IERC4626.sol";

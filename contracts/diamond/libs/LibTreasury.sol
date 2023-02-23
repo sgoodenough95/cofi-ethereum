@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
@@ -11,19 +11,17 @@ library LibTreasury {
 
     /// @notice Emitted when the backing reserve of an asset is updated.
     ///
-    /// @param  asset   The asset being backed.
-    /// @param  add     Indicates if amount is added or subtracted.            
+    /// @param  asset   The asset being backed.           
     /// @param  amount  The amount of backing assets.
-    event BackingReserveUpdated(address asset, uint8 add, uint256 amount);
+    event BackingReserveUpdated(address asset, int256 amount);
 
     /// @notice Emitted when the creditRedeemAllowance of an account is updated.
     /// @notice Accounts that request to mint creditAssets directly can freely convert back.
     ///
     /// @param  account The updated account.
     /// @param  asset   The asset that is being backed.
-    /// @param  add     Indicates if amount is added or subtracted.
     /// @param  amount  The amount the asset is being backed by.
-    event CreditRedeemAllowanceUpdated(address account, address asset, uint8 add, uint256 amount);
+    event CreditRedeemAllowanceUpdated(address account, address asset, int256 amount);
 
     /// @notice Emitted when an amount of reserve surplus is claimed of a backing asset.
     ///
@@ -37,14 +35,15 @@ library LibTreasury {
     /// @param  amount          The amount of backing assets.
     function _adjustBackingReserve(
         address asset,
-        uint256 amount,
-        uint8   add
-    ) internal returns (uint256) {  // (?) USDSC -> USDST -> 1,000.
+        int256  amount
+    ) internal returns (uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        if (add == 1) s.backingReserve[asset] += amount;
-        else s.backingReserve[asset] -= amount;
-        emit BackingReserveUpdated(asset, add, amount);
+        if (amount >= 0) s.backingReserve[asset] += LibAppStorage.abs(amount);
+        
+        else s.backingReserve[asset] -= LibAppStorage.abs(amount);
+
+        emit BackingReserveUpdated(asset, amount);
 
         return s.backingReserve[asset];
     }
@@ -57,18 +56,19 @@ library LibTreasury {
     function _adjustCreditRedeemAllowance(
         address asset,
         address account,
-        uint256 amount,
-        uint8   add
+        int256  amount
     ) internal returns (uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        if (add == 1) s.creditRedeemAllowance[account][asset] += amount;
-        else s.creditRedeemAllowance[account][asset] -= amount;
-        emit CreditRedeemAllowanceUpdated(account, asset, add, amount);
+        if (amount >= 0) s.creditRedeemAllowance[account][asset] += LibAppStorage.abs(amount);
+        else s.creditRedeemAllowance[account][asset] -= LibAppStorage.abs(amount);
+
+        emit CreditRedeemAllowanceUpdated(account, asset, amount);
 
         return s.creditRedeemAllowance[account][asset];
     }
 
+    // FIX
     function _claimReserveSurplus(
         address asset,
         uint256 amount

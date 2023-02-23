@@ -6,7 +6,7 @@ const { API_KEY, PRIV_KEY, PRIV_KEY_1, PRIV_KEY_MM } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.17",
+  solidity: "0.8.19",
   diamondAbi: {
     name: "Stoa-Diamond",
     include: ["Facet"],

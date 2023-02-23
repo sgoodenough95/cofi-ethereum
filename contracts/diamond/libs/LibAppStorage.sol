@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 import { IStoa } from "./../interfaces/IStoa.sol";
@@ -10,10 +10,11 @@ struct Safe {
     // uint256 index;              // Identifier for the Safe.
     // safeStore token (4626).
     address store;    // Ethereum can be address(1) (?)
-    address credit;          // E.g., USDSC.
+    address creditAsset;          // E.g., USDSC.
     uint256 bal;                // Either tokens or shares, depending on the asset.
-    uint256 debt;               // [tokens].
+    uint256 credit;               // [tokens].
     uint8   status;
+    // uint8   authorised;
 }
 
 struct VaultParams {
@@ -51,11 +52,11 @@ struct AppStorage {
     // E.g., USDST => 1; USDSC => 1; USDFI => 1.
     mapping(address => uint8)       mintEnabled;
 
-    // E.g., USDST => 50bps.
+    // E.g., USDST => 50bps. NOTE: PercentageMath might not work when using different types.
     mapping(address => uint256)     mintFee;
 
     // E.g., USDST => 1; USDSC => 1; USDFI => 1.
-    mapping(address => uint256)     redeemEnabled;
+    mapping(address => uint8)     redeemEnabled;
 
     // E.g., USDSTA => 100bps.
     mapping(address => uint256)     redeemFee;
@@ -69,6 +70,9 @@ struct AppStorage {
     mapping(address => mapping(address => uint8)) creditConvertEnabled;
 
     mapping(address => uint256)     mgmtFee;
+
+    // E.g., USDSC => 50bps.
+    mapping(address => uint256) origFee;
 
     // Used when manual movement of inputAssets is required.
     // (At least to start with) consider the diamond as the inputStore.
@@ -94,8 +98,11 @@ struct AppStorage {
 
     mapping(address => uint32) safeIndex;
 
+    // E.g., USDST => 2_500.
+    mapping(address => uint256) LTV;
+
     // Enables transfers to non-active accounts that can later be claimed.
-    mapping(address => mapping(address => uint256)) pendingClaim;
+    // mapping(address => mapping(address => uint256)) pendingClaim;
 
     // E.g., USDST => backing amount. The amount held as backing.
     // Only consider USDSC as the token being backed for now (to avoid double-mapping).

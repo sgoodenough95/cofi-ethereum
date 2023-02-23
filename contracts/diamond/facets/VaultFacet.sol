@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 /**
     █▀▀ ▀▀█▀▀ █▀▀█ █▀▀█ 
@@ -108,8 +108,7 @@ contract VaultFacet is Modifiers {
         // (2)
         LibTreasury._adjustBackingReserve(
             s.primeVaultBacking[_vault.credit],
-            mintAfterFee,
-            1
+            int256(mintAfterFee)
         );
 
         // (3)
@@ -119,8 +118,7 @@ contract VaultFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             _vault.credit,
             depositFrom,
-            mintAfterFee,
-            1
+            int256(mintAfterFee)
         );
     }
 
@@ -210,8 +208,7 @@ contract VaultFacet is Modifiers {
         // (2)
         LibTreasury._adjustBackingReserve(
             _vault.active,
-            amount,
-            0
+            -(int256(amount))
         );
 
         // (3)
@@ -221,8 +218,7 @@ contract VaultFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             _vault.credit,
             depositFrom,
-            amount,
-            0
+            -(int256(amount))
         );
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 /**
     █▀▀ ▀▀█▀▀ █▀▀█ █▀▀█ 
@@ -122,8 +122,7 @@ contract ExchangeFacet is Modifiers {
         // (2)
         LibTreasury._adjustBackingReserve(
             s.primeBacking[creditAsset],
-            mintAfterFee,
-            1
+            int256(mintAfterFee)
         );
 
         // (3)
@@ -133,8 +132,7 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             s.primeBacking[creditAsset],
             depositFrom,
-            mintAfterFee,
-            1
+            int256(mintAfterFee)
         );
     }
 
@@ -164,8 +162,7 @@ contract ExchangeFacet is Modifiers {
         // (2)
         LibTreasury._adjustBackingReserve(
             activeAsset,
-            amount,
-            1
+            int256(amount)
         );
 
         // (3)
@@ -175,8 +172,7 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             activeAsset,
             depositFrom,
-            amount,
-            1
+            int256(amount)
         );
     }
 
@@ -221,12 +217,14 @@ contract ExchangeFacet is Modifiers {
 
         // (1)
         LibToken._burn(creditAsset, depositFrom, amount);
-
+        console.log('Hello');
+        console.logInt(-int(amount));
+        int256 _amount = -int256(amount);
+        console.logInt(_amount);
         // (2)
         LibTreasury._adjustBackingReserve(
             activeAsset,
-            amount,
-            0
+            _amount
         );
 
         // (3)
@@ -236,8 +234,7 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             activeAsset,
             depositFrom,
-            amount,
-            0
+            _amount
         );
     }
 
@@ -325,8 +322,7 @@ contract ExchangeFacet is Modifiers {
         // (2)
         LibTreasury._adjustBackingReserve(
             activeAsset,
-            amount,
-            0
+            -(int256(amount))
         );
 
         // (3)
@@ -340,8 +336,7 @@ contract ExchangeFacet is Modifiers {
         LibTreasury._adjustCreditRedeemAllowance(
             activeAsset,
             depositFrom,
-            amount,
-            0
+            -(int256(amount))
         );
     }
 }
