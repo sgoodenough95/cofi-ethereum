@@ -104,6 +104,8 @@ contract SafeCommonFacet is Modifiers {
 
         // Update backing reserve only applies to direct mints.
 
+        s.safe[msg.sender][index].status = 2;
+
         LibToken._mint(s.safe[msg.sender][index].creditAsset, recipient, amount);
 
         IERC4626 vault = IERC4626(s.safe[msg.sender][index].store);
@@ -115,7 +117,7 @@ contract SafeCommonFacet is Modifiers {
         LibSafe._adjustCredit(-int256(creditShares), msg.sender, index);
         LibSafe._adjustBal(-int256(origFeeShares), msg.sender, index);
 
-        emit LibSafe.Borrow(msg.sender, index, amount);
+        emit LibSafe.Borrow(msg.sender, index, amount, origFee);
 
         /**
             LOAN CALC STEPS:
@@ -132,7 +134,30 @@ contract SafeCommonFacet is Modifiers {
         s.origFeesCollected[s.safe[msg.sender][index].store] += origFeeShares;
     }
 
-    // function repay() {}
+    function repay(
+        uint256 amount,
+        address depositFrom,
+        address account,
+        uint32  index
+    )   external
+        minDeposit(amount, s.safe[account][index].creditAsset)
+    {
+        require(
+            s.safe[account][index].status == 1 ||
+            s.safe[account][index].status == 2,
+            'SafeFacet: Safe not active'
+        );
+
+        LibToken._burn(s.safe[account][index].creditAsset, depositFrom, amount);
+
+        uint256 shares = IERC4626(s.safe[account][index].store).previewDeposit(amount);
+
+        LibSafe._adjustCredit(int256(shares), account, index);
+
+        // Set status to 1 if fully repaid (?)
+
+        emit LibSafe.Repay(account, index, amount);
+    }
 
     function getSafe(
         address account,

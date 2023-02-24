@@ -52,7 +52,15 @@ library LibSafe {
     /// @param  account The account initiating the borrow.
     /// @param  index   The Safe ID.
     /// @param  amount  The amount borrowed (in ASSETS, not shares).
-    event Borrow(address account, uint32 index, uint256 amount);
+    /// @param  fee     The origination fee captured (in activeAssets).
+    event Borrow(address account, uint32 index, uint256 amount, uint256 fee);
+
+    /// @notice Emitted when a repay operation is executed.
+    ///
+    /// @param  account The account being repaid.
+    /// @param  index   The Safe ID.
+    /// @param  amount  The amount repaid (in ASSETS, not shares).
+    event Repay(address account, uint32 index, uint256 amount);
 
     /// @notice Internal function for opening a Safe.
     ///
@@ -186,13 +194,34 @@ library LibSafe {
         // Updates credit to most recent LTV change.
         _pokeCredit(account, index);
 
-        uint256 assets = IERC4626(s.safe[account][index].store)
+        uint256 assets  = IERC4626(s.safe[account][index].store)
             .previewRedeem(s.safe[account][index].credit);
+        uint256 fee     = assets.percentMul(s.origFee[s.safe[account][index].creditAsset]);
 
         // Returns assets (not shares).
-        return (
-            assets - assets.percentMul(s.origFee[s.safe[account][index].creditAsset]),
-            assets.percentMul(s.origFee[s.safe[account][index].creditAsset])
+        return (assets - fee, fee);
+    }
+
+    function _getMaxWithdraw(
+        address account,
+        uint32  index
+    ) internal returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        if (s.safe[account][index].status == 1) return s.safe[account][index].bal;
+
+        _pokeCredit(account, index);
+
+        uint256 baseCredit =
+            s.safe[account][index].bal.percentMul(
+                s.LTV[IERC4626(s.safe[msg.sender][index].store).asset()]
+            );
+        
+        if (baseCredit <= s.safe[account][index].credit) return s.safe[account][index].bal;
+
+        // Convert LTV to CR. E.g., 10,000 / 2_500 * 10,000 = 400%.
+        return s.safe[account][index].bal - s.safe[account][index].credit.percentMul(
+            10_000 / s.LTV[IERC4626(s.safe[msg.sender][index].store).asset()] * 10_000
         );
     }
 
