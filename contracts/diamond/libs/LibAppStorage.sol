@@ -101,6 +101,12 @@ struct AppStorage {
     // E.g., USDST => 2_500.
     mapping(address => uint256) LTV;
 
+    // // E.g., USDST => 0 (if no update performed to LTV). Used for gas savings.
+    // mapping(address => uint32)  LTVUpdateIndex;
+
+    // E.g., saUSDST => feesCollected.
+    mapping(address => uint256) origFeesCollected;
+
     // Enables transfers to non-active accounts that can later be claimed.
     // mapping(address => mapping(address => uint256)) pendingClaim;
 

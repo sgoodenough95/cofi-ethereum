@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
+import { IERC4626 } from ".././interfaces/IERC4626.sol";
 import { GPv2SafeERC20 } from "./external/GPv2SafeERC20.sol";
 import 'hardhat/console.sol';
 
@@ -66,6 +67,25 @@ library LibTreasury {
         emit CreditRedeemAllowanceUpdated(account, asset, amount);
 
         return s.creditRedeemAllowance[account][asset];
+    }
+
+    /// @notice Admin function for claiming origination fees from a given Safe store.
+    ///
+    /// @param  store       The Safe store to claim fees from.
+    /// @param  recipient   The receiver of the fees.
+    /// @param  amount      The amount of fees to claim. If greater than allocation, return all.
+    function _claimOrigFees(
+        address store,
+        address recipient,
+        uint256 amount
+    ) internal {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        amount = amount > s.feesCollected[store] ? s.feesCollected[store] : amount;
+
+        IERC4626(store).redeem(amount, recipient, address(this));
+
+        s.feesCollected[store] -= amount;
     }
 
     // FIX

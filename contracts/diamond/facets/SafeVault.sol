@@ -18,7 +18,7 @@ import { LibVault } from '../libs/LibVault.sol';
 import { LibSafe } from '../libs/LibSafe.sol';
 import { IERC4626 } from ".././interfaces/IERC4626.sol";
 
-contract SafeVault is Modifiers {
+contract SafeVaultFacet is Modifiers {
 
     /// @notice Opens a Sade with an activeAsset originating from a vault.
     /// @dev    Only this route likely to be available for MVP.

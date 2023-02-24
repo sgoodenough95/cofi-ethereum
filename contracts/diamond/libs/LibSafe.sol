@@ -47,6 +47,13 @@ library LibSafe {
     /// @param  amount  The credit change amount.
     event SafeCreditUpdated(address account, uint32 index, int256 amount);
 
+    /// @notice Emitted when a borrow operation is executed.
+    ///
+    /// @param  account The account initiating the borrow.
+    /// @param  index   The Safe ID.
+    /// @param  amount  The amount borrowed (in ASSETS, not shares).
+    event Borrow(address account, uint32 index, uint256 amount);
+
     /// @notice Internal function for opening a Safe.
     ///
     /// @param  amount      The amount of activeAssets to deposit.
@@ -65,12 +72,28 @@ library LibSafe {
         s.safe[msg.sender][s.safeIndex[msg.sender]].store       = store;
         s.safe[msg.sender][s.safeIndex[msg.sender]].creditAsset = s.creditAsset[asset];
         s.safe[msg.sender][s.safeIndex[msg.sender]].bal         = shares;
-        s.safe[msg.sender][s.safeIndex[msg.sender]].credit      = amount.percentMul(s.LTV[asset]);
+        // This credit parameter is NOT displayed on the front-end.
+        s.safe[msg.sender][s.safeIndex[msg.sender]].credit      = shares.percentMul(s.LTV[asset]);
         s.safe[msg.sender][s.safeIndex[msg.sender]].status      = 1;
 
         emit SafeOpened(msg.sender, s.safeIndex[msg.sender], store, amount);
 
         s.safeIndex[msg.sender] += 1;
+    }
+
+    /// @notice Used for updating credit to reflect the most recent LTV change.
+    function _pokeCredit(
+        address account,
+        uint32 index
+    ) internal returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        s.safe[account][s.safeIndex[account]].credit =
+            s.safe[account][s.safeIndex[account]].bal.percentMul(
+                s.LTV[IERC4626(s.safe[account][index].store).asset()]
+            );
+
+        return s.safe[account][s.safeIndex[account]].credit;
     }
 
     function _deposit(
@@ -104,6 +127,11 @@ library LibSafe {
         emit SafeTransfer(msg.sender, fromIndex, recipient, toIndex, amount);
     }
 
+    /// @notice Internal function to update the balance of a Safe.
+    ///
+    /// @param  amount  The amount to adjust by, denominated in SHARES (not assets).
+    /// @param  account The account to adjust balance for.
+    /// @param  index   The Safe ID.
     function _adjustBal(
         int256  amount,
         address account,
@@ -117,6 +145,11 @@ library LibSafe {
         emit SafeBalUpdated(account, index, amount);
     }
 
+    /// @notice Internal function to update the credit of a Safe.
+    ///
+    /// @param  amount  The amount to adjust by, denominated in SHARES (not assets).
+    /// @param  account The account to adjust credit for.
+    /// @param  index   The Safe ID.
     function _adjustCredit(
         int256  amount,
         address account,
@@ -146,14 +179,31 @@ library LibSafe {
     function _getMaxBorrow(
         address account,
         uint32  index
-    ) internal view returns (uint256, uint256) {
+    ) internal returns (uint256, uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
+        // LTVIndex check for gas savings (?)
+        // Updates credit to most recent LTV change.
+        _pokeCredit(account, index);
+
+        uint256 assets = IERC4626(s.safe[account][index].store)
+            .previewRedeem(s.safe[account][index].credit);
+
+        // Returns assets (not shares).
         return (
-            s.safe[account][index].credit -
-                s.safe[account][index].credit.percentMul(s.origFee[s.safe[account][index].creditAsset]),
-            s.safe[account][index].credit.percentMul(s.origFee[s.safe[account][index].creditAsset])
+            assets - assets.percentMul(s.origFee[s.safe[account][index].creditAsset]),
+            assets.percentMul(s.origFee[s.safe[account][index].creditAsset])
         );
+    }
+
+    function _adjustLTV(
+        address asset,
+        uint256 LTV
+    ) internal {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        s.LTV[asset] = LTV;
+        // s.LTVUpdateIndex[asset] += 1;
     }
 
     // _isSafeActive(

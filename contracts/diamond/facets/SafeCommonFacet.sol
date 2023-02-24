@@ -9,7 +9,6 @@ pragma solidity 0.8.19;
     @author stoa.money
     @title  Safe Facet
     @notice User-operated functions for managing Safes.
-    @dev    TO-DO: Split [vault] and [exchange] into separate facets.
  */
 
 import { Safe, VaultParams, Modifiers } from '../libs/LibAppStorage.sol';
@@ -18,7 +17,7 @@ import { LibVault } from '../libs/LibVault.sol';
 import { LibSafe } from '../libs/LibSafe.sol';
 import { IERC4626 } from ".././interfaces/IERC4626.sol";
 
-contract SafeCommon is Modifiers {
+contract SafeCommonFacet is Modifiers {
 
     /// @notice Opens a Safe with activeAssets already held by the account.
     ///
@@ -92,7 +91,6 @@ contract SafeCommon is Modifiers {
         uint32  index
     )   external
         minWithdraw(amount, s.safe[msg.sender][index].creditAsset)
-        returns (uint256)
     {
         require(
             s.safe[msg.sender][index].status == 1 ||
@@ -104,19 +102,34 @@ contract SafeCommon is Modifiers {
 
         require(amount <= maxBorrow, 'SafeFacet: Insufficient credit');
 
-        // Update backing reserve only applies to direct mints (?)
+        // Update backing reserve only applies to direct mints.
 
         LibToken._mint(s.safe[msg.sender][index].creditAsset, recipient, amount);
 
-        LibSafe._adjustCredit(int256(amount), msg.sender, index);
+        IERC4626 vault = IERC4626(s.safe[msg.sender][index].store);
 
-        LibSafe._adjustBal(-int256(origFee), msg.sender, index);
+        // Convert assets to shares to adjust Safe params.
+        uint256 creditShares    = vault.previewDeposit(amount);
+        uint256 origFeeShares   = vault.previewDeposit(origFee);
 
-        // Update Stoa Treasury Safe (?)
+        LibSafe._adjustCredit(-int256(creditShares), msg.sender, index);
+        LibSafe._adjustBal(-int256(origFeeShares), msg.sender, index);
 
-        // emit Borrow
+        emit LibSafe.Borrow(msg.sender, index, amount);
 
-        return origFee;
+        /**
+            LOAN CALC STEPS:
+
+            1. User opens Safe with 10,000 USD. Has "2,500" credits.
+            2. Alice can see that her maxBorrow is 2,487.5 credits.
+            3. Alice calls borrow(2,487.5, Alice's wallet, 0).
+            4* Alice's credit is now 12.5.
+            5* Alice's maxBorrow is now 12.5-(12.5*0.05%)=12.4375.
+
+            If Alice's maxBorrow < minWithdraw, display maxBorrow as 0.
+         */
+
+        s.origFeesCollected[s.safe[msg.sender][index].store] += origFeeShares;
     }
 
     // function repay() {}
@@ -129,11 +142,12 @@ contract SafeCommon is Modifiers {
         return s.safe[account][index];
     }
 
-    function getMaxBorrow(
-        address account,
-        uint32  index
-    ) external view returns (uint256 maxBorrow, uint256 origFee) {
+    // Can be deduced off-chain.
+    // function getMaxBorrow(
+    //     address account,
+    //     uint32  index
+    // ) external returns (uint256 maxBorrow, uint256 origFee) {
 
-        (maxBorrow, origFee) = LibSafe._getMaxBorrow(account, index);
-    }
+    //     (maxBorrow, origFee) = LibSafe._getMaxBorrow(account, index);
+    // }
 }
