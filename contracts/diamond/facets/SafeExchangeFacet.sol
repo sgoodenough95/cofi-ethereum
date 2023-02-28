@@ -65,17 +65,13 @@ contract SafeExchangeFacet is Modifiers {
         uint256 amount,
         address inputAsset, // One [exchange] activeAsset can have multiple inputAssets.
         address depositFrom,
+        address recipient,
         uint32  index
     )   external
         minDeposit(amount, inputAsset)
+        activeSafe(recipient, index)
     {
-        require(
-            s.safe[msg.sender][index].status == 1 ||
-            s.safe[msg.sender][index].status == 2,
-            'SafeFacet: Safe not active'
-        );
-
-        address activeAsset = IERC4626(s.safe[msg.sender][index].store).asset();
+        address activeAsset = IERC4626(s.safe[recipient][index].store).asset();
 
         require(
             LibToken._isValidActiveInput(inputAsset, activeAsset) == 1,
@@ -101,6 +97,23 @@ contract SafeExchangeFacet is Modifiers {
         // }
 
         // Deposit activeAssets to ERC4626 Safe Store contract.
-        LibSafe._deposit(amount, address(this), index);
+        LibSafe._deposit(amount, address(this), recipient, index);
+    }
+
+    function withdrawExchange(
+        uint256 amount,
+        address recipient,
+        uint32  index
+    )   external
+        minWithdraw(amount, IERC4626(s.safe[msg.sender][index].store).asset())
+        activeSafe(msg.sender, index)
+    {
+        uint256 assets = LibSafe._withdraw(amount, address(this), index);
+
+        LibToken._burn(IERC4626(s.safe[msg.sender][index].store).asset(), address(this), assets);
+
+        address inputAsset = LibToken._getRedeemAsset(IERC4626(s.safe[msg.sender][index].store).asset());
+
+        LibToken._transfer(inputAsset, amount, recipient);
     }
 }

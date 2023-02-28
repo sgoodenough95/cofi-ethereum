@@ -81,14 +81,17 @@ library LibTreasury {
     ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        amount = amount > s.feesCollected[store] ? s.feesCollected[store] : amount;
+        amount = amount > s.origFeesCollected[store] ? s.origFeesCollected[store] : amount;
 
         IERC4626(store).redeem(amount, recipient, address(this));
 
-        s.feesCollected[store] -= amount;
+        s.origFeesCollected[store] -= amount;
     }
 
-    // FIX
+    /// @notice Admin function for claiming funds that are not held as backing.
+    ///
+    /// @param  asset   The backing reserve of the asset (e.g., USDST).
+    /// @param  amount  The amount to claim. If above surplus then transfers entire surplus.
     function _claimReserveSurplus(
         address asset,
         uint256 amount
@@ -100,7 +103,7 @@ library LibTreasury {
 
         amount = amount > surplus ? surplus : amount;
 
-        IERC20(asset).safeTransfer(msg.sender, surplus);
+        IERC20(asset).safeTransfer(msg.sender, amount);
         emit ReserveSurplusClaimed(amount, asset);
     }
 }

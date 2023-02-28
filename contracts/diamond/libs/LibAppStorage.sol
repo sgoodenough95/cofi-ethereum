@@ -6,15 +6,15 @@ import { IStoa } from "./../interfaces/IStoa.sol";
 
 /// @dev    A Safe supports one activeAsset [vault] and one creditAsset.
 struct Safe {
-    // address owner;
-    // uint256 index;              // Identifier for the Safe.
-    // safeStore token (4626).
-    address store;    // Ethereum can be address(1) (?)
-    address creditAsset;          // E.g., USDSC.
-    uint256 bal;                // Either tokens or shares, depending on the asset.
-    uint256 credit;               // [tokens].
+    address owner;
+    address store;          // [ERC4626]. E.g., saUSDST.
+    address creditAsset;    // [ERC20]. E.g., USDSC.
+    uint256 bal;            // [shares].
+    uint256 credit;         // [shares].
+    uint256 mFeeAppl;       // [assets].
+    uint256 rFeeAppl;       // [assets].
     uint8   status;
-    // uint8   authorised;
+    uint8   authorised;     // KYC (?)
 }
 
 struct VaultParams {
@@ -28,7 +28,7 @@ struct VaultParams {
 enum SafeStatus {
     nonExistent,            // 0
     active,                 // 1
-    activeDebt,             // 2
+    // activeDebt,             // 2
     closedByOwner,          // 3
     closedByLiquidation,    // 4
     closedByAdmin           // 5
@@ -52,7 +52,7 @@ struct AppStorage {
     // E.g., USDST => 1; USDSC => 1; USDFI => 1.
     mapping(address => uint8)       mintEnabled;
 
-    // E.g., USDST => 50bps. NOTE: PercentageMath might not work when using different types.
+    // E.g., USDST => 50bps.
     mapping(address => uint256)     mintFee;
 
     // E.g., USDST => 1; USDSC => 1; USDFI => 1.
@@ -108,7 +108,8 @@ struct AppStorage {
     mapping(address => uint256) origFeesCollected;
 
     // Enables transfers to non-active accounts that can later be claimed.
-    // mapping(address => mapping(address => uint256)) pendingClaim;
+    mapping(address => mapping(address => uint256)) pendingBal;
+    mapping(address => mapping(address => uint256)) pendingCredit;
 
     // E.g., USDST => backing amount. The amount held as backing.
     // Only consider USDSC as the token being backed for now (to avoid double-mapping).
@@ -117,7 +118,11 @@ struct AppStorage {
     // E.g., account => USDST => allowance.
     mapping(address => mapping(address => uint256)) creditRedeemAllowance;
 
+    // E.g., vUSDC => VaultParams.
     mapping(address => VaultParams) vaultParams;
+
+    // E.g., USDFI => vUSDC. Used for obtaining vault for Safe withdrawals.
+    mapping(address => address) activeToVault;
 
     mapping(address => uint8) isAdmin;
 }
@@ -168,6 +173,16 @@ contract Modifiers is IStoa {
 
     modifier minWithdraw(uint256 amount, address asset) {
         require(amount >= s.minWithdraw[asset], "Invalid withdrawal");
+        _;
+    }
+
+    // modifier isSafeOwner(uint32 index) {
+    //     require(s.safe[msg.sender][index].owner == msg.sender, 'Not Safe owner');
+    //     _;
+    // }
+
+    modifier activeSafe(address owner, uint32 index) {
+        require(s.safe[owner][index].status == 1, 'Safe not active');
         _;
     }
 

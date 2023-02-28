@@ -32,58 +32,146 @@ contract SafeCommonFacet is Modifiers {
         LibSafe._open(amount, msg.sender, s.primeStore[activeAsset]);
     }
 
+    /// @notice Deposits an activeAsset to an existing Safe.
+    ///
+    /// @param  amount      The amount of activeAssets to deposit.
+    /// @param  recipient   The owner of the recipient Safe.
+    /// @param  index       The Safe ID.
     function depositActive(
         uint256 amount,
+        address depositFrom,
+        address recipient,
         uint32  index
     )   external
-        minDeposit(amount, IERC4626(s.safe[msg.sender][index].store).asset())
+        minDeposit(amount, IERC4626(s.safe[recipient][index].store).asset())
+        activeSafe(recipient, index)
     {
-        require(
-            s.safe[msg.sender][index].status == 1 ||
-            s.safe[msg.sender][index].status == 2,
-            'SafeFacet: Safe not active'
-        );
-
-        LibSafe._deposit(amount, msg.sender, index);
+        LibSafe._deposit(amount, depositFrom, recipient, index);
     }
 
-    // function withdrawExchange() {}
+    /// @notice Deposits an activeAsset to a non-existent Safe.
+    /// @notice recipient can only claim once created an eligible Safe.
+    ///
+    /// @param  amount      The amount of activeAssets to deposit.
+    /// @param  asset       The activeAsset to deposit.
+    /// @param  depositFrom The account to deposit assets from.
+    /// @param  recipient   The account eliglble to claim assets.
+    function depositActiveClaim(
+        uint256 amount,
+        address asset,
+        address depositFrom,
+        address recipient
+    )   external
+        minDeposit(amount, asset)
+    {
+        uint256 shares =
+            IERC4626(s.primeStore[asset]).deposit(amount, address(this), depositFrom);
 
-    // function withdrawVault() {}
+        s.pendingBal[recipient][s.primeStore[asset]] += shares;
+    }
 
-    // function withdrawActive() {}
+    /// @notice Deposits a creditAsset to a non-existent Safe.
+    /// @notice recipient can only claim once created an eligible Safe.
+    ///
+    /// @param  amount      The amount of creditAssets.
+    /// @param  asset       The creditAsset to deposit.
+    /// @param  depositFrom The account to deposit assets from.
+    /// @param  recipient   The account eligble to claim assets.
+    function depositCreditClaim(
+        uint256 amount,
+        address asset,
+        address depositFrom,
+        address recipient
+    )   external
+        minDeposit(amount, asset)
+    {
+        LibToken._burn(asset, depositFrom, amount);
 
-    // function transfer(
-    //     uint256 amount,
-    //     address recipient,
-    //     uint32  fromIndex,
-    //     uint32  toIndex     // Later do not specify (?)
-    // )   external
-    //     minDeposit(amount, IERC4626(s.safe[msg.sender][fromIndex].store).asset())
-    // {
-    //     require(
-    //         s.safe[msg.sender][fromIndex].status == 1 ||
-    //         s.safe[msg.sender][fromIndex].status == 2,
-    //         'SafeFacet: Safe not active'
-    //     );
+        uint256 shares = IERC4626(s.primeStore[asset]).previewDeposit(amount);
 
-    //     // Check has free bal
+        s.pendingCredit[recipient][asset] += shares;
+    }
 
-    //     if(
-    //         s.safe[recipient][toIndex].status == 0 ||
-    //         s.safe[recipient][toIndex].status > 2,
-    //     )   pendingClaim[recipient][IERC4626(s.safe[msg.sender][fromIndex].store).asset()]
-    //             += amount;
+    function withdrawActive(
+        uint256 amount,
+        address recipient,
+        uint32  index
+    )   external
+        minWithdraw(amount, IERC4626(s.safe[msg.sender][index].store).asset())
+        activeSafe(msg.sender, index)
+    {
+        // Check has free bal
+        require(
+            amount <= LibSafe._getMaxWithdraw(msg.sender, index),
+            'SafeFacet: Insufficient allowance'
+        );
 
-    //     require(
-    //         s.safe[msg.sender][fromIndex].store == s.safe[recipient][toIndex].store,
-    //         'SafeFacet: Recipient Safe belongs to different store'
-    //     );
-    // }
+        LibSafe._withdraw(amount, recipient, index);
+    }
 
-    // function transferCredit() {}
+    function transfer(
+        uint256 amount,
+        address recipient,
+        uint32  fromIndex,
+        uint32  toIndex
+    )   external
+        minWithdraw(amount, IERC4626(s.safe[msg.sender][fromIndex].store).asset())
+        activeSafe(msg.sender, fromIndex)
+    {
+        // Check has free bal
+        require(
+            amount <= LibSafe._getMaxWithdraw(msg.sender, fromIndex),
+            'SafeFacet: Insufficient allowance'
+        );
 
-    // function transferExternal() {} // (?) Can be handled by deposit.
+        uint256 shares = IERC4626(s.safe[msg.sender][fromIndex].store).previewDeposit(amount);
+
+        LibSafe._adjustBal(-int256(shares), msg.sender, fromIndex);
+
+        if (
+            s.safe[recipient][toIndex].status != 1 ||
+            s.safe[msg.sender][fromIndex].store != s.safe[recipient][toIndex].store
+        )   
+            s.pendingBal[recipient][s.safe[msg.sender][fromIndex].store] += shares;
+        else
+            LibSafe._adjustBal(int256(shares), recipient, toIndex);
+    }
+
+    function transferCredit(
+        uint256 amount,
+        address recipient,
+        uint32  fromIndex,
+        uint32  toIndex
+    )   external
+        minWithdraw(amount, IERC4626(s.safe[msg.sender][fromIndex].store).asset())
+        activeSafe(msg.sender, fromIndex)
+    {
+        (uint256 maxBorrow, uint256 origFee) = LibSafe._getMaxBorrow(msg.sender, fromIndex);
+
+        // Check has free credit
+        require(amount <= maxBorrow, 'SafeFacet: Insufficient allowance');
+
+        IERC4626 vault = IERC4626(s.safe[msg.sender][fromIndex].store);
+
+        // Convert assets to shares to adjust Safe params.
+        uint256 creditShares    = vault.previewDeposit(amount);
+        uint256 origFeeShares   = vault.previewDeposit(origFee);
+
+        // Reduce credit and bal of sender.
+        LibSafe._adjustCredit(-int256(creditShares), msg.sender, fromIndex);
+        LibSafe._adjustBal(-int256(origFeeShares), msg.sender, fromIndex);
+
+        // Increase credit of recipient, depending on if the Safe is eligible.
+        if (
+            s.safe[recipient][toIndex].status != 1 ||
+            // Check if sender and receiver Safes share same creditAsset.
+            s.creditAsset[IERC4626(s.safe[msg.sender][fromIndex].store).asset()] !=
+                s.creditAsset[IERC4626(s.safe[recipient][toIndex].store).asset()]
+        )   // Increase pending credit claim if recipient Safe not compatible.
+            s.pendingCredit[recipient][s.safe[msg.sender][fromIndex].creditAsset] += creditShares;
+        else
+            LibSafe._adjustCredit(int256(creditShares), recipient, toIndex);
+    }
 
     function borrow(
         uint256 amount,
@@ -91,22 +179,11 @@ contract SafeCommonFacet is Modifiers {
         uint32  index
     )   external
         minWithdraw(amount, s.safe[msg.sender][index].creditAsset)
+        activeSafe(msg.sender, index)
     {
-        require(
-            s.safe[msg.sender][index].status == 1 ||
-            s.safe[msg.sender][index].status == 2,
-            'SafeFacet: Safe not active'
-        );
-
         (uint256 maxBorrow, uint256 origFee) = LibSafe._getMaxBorrow(msg.sender, index);
 
         require(amount <= maxBorrow, 'SafeFacet: Insufficient credit');
-
-        // Update backing reserve only applies to direct mints.
-
-        s.safe[msg.sender][index].status = 2;
-
-        LibToken._mint(s.safe[msg.sender][index].creditAsset, recipient, amount);
 
         IERC4626 vault = IERC4626(s.safe[msg.sender][index].store);
 
@@ -117,7 +194,9 @@ contract SafeCommonFacet is Modifiers {
         LibSafe._adjustCredit(-int256(creditShares), msg.sender, index);
         LibSafe._adjustBal(-int256(origFeeShares), msg.sender, index);
 
-        emit LibSafe.Borrow(msg.sender, index, amount, origFee);
+        // Update backing reserve only applies to direct mints.
+
+        LibToken._mint(s.safe[msg.sender][index].creditAsset, recipient, amount);
 
         /**
             LOAN CALC STEPS:
@@ -137,26 +216,63 @@ contract SafeCommonFacet is Modifiers {
     function repay(
         uint256 amount,
         address depositFrom,
-        address account,
+        address recipient,
         uint32  index
     )   external
-        minDeposit(amount, s.safe[account][index].creditAsset)
+        minDeposit(amount, s.safe[recipient][index].creditAsset)
+        activeSafe(recipient, index)
+    {
+        LibToken._burn(s.safe[recipient][index].creditAsset, depositFrom, amount);
+
+        uint256 shares = IERC4626(s.safe[recipient][index].store).previewDeposit(amount);
+
+        LibSafe._adjustCredit(int256(shares), recipient, index);
+    }
+
+    function claimBal(
+        address asset,
+        uint32  index
+    )   external
+        activeSafe(msg.sender, index)
     {
         require(
-            s.safe[account][index].status == 1 ||
-            s.safe[account][index].status == 2,
-            'SafeFacet: Safe not active'
+            s.pendingBal[msg.sender][asset] > 0,
+            'SafeFacet: Invalid bal claim'
         );
 
-        LibToken._burn(s.safe[account][index].creditAsset, depositFrom, amount);
+        require(
+            asset == s.safe[msg.sender][index].store,
+            'SafeFacet: Asset mismatch for bal claim'
+        );
 
-        uint256 shares = IERC4626(s.safe[account][index].store).previewDeposit(amount);
+        s.safe[msg.sender][index].bal += s.pendingBal[msg.sender][asset];
 
-        LibSafe._adjustCredit(int256(shares), account, index);
+        emit LibSafe.SafeBalUpdated(msg.sender, index, int256(s.pendingBal[msg.sender][asset]));
 
-        // Set status to 1 if fully repaid (?)
+        s.pendingBal[msg.sender][asset] = 0;
+    }
 
-        emit LibSafe.Repay(account, index, amount);
+    function claimCredit(
+        address asset,
+        uint32  index
+    )   external
+        activeSafe(msg.sender, index)
+    {
+        require(
+            s.pendingCredit[msg.sender][asset] > 0,
+            'SafeFacet: Invalid credit claim'
+        );
+
+        require(
+            asset == s.safe[msg.sender][index].creditAsset,
+            'SafeFacet: Asset mismatch for credit claim'
+        );
+
+        s.safe[msg.sender][index].credit += s.pendingCredit[msg.sender][asset];
+
+        emit LibSafe.SafeCreditUpdated(msg.sender, index, int256(s.pendingCredit[msg.sender][asset]));
+
+        s.pendingCredit[msg.sender][asset] = 0;
     }
 
     function getSafe(
@@ -166,13 +282,4 @@ contract SafeCommonFacet is Modifiers {
 
         return s.safe[account][index];
     }
-
-    // Can be deduced off-chain.
-    // function getMaxBorrow(
-    //     address account,
-    //     uint32  index
-    // ) external returns (uint256 maxBorrow, uint256 origFee) {
-
-    //     (maxBorrow, origFee) = LibSafe._getMaxBorrow(account, index);
-    // }
 }

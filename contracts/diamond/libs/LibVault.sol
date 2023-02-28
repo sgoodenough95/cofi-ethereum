@@ -62,7 +62,7 @@ library LibVault {
         address recipient
     ) internal returns (uint256 assets) {
 
-        uint256 shares = IERC4626(vault).convertToShares(amount);
+        uint256 shares = IERC4626(vault).previewDeposit(amount);
 
         assets = IERC4626(vault).redeem(shares, recipient, address(this));
         emit Unwrap(amount, shares, vault, assets, recipient);
@@ -83,7 +83,7 @@ library LibVault {
         address vault
     ) internal view returns (uint256 assets) {
 
-        assets = IERC4626(vault).convertToAssets(shares);
+        assets = IERC4626(vault).previewRedeem(shares);
     }
 
     /// @notice Gets total value of Stoa's holding of shares from vault.

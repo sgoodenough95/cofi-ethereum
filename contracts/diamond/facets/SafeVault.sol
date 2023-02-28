@@ -59,16 +59,12 @@ contract SafeVaultFacet is Modifiers {
         uint256 amount,
         address vault,
         address depositFrom,
+        address recipient,
         uint32  index
     )   external
         minDeposit(amount, s.vaultParams[vault].input)
+        activeSafe(recipient, index)
     {
-        require(
-            s.safe[msg.sender][index].status == 1 ||
-            s.safe[msg.sender][index].status == 2,
-            'SafeFacet: Safe not active'
-        );
-
         VaultParams memory _vault = s.vaultParams[vault];
 
         require(_vault.enabled == 1, "VaultFacet: Vault disabled");
@@ -90,6 +86,30 @@ contract SafeVaultFacet is Modifiers {
         // }
 
         // Deposit activeAssets to ERC4626 Safe Store contract.
-        LibSafe._deposit(amount, address(this), index);
+        LibSafe._deposit(amount, depositFrom, recipient, index);
+    }
+
+    function withdrawVault(
+        uint256 amount,
+        uint32  index,
+        address recipient
+    )   external
+        minWithdraw(amount, IERC4626(s.safe[msg.sender][index].store).asset())
+        activeSafe(msg.sender, index)
+    {
+        address vault = s.activeToVault[IERC4626(s.safe[msg.sender][index].store).asset()];
+
+        VaultParams memory _vault = s.vaultParams[vault];
+
+        require(_vault.enabled == 1, "VaultFacet: Vault disabled");
+
+        // First, pull activeAssets from Safe Store contract.
+        uint256 assets = LibSafe._withdraw(amount, address(this), index);
+
+        // Second, burn activeAssets.
+        LibToken._burn(_vault.active, address(this), assets);
+
+        // Lastly, transfer inputAssets from vault to recipient.
+        LibVault._unwrap(amount, vault, recipient);
     }
 }

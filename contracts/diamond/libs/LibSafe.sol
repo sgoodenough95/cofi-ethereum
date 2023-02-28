@@ -24,6 +24,8 @@ library LibSafe {
     /// @param  amount  The amount of activeAssets deposited.
     event SafeDeposit(address account, uint32 index, uint256 amount);
 
+    event SafeWithdraw(address account, uint32 index, uint256 amount, address recipient);
+
     /// @notice Emitted when a Safe transfer operation is executed.
     ///
     /// @param  from        The owner of the outgoing Safe transfer.
@@ -47,20 +49,20 @@ library LibSafe {
     /// @param  amount  The credit change amount.
     event SafeCreditUpdated(address account, uint32 index, int256 amount);
 
-    /// @notice Emitted when a borrow operation is executed.
-    ///
-    /// @param  account The account initiating the borrow.
-    /// @param  index   The Safe ID.
-    /// @param  amount  The amount borrowed (in ASSETS, not shares).
-    /// @param  fee     The origination fee captured (in activeAssets).
-    event Borrow(address account, uint32 index, uint256 amount, uint256 fee);
+    // /// @notice Emitted when credits are issued from a Safe.
+    // ///
+    // /// @param  account The account initiating the borrow.
+    // /// @param  index   The Safe ID.
+    // /// @param  amount  The amount borrowed (in ASSETS, not shares).
+    // /// @param  fee     The origination fee captured (in activeAssets).
+    // event Borrow(address account, uint32 index, uint256 amount, uint256 fee);
 
-    /// @notice Emitted when a repay operation is executed.
-    ///
-    /// @param  account The account being repaid.
-    /// @param  index   The Safe ID.
-    /// @param  amount  The amount repaid (in ASSETS, not shares).
-    event Repay(address account, uint32 index, uint256 amount);
+    // /// @notice Emitted when credits are returned to a Safe.
+    // ///
+    // /// @param  account The account being repaid.
+    // /// @param  index   The Safe ID.
+    // /// @param  amount  The amount repaid (in ASSETS, not shares).
+    // event Repay(address account, uint32 index, uint256 amount);
 
     /// @notice Internal function for opening a Safe.
     ///
@@ -107,16 +109,37 @@ library LibSafe {
     function _deposit(
         uint256 amount,
         address depositFrom,
+        address recipient,
         uint32  index
-    ) internal {
+    ) internal returns (uint256 shares) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        uint256 shares =
-            IERC4626(s.safe[msg.sender][index].store).deposit(amount, address(this), depositFrom);
+        shares =
+            IERC4626(s.safe[recipient][index].store).deposit(amount, address(this), depositFrom);
 
         s.safe[msg.sender][s.safeIndex[msg.sender]].bal += shares;
 
         emit SafeDeposit(msg.sender, index, amount);
+    }
+
+    /// @dev    Require _getMaxWithdraw() (and by extension, _pokeCredit()) is called first.
+    /// @param  amount      The amount of activeAssets to withdraw.
+    /// @param  recipient   The receiver of the activeAssets.
+    /// @param  index       The Safe ID to withdraw from.
+    function _withdraw(
+        uint256 amount,
+        address recipient,
+        uint32  index
+    ) internal returns (uint256 assets) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        uint256 shares = IERC4626(s.safe[recipient][index].store).previewDeposit(amount);
+
+        assets = IERC4626(s.safe[recipient][index].store).redeem(shares, recipient, address(this));
+
+        s.safe[msg.sender][s.safeIndex[msg.sender]].bal -= shares;
+
+        emit SafeWithdraw(msg.sender, index, amount, recipient);
     }
 
     function _transfer(
@@ -202,13 +225,16 @@ library LibSafe {
         return (assets - fee, fee);
     }
 
+    /// @notice Function for retrieving maxWithdraw. Dictates limits on withdrawals/transfers/borrows.
+    /// @dev    Pokes credit, therefore not a view. maxWithdraw can be deduced off-chain to show user beforehand.
+    ///
+    /// @param  account The Safe owner.
+    /// @param  index   The Safe ID.
     function _getMaxWithdraw(
         address account,
         uint32  index
     ) internal returns (uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
-
-        if (s.safe[account][index].status == 1) return s.safe[account][index].bal;
 
         _pokeCredit(account, index);
 
@@ -234,12 +260,4 @@ library LibSafe {
         s.LTV[asset] = LTV;
         // s.LTVUpdateIndex[asset] += 1;
     }
-
-    // _isSafeActive(
-    //     address account,
-    //     uint32  index
-    // ) internal view returns (uint8) {
-
-    //     return s.safe[account][index].status;
-    // }
 }
