@@ -7,8 +7,8 @@ pragma solidity 0.8.19;
     ▀▀▀ ░░▀░░ ▀▀▀▀ ▀░░▀
 
     @author stoa.money
-    @title  Safe Facet
-    @notice User-operated functions for managing Safes.
+    @title  SafeExchange Facet
+    @notice Functions for opening, depositing, and withdrawing via Exchange pathway.
  */
 
 import { Safe, VaultParams, Modifiers } from '../libs/LibAppStorage.sol';

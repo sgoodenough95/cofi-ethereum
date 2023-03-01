@@ -7,9 +7,8 @@ pragma solidity 0.8.19;
     ▀▀▀ ░░▀░░ ▀▀▀▀ ▀░░▀
 
     @author stoa.money
-    @title  Safe Facet
-    @notice User-operated functions for managing Safes.
-    @dev    TO-DO: Split [vault] and [exchange] into separate facets.
+    @title  SafeVault Facet
+    @notice Functions for opening, depositing, and withdrawing via Vault pathway.
  */
 
 import { Safe, VaultParams, Modifiers } from '../libs/LibAppStorage.sol';

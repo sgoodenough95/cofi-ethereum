@@ -298,4 +298,20 @@ contract SafeCommonFacet is Modifiers {
 
         return s.safe[account][index];
     }
+
+    function getPendingBal(
+        address asset,
+        address account
+    ) external view returns (uint256) {
+
+        return s.pendingBal[account][asset];
+    }
+
+    function getPendingCredit(
+        address asset,
+        address account
+    ) external view returns (uint256) {
+
+        return s.pendingCredit[account][asset];
+    }
 }

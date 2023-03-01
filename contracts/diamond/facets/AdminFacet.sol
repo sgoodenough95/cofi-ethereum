@@ -23,6 +23,14 @@ import { GPv2SafeERC20 } from ".././libs/external/GPv2SafeERC20.sol";
 contract AdminFacet is Modifiers {
     using GPv2SafeERC20 for IERC20;
 
+    function whitelist(
+        address account,
+        uint8   whitelisted
+    ) external onlyAdmin() {
+
+        s.isWhitelisted[account] = whitelisted == 1 ? 1 : 0;
+    }
+
     function setMinDeposit(
         address asset,
         uint256 amount
@@ -181,12 +189,14 @@ contract AdminFacet is Modifiers {
         s.creditConvertEnabled[creditAsset][activeAsset] = enabled;
     }
 
-    // function freezeSafe(
-    //     address owner,
-    //     uint256 id
-    // ) external onlyAdmin() {
+    function freezeSafe(
+        address account,
+        uint32  index,
+        uint8   freeze
+    ) external onlyAdmin() {
 
-    // }
+        s.safe[account][index].status = freeze == 1 ? 2 : 1;
+    }
 
     // function setFeeCollector(
     //     address feeCollector

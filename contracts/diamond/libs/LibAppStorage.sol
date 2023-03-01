@@ -56,7 +56,7 @@ struct AppStorage {
     mapping(address => uint256)     mintFee;
 
     // E.g., USDST => 1; USDSC => 1; USDFI => 1.
-    mapping(address => uint8)     redeemEnabled;
+    mapping(address => uint8)       redeemEnabled;
 
     // E.g., USDSTA => 100bps.
     mapping(address => uint256)     redeemFee;
@@ -72,7 +72,7 @@ struct AppStorage {
     mapping(address => uint256)     mgmtFee;
 
     // E.g., USDSC => 50bps.
-    mapping(address => uint256) origFee;
+    mapping(address => uint256)     origFee;
 
     // Used when manual movement of inputAssets is required.
     // (At least to start with) consider the diamond as the inputStore.
@@ -89,14 +89,14 @@ struct AppStorage {
     mapping(address => address)     primeVaultBacking;
 
     // E.g., USDST => saUSDST.
-    mapping(address => address) primeStore;
+    mapping(address => address)     primeStore;
 
     // mapping(address => address) primeActive;
 
     // account => safeIndex => Safe. uint32 allows for circa 4.3m Safes created per address.
     mapping(address => mapping(uint32 => Safe)) safe;
 
-    mapping(address => uint32) safeIndex;
+    mapping(address => uint32)      safeIndex;
 
     // E.g., USDST => 2_500.
     mapping(address => uint256) LTV;
@@ -122,9 +122,11 @@ struct AppStorage {
     mapping(address => VaultParams) vaultParams;
 
     // E.g., USDFI => vUSDC. Used for obtaining vault for Safe withdrawals.
-    mapping(address => address) activeToVault;
+    mapping(address => address)     activeToVault;
 
-    mapping(address => uint8) isAdmin;
+    mapping(address => uint8)       isAdmin;
+
+    mapping(address => uint8)       isWhitelisted; // Leave for now, but include later.
 }
 
 library LibAppStorage {
