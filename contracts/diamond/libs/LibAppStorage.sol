@@ -26,12 +26,12 @@ struct VaultParams {
 }
 
 enum SafeStatus {
-    nonExistent,            // 0
-    active,                 // 1
-    // activeDebt,             // 2
-    closedByOwner,          // 3
-    closedByLiquidation,    // 4
-    closedByAdmin           // 5
+    nonExistent,    // 0
+    active,         // 1
+    frozen,         // 2
+    // May leave out (3) and (4) if non-custodial.
+    closedByAdmin,  // 3
+    closedByUser    // 4
 }
 
 /// @dev    Stores variables used by two or more Facets.

@@ -233,7 +233,7 @@ library LibSafe {
     function _getMaxWithdraw(
         address account,
         uint32  index
-    ) internal returns (uint256) {
+    ) internal returns (uint256, uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         _pokeCredit(account, index);
@@ -243,11 +243,14 @@ library LibSafe {
                 s.LTV[IERC4626(s.safe[msg.sender][index].store).asset()]
             );
         
-        if (baseCredit <= s.safe[account][index].credit) return s.safe[account][index].bal;
+        if (baseCredit <= s.safe[account][index].credit) return (s.safe[account][index].bal, baseCredit);
 
         // Convert LTV to CR. E.g., 10,000 / 2_500 * 10,000 = 400%.
-        return s.safe[account][index].bal - s.safe[account][index].credit.percentMul(
-            10_000 / s.LTV[IERC4626(s.safe[msg.sender][index].store).asset()] * 10_000
+        return (
+            s.safe[account][index].bal - s.safe[account][index].credit.percentMul(
+                10_000 / s.LTV[IERC4626(s.safe[msg.sender][index].store).asset()] * 10_000
+            ),
+            baseCredit
         );
     }
 

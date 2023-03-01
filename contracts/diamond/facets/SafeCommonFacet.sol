@@ -13,6 +13,7 @@ pragma solidity 0.8.19;
 
 import { Safe, VaultParams, Modifiers } from '../libs/LibAppStorage.sol';
 import { LibToken } from '../libs/LibToken.sol';
+import { LibTreasury } from '../libs/LibTreasury.sol';
 import { LibVault } from '../libs/LibVault.sol';
 import { LibSafe } from '../libs/LibSafe.sol';
 import { IERC4626 } from ".././interfaces/IERC4626.sol";
@@ -100,11 +101,9 @@ contract SafeCommonFacet is Modifiers {
         minWithdraw(amount, IERC4626(s.safe[msg.sender][index].store).asset())
         activeSafe(msg.sender, index)
     {
-        // Check has free bal
-        require(
-            amount <= LibSafe._getMaxWithdraw(msg.sender, index),
-            'SafeFacet: Insufficient allowance'
-        );
+        (uint256 maxWithdraw, ) = LibSafe._getMaxWithdraw(msg.sender, index);
+
+        require(amount <= maxWithdraw, 'SafeFacet: Insufficient allowance');
 
         LibSafe._withdraw(amount, recipient, index);
     }
@@ -118,11 +117,9 @@ contract SafeCommonFacet is Modifiers {
         minWithdraw(amount, IERC4626(s.safe[msg.sender][fromIndex].store).asset())
         activeSafe(msg.sender, fromIndex)
     {
-        // Check has free bal
-        require(
-            amount <= LibSafe._getMaxWithdraw(msg.sender, fromIndex),
-            'SafeFacet: Insufficient allowance'
-        );
+        (uint256 maxWithdraw, ) = LibSafe._getMaxWithdraw(msg.sender, fromIndex);
+
+        require(amount <= maxWithdraw, 'SafeFacet: Insufficient allowance');
 
         uint256 shares = IERC4626(s.safe[msg.sender][fromIndex].store).previewDeposit(amount);
 
@@ -273,6 +270,25 @@ contract SafeCommonFacet is Modifiers {
         emit LibSafe.SafeCreditUpdated(msg.sender, index, int256(s.pendingCredit[msg.sender][asset]));
 
         s.pendingCredit[msg.sender][asset] = 0;
+    }
+
+    function liquidate(
+        uint32 index
+    )   external
+        activeSafe(msg.sender, index)
+    {
+        (uint256 maxWithdraw, uint256 baseCredit) = LibSafe._getMaxWithdraw(msg.sender, index);
+
+        require(maxWithdraw < s.safe[msg.sender][index].bal, 'SafeFacet: Nothing to liquidate');
+
+        uint256 debt = baseCredit - s.safe[msg.sender][index].credit;
+
+        // Secure collateral to back outstanding credit. Leave out liquidation fee, at least for now.
+        LibSafe._adjustBal(-int256(debt), msg.sender, index);
+
+        uint256 assets = IERC4626(s.safe[msg.sender][index].store).redeem(debt, address(this), address(this));
+
+        LibTreasury._adjustBackingReserve(IERC4626(s.safe[msg.sender][index].store).asset(), int256(assets));
     }
 
     function getSafe(
