@@ -69,10 +69,12 @@ library LibSafe {
     /// @param  amount      The amount of activeAssets to deposit.
     /// @param  depositFrom The account to deposit from.
     /// @param  store       The Safe Store contract to store activeAssets.
+    /// @param  active      Indicates if opening with activeAsset. Affects mint/redemption fee.
     function _open(
         uint256 amount,
         address depositFrom,
-        address store   // Can add 'depositEnabled' to Safe Store contract.
+        address store,  // Can add 'depositEnabled' to Safe Store contract.
+        uint8   active
     ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
@@ -85,6 +87,8 @@ library LibSafe {
         // This credit parameter is NOT displayed on the front-end.
         s.safe[msg.sender][s.safeIndex[msg.sender]].credit      = shares.percentMul(s.LTV[asset]);
         s.safe[msg.sender][s.safeIndex[msg.sender]].status      = 1;
+
+        _setFee(int256(shares), msg.sender, s.safeIndex[msg.sender], active);
 
         emit SafeOpened(msg.sender, s.safeIndex[msg.sender], store, amount);
 
@@ -110,14 +114,17 @@ library LibSafe {
         uint256 amount,
         address depositFrom,
         address recipient,
-        uint32  index
+        uint32  index,
+        uint8   active
     ) internal returns (uint256 shares) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         shares =
             IERC4626(s.safe[recipient][index].store).deposit(amount, address(this), depositFrom);
 
-        s.safe[msg.sender][s.safeIndex[msg.sender]].bal += shares;
+        s.safe[recipient][index].bal += shares;
+
+        _setFee(int256(shares), recipient, index, active);
 
         emit SafeDeposit(msg.sender, index, amount);
     }
@@ -129,7 +136,8 @@ library LibSafe {
     function _withdraw(
         uint256 amount,
         address recipient,
-        uint32  index
+        uint32  index,
+        uint8   active
     ) internal returns (uint256 assets) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
@@ -138,6 +146,8 @@ library LibSafe {
         assets = IERC4626(s.safe[recipient][index].store).redeem(shares, recipient, address(this));
 
         s.safe[msg.sender][s.safeIndex[msg.sender]].bal -= shares;
+
+        _setFee(-int256(shares), recipient, index, active);
 
         emit SafeWithdraw(msg.sender, index, amount, recipient);
     }
@@ -262,5 +272,22 @@ library LibSafe {
 
         s.LTV[asset] = LTV;
         // s.LTVUpdateIndex[asset] += 1;
+    }
+
+    function _setFee(
+        int256  amount,
+        address account,
+        uint32  index,
+        uint8   active
+    ) internal {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        if (active == 1) {
+            if (amount >= 0) s.safe[account][index].mFeeAppl += LibAppStorage.abs(amount);
+            else s.safe[account][index].mFeeAppl -= LibAppStorage.abs(amount);
+        }
+        else
+            if (amount >= 0) s.safe[account][index].rFeeAppl += LibAppStorage.abs(amount);
+            else s.safe[account][index].rFeeAppl -= LibAppStorage.abs(amount);
     }
 }

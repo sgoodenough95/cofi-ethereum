@@ -30,7 +30,7 @@ contract SafeCommonFacet is Modifiers {
     )   external
         minDeposit(amount, activeAsset)
     {
-        LibSafe._open(amount, msg.sender, s.primeStore[activeAsset]);
+        LibSafe._open(amount, msg.sender, s.primeStore[activeAsset], 1);
     }
 
     /// @notice Deposits an activeAsset to an existing Safe.

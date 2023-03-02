@@ -12,6 +12,8 @@ interface IStoaToken {
 
     function changeSupply(uint newTotalSupply) external;
 
+    function getYieldEarned(address account) external returns (uint256);
+
     function rebaseOptIn() external;
 
     function rebaseOptOut() external;

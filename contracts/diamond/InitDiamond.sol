@@ -42,6 +42,8 @@ contract InitDiamond {
         s.vaultParams[_args.vUSDC].credit   = _args.USDSC;
         s.vaultParams[_args.vUSDC].enabled  = 1;
 
+        s.activeToVault[_args.USDFI] = _args.vUSDC;
+
         s.activeInputs[_args.USDST] = [_args.USDC, _args.DAI];
 
         s.creditAsset[_args.USDC] = _args.USDSC;
