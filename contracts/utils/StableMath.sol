@@ -111,4 +111,8 @@ library StableMath {
         // e.g. 8e36 / 10e18 = 8e17
         return z.div(y);
     }
+
+    function abs(int256 x) internal pure returns (uint256) {
+        return uint256(x >= 0 ? x : -x);
+    }
 }

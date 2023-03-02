@@ -37,6 +37,7 @@ import 'hardhat/console.sol';
 contract ActiveToken is ERC20 {
     using SafeMath for uint256;
     using StableMath for uint256;
+    using StableMath for int256;
 
     event TotalSupplyUpdatedHighres(
         uint256 totalSupply,
@@ -76,6 +77,7 @@ contract ActiveToken is ERC20 {
     // Does not apply when two non-rebasing accounts trade.
     mapping(address => YieldDeriv) yieldDeriv;
     mapping(address => uint256) yieldEarned;
+    mapping(address => int256) yieldExcl;
 
     uint256 private constant RESOLUTION_INCREASE = 1e9;
 
@@ -292,6 +294,8 @@ contract ActiveToken is ERC20 {
     ) internal {
         bool isNonRebasingTo = _isNonRebasingAccount(_to);
         bool isNonRebasingFrom = _isNonRebasingAccount(_from);
+        yieldExcl[_from] -= int256(_value);
+        yieldExcl[_to] += int256(_value);
 
         // Credits deducted and credited might be different due to the
         // differing creditsPerToken used by each account
@@ -430,6 +434,8 @@ contract ActiveToken is ERC20 {
         uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
         _creditBalances[_account] = _creditBalances[_account].add(creditAmount);
 
+        yieldExcl[_account] -= int256(_amount); 
+
         // If the account is non rebasing and doesn't have a set creditsPerToken
         // then set it i.e. this is a mint from a fresh contract
         if (isNonRebasingAccount) {
@@ -474,6 +480,8 @@ contract ActiveToken is ERC20 {
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
         uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
         uint256 currentCredits = _creditBalances[_account];
+
+        yieldExcl[_account] += int256(_amount);
 
         // Remove the credits, burning rounding errors
         if (
@@ -708,11 +716,20 @@ contract ActiveToken is ERC20 {
         );
     }
 
+    /**
+        _exclude:
+        - Increases for outgoing amount (transfer 1,000) = 1,000.
+        - Decreases for incoming amount (receive 1,000) = -1,000.
+     */
     function captureYieldEarned(address _account)
-        public
+        public // internal
     {
         yieldDeriv[_account].yield =
-            yieldDeriv[_account].rcpt > 0 ? 0 : balanceOf(_account) - yieldDeriv[_account].bal;
+            yieldDeriv[_account].rcpt == 0 ?
+                yieldDeriv[_account].yield :
+                yieldExcl[_account] >= 0 ?
+                    balanceOf(_account) + yieldExcl[_account].abs() - yieldDeriv[_account].bal :
+                    balanceOf(_account) - yieldExcl[_account].abs() - yieldDeriv[_account].bal;
         yieldEarned[_account] += yieldDeriv[_account].yield;
         yieldDeriv[_account].rcpt = _rebasingCredits;
         yieldDeriv[_account].bal = balanceOf(_account);
