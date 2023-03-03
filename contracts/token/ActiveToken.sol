@@ -68,14 +68,6 @@ contract ActiveToken is ERC20 {
     mapping(address => bool) private whitelisted;
     mapping(address => bool) private blacklisted;
 
-    struct YieldDeriv {
-        uint256 rcpt;
-        uint256 bal;
-        uint256 yield;
-    }
-    // Must update upon every mint/burn/transfer operation, for sender + receiver.
-    // Does not apply when two non-rebasing accounts trade.
-    mapping(address => YieldDeriv) yieldDeriv;
     mapping(address => uint256) yieldEarned;
     mapping(address => int256) yieldExcl;
 
@@ -294,8 +286,8 @@ contract ActiveToken is ERC20 {
     ) internal {
         bool isNonRebasingTo = _isNonRebasingAccount(_to);
         bool isNonRebasingFrom = _isNonRebasingAccount(_from);
-        yieldExcl[_from] -= int256(_value);
-        yieldExcl[_to] += int256(_value);
+        yieldExcl[_from] += int256(_value);
+        yieldExcl[_to] -= int256(_value);
 
         // Credits deducted and credited might be different due to the
         // differing creditsPerToken used by each account
@@ -314,17 +306,12 @@ contract ActiveToken is ERC20 {
             nonRebasingSupply = nonRebasingSupply.add(_value);
             // Update rebasingCredits by subtracting the deducted amount
             _rebasingCredits = _rebasingCredits.sub(creditsDeducted);
-            captureYieldEarned(_from);
         } else if (!isNonRebasingTo && isNonRebasingFrom) {
             // Transfer to rebasing account from non-rebasing account
             // Decreasing non-rebasing credits by the amount that was sent
             nonRebasingSupply = nonRebasingSupply.sub(_value);
             // Update rebasingCredits by adding the credited amount
             _rebasingCredits = _rebasingCredits.add(creditsCredited);
-            captureYieldEarned(_to);
-        } else if (!isNonRebasingTo && !isNonRebasingFrom) {
-            captureYieldEarned(_to);
-            captureYieldEarned(_from);
         }
     }
 
@@ -442,7 +429,6 @@ contract ActiveToken is ERC20 {
             nonRebasingSupply = nonRebasingSupply.add(_amount);
         } else {
             _rebasingCredits = _rebasingCredits.add(creditAmount);
-            captureYieldEarned(_account);
         }
 
         _totalSupply = _totalSupply.add(_amount);
@@ -502,7 +488,6 @@ contract ActiveToken is ERC20 {
             nonRebasingSupply = nonRebasingSupply.sub(_amount);
         } else {
             _rebasingCredits = _rebasingCredits.sub(creditAmount);
-            captureYieldEarned(_account);
         }
 
         _totalSupply = _totalSupply.sub(_amount);
@@ -591,8 +576,6 @@ contract ActiveToken is ERC20 {
 
         rebaseState[msg.sender] = RebaseOptions.OptIn;
 
-        captureYieldEarned(msg.sender);
-
         // Delete any fixed credits per token
         delete nonRebasingCreditsPerToken[msg.sender];
     }
@@ -622,7 +605,6 @@ contract ActiveToken is ERC20 {
         _rebasingCredits = _rebasingCredits.add(_creditBalances[_account]);
 
         rebaseState[_account] = RebaseOptions.OptIn;
-        captureYieldEarned(_account);
 
         // Delete any fixed credits per token
         delete nonRebasingCreditsPerToken[_account];
@@ -633,8 +615,6 @@ contract ActiveToken is ERC20 {
      */
     function rebaseOptOut() public nonReentrant {
         require(!_isNonRebasingAccount(msg.sender), "ActivatedToken: Account has not opted in");
-
-        captureYieldEarned(msg.sender);
 
         // Increase non rebasing supply
         nonRebasingSupply = nonRebasingSupply.add(balanceOf(msg.sender));
@@ -647,8 +627,6 @@ contract ActiveToken is ERC20 {
 
         // Mark explicitly opted out of rebasing
         rebaseState[msg.sender] = RebaseOptions.OptOut;
-
-        yieldDeriv[msg.sender].rcpt = 0;
     }
 
     /**
@@ -656,8 +634,6 @@ contract ActiveToken is ERC20 {
      */
     function rebaseOptOutExternal(address _account) public nonReentrant {
         require(!_isNonRebasingAccount(_account), "ActivatedToken: Account has not opted in");
-
-        captureYieldEarned(_account);
 
         // Increase non rebasing supply
         nonRebasingSupply = nonRebasingSupply.add(balanceOf(_account));
@@ -670,8 +646,6 @@ contract ActiveToken is ERC20 {
 
         // Mark explicitly opted out of rebasing
         rebaseState[_account] = RebaseOptions.OptOut;
-
-        yieldDeriv[_account].rcpt = 0;
     }
 
     /**
@@ -717,30 +691,20 @@ contract ActiveToken is ERC20 {
     }
 
     /**
-        _exclude:
-        - Increases for outgoing amount (transfer 1,000) = 1,000.
-        - Decreases for incoming amount (receive 1,000) = -1,000.
+        yieldExcl[_account]:
+        - Increases for outgoing amount (transfer 1,000) = 1,000. E.g., burning 1,000 from = +1,000.
+        - Decreases for incoming amount (receive 1,000) = -1,000. E.g., minting 1,000 to = -1,000.
      */
-    function captureYieldEarned(address _account)
-        public // internal
-    {
-        yieldDeriv[_account].yield =
-            yieldDeriv[_account].rcpt == 0 ?
-                yieldDeriv[_account].yield :
-                yieldExcl[_account] >= 0 ?
-                    balanceOf(_account) + yieldExcl[_account].abs() - yieldDeriv[_account].bal :
-                    balanceOf(_account) - yieldExcl[_account].abs() - yieldDeriv[_account].bal;
-        yieldEarned[_account] += yieldDeriv[_account].yield;
-        yieldDeriv[_account].rcpt = _rebasingCredits;
-        yieldDeriv[_account].bal = balanceOf(_account);
-    }
-
     function getYieldEarned(address _account)
         external
         view
         returns (uint256)
     {
-        return yieldEarned[_account];
+        if (yieldExcl[_account] >= 0) {
+            return balanceOf(_account) + yieldExcl[_account].abs();
+        } else {
+            return balanceOf(_account) - yieldExcl[_account].abs();
+        }
     }
 
     /**

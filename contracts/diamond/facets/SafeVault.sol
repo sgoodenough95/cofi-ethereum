@@ -85,7 +85,8 @@ contract SafeVaultFacet is Modifiers {
         // }
 
         // Deposit activeAssets to ERC4626 Safe Store contract.
-        LibSafe._deposit(amount, depositFrom, recipient, index, 0);
+        LibSafe._deposit(amount, depositFrom, recipient, index);
+        // LibSafe._deposit(amount, depositFrom, recipient, index, 0);
     }
 
     function withdrawVault(
@@ -103,7 +104,8 @@ contract SafeVaultFacet is Modifiers {
         require(_vault.enabled == 1, "VaultFacet: Vault disabled");
 
         // First, pull activeAssets from Safe Store contract.
-        uint256 assets = LibSafe._withdraw(amount, address(this), index, 0);
+        uint256 assets = LibSafe._withdraw(amount, address(this), index);
+        // uint256 assets = LibSafe._withdraw(amount, address(this), index, 0);
 
         // Second, burn activeAssets.
         LibToken._burn(_vault.active, address(this), assets);

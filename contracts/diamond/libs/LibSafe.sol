@@ -114,8 +114,8 @@ library LibSafe {
         uint256 amount,
         address depositFrom,
         address recipient,
-        uint32  index,
-        uint8   active
+        uint32  index
+        // uint8   active
     ) internal returns (uint256 shares) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
@@ -124,7 +124,7 @@ library LibSafe {
 
         s.safe[recipient][index].bal += shares;
 
-        _setFee(int256(shares), recipient, index, active);
+        // _setFee(int256(shares), recipient, index, active);
 
         emit SafeDeposit(msg.sender, index, amount);
     }
@@ -136,8 +136,8 @@ library LibSafe {
     function _withdraw(
         uint256 amount,
         address recipient,
-        uint32  index,
-        uint8   active
+        uint32  index
+        // uint8   active
     ) internal returns (uint256 assets) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
@@ -147,7 +147,7 @@ library LibSafe {
 
         s.safe[msg.sender][s.safeIndex[msg.sender]].bal -= shares;
 
-        _setFee(-int256(shares), recipient, index, active);
+        // _setFee(-int256(shares), recipient, index, active);
 
         emit SafeWithdraw(msg.sender, index, amount, recipient);
     }

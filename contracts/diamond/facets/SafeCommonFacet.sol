@@ -24,7 +24,7 @@ contract SafeCommonFacet is Modifiers {
     ///
     /// @param  amount      The amount of activeAssets to deposit.
     /// @param  activeAsset The address of the activeAsset.
-    function openActive(
+    function _openActive(
         uint256 amount,
         address activeAsset
     )   external
@@ -291,7 +291,7 @@ contract SafeCommonFacet is Modifiers {
         LibTreasury._adjustBackingReserve(IERC4626(s.safe[msg.sender][index].store).asset(), int256(assets));
     }
 
-    function getSafe(
+    function _getSafe(
         address account,
         uint32  index
     ) external view returns (Safe memory) {
