@@ -198,6 +198,14 @@ contract AdminFacet is Modifiers {
         s.safe[account][index].status = freeze == 1 ? 2 : 1;
     }
 
+    function setPointsRate(
+        address asset,
+        uint256 amount
+    ) external onlyAdmin() {
+
+        s.pointsRate[asset] = amount;
+    }
+
     // function setFeeCollector(
     //     address feeCollector
     // ) external onlyAdmin() {

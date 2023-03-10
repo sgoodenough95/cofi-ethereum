@@ -56,35 +56,47 @@ async function deployDiamond () {
     //   await stoaActivatedDollar.deployed()
     //   console.log('Stoa Activated Dollar deployed:', stoaActivatedDollar.address)
 
-    //   // deploy Stoa Activated Dollar
-    //   const StoaDeFiActivatedDollar = await ethers.getContractFactory('ActivatedToken')
-    //   const stoaDeFiActivatedDollar = await StoaDeFiActivatedDollar.deploy('Stoa DeFi-Activated Dollar', 'USDFI')
-    //   await stoaDeFiActivatedDollar.deployed()
-    //   console.log('Stoa DeFi-Activated Dollar deployed:', stoaDeFiActivatedDollar.address)
+      // deploy Stoa Activated Dollar
+      const USDFI = await ethers.getContractFactory('ActiveToken')
+      const usdfi = await USDFI.deploy('Stoa DeFi Active Dollar', 'USDFI')
+      await usdfi.deployed()
+      console.log('Stoa DeFi Active Dollar deployed:', usdfi.address)
 
-    //   // deploy Stoa Activated Dollar
-    //   const StoaDollar = await ethers.getContractFactory('UnactivatedToken')
-    //   const stoaDollar = await StoaDollar.deploy('Stoa Dollar', 'USDST')
-    //   await stoaDollar.deployed()
-    //   console.log('Stoa Dollar deployed:', stoaDollar.address)
+      // deploy Stoa Activated Dollar
+      const USDSC = await ethers.getContractFactory('CreditToken')
+      const usdsc = await USDSC.deploy('Stoa Dollar Credit', 'USDSC')
+      await usdsc.deployed()
+      console.log('Stoa Dollar Credit deployed:', usdsc.address)
 
-    //   // deploy Stoa Activated Dollar
-    //   const USDC = await ethers.getContractFactory('UnactivatedToken')
-    //   const usdc = await USDC.deploy('USD Coin', 'USDC')
-    //   await usdc.deployed()
-    //   console.log('USDC deployed:', usdc.address)
+      // deploy Stoa Activated Dollar
+      const USDC = await ethers.getContractFactory('CreditToken')
+      const usdc = await USDC.deploy('USD Coin', 'USDC')
+      await usdc.deployed()
+      console.log('USDC deployed:', usdc.address)
 
-    //   // deploy Stoa Activated Dollar
-    //   const DAI = await ethers.getContractFactory('UnactivatedToken')
-    //   const dai = await DAI.deploy('Dai', 'DAI')
-    //   await dai.deployed()
-    //   console.log('Dai deployed:', dai.address)
+      // deploy Stoa Activated Dollar
+      const DAI = await ethers.getContractFactory('CreditToken')
+      const dai = await DAI.deploy('Dai', 'DAI')
+      await dai.deployed()
+      console.log('Dai deployed:', dai.address)
 
-    //   // deploy Stoa Activated Dollar
-    //   const VaultUSDC = await ethers.getContractFactory('UnactivatedToken')
-    //   const vaultUSDC = await VaultUSDC.deploy('Vault USDC', 'vUSDC')
-    //   await vaultUSDC.deployed()
-    //   console.log('Vault USDC deployed:', vaultUSDC.address)
+      // deploy Stoa Activated Dollar
+      const VUSDC = await ethers.getContractFactory('CreditToken')
+      const vusdc = await VUSDC.deploy('Vault USDC', 'vUSDC')
+      await vusdc.deployed()
+      console.log('Vault USDC deployed:', vusdc.address)
+
+      // deploy Stoa Activated Dollar
+      const VDAI = await ethers.getContractFactory('CreditToken')
+      const vdai = await VDAI.deploy('Vault DAI', 'vDAI')
+      await vdai.deployed()
+      console.log('Vault DAI deployed:', vdai.address)
+
+      // deploy Stoa Activated Dollar
+      const STOA = await ethers.getContractFactory('CreditToken')
+      const stoa = await STOA.deploy('Stoa', 'STOA')
+      await stoa.deployed()
+      console.log('STOA deployed:', stoa.address)
 
   // deploy DiamondCutFacet
   const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
@@ -115,9 +127,10 @@ async function deployDiamond () {
   const FacetNames = [
     'DiamondLoupeFacet',
     'OwnershipFacet',
-    'ExchangeFacet',
     'VaultFacet',
-    'RebaseFacet',
+    'SafeVaultFacet',
+    'SafeFacet',
+    'RewardFacet',
     'AdminFacet'
   ]
   const cut = []
@@ -134,12 +147,13 @@ async function deployDiamond () {
   }
 
   const initArgs = [{
-    USDSTA: '0x4362bE47962A2Ebd25d64C6484915B26fA4A60b2',
-    USDFI:  '0xfda84C6774C52bF60E175DE696E5aCfde37002D1',
-    USDST:  '0xA55dcD876A6374f7037dc4990B6afAEC7Af09AD5',
-    USDC:   '0x62288d769013Fb01297AfE48fc07eA4A4Dd00a11',
-    DAI:    '0x3611508D464041Ce4e22B57c8f82c15F373e2f51',
-    vUSDC:  '0x1e03076446FBdfe36bA5561fA810073CF53f7346'
+    USDFI:  usdfi.address,
+    USDSC:  usdsc.address,
+    USDC:   usdc.address,
+    DAI:    dai.address,
+    vUSDC:  vusdc.address,
+    vDAI:   vdai.address,
+    STOA:   stoa.address
   }]
 
   // upgrade diamond with facets

@@ -49,6 +49,8 @@ library LibTreasury {
         return s.backingReserve[asset];
     }
 
+    ///
+
     /// @notice Adjusts the creditRedeemAllowance of a given account for a particular asset.
     ///
     /// @param  asset   The creditAsset which has the allowance (e.g., cUSDST).

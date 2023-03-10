@@ -58,7 +58,7 @@ contract SafeExchangeFacet is Modifiers {
         // }
 
         // Deposit activeAssets to ERC4626 Safe Store contract.
-        LibSafe._open(amount, address(this), s.primeStore[activeAsset], 0);
+        LibSafe._open(amount, address(this), s.primeStore[activeAsset]);
     }
 
     function depositExchange(

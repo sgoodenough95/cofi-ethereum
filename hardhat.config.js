@@ -6,7 +6,16 @@ const { API_KEY, PRIV_KEY, PRIV_KEY_1, PRIV_KEY_MM } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.19",
+  solidity: {
+    version: "0.8.19",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 1000,
+      },
+      viaIR: true,
+    },
+  },
   diamondAbi: {
     name: "Stoa-Diamond",
     include: ["Facet"],
@@ -20,5 +29,12 @@ module.exports = {
       url: `https://goerli.infura.io/v3/${API_KEY}`,
       accounts: [`${PRIV_KEY_1}`]
     }
-  }
+  },
+  // settings: {
+  //   optimizer: {
+  //     enabled: true,
+  //     runs: 1000,
+  //   },
+  //   viaIR: true,
+  // }
 };

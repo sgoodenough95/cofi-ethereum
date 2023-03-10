@@ -53,6 +53,7 @@ contract ActiveToken is ERC20 {
 
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
     uint256 public _totalSupply;
+    uint256 public _totalYieldEarned;
     mapping(address => mapping(address => uint256)) private _allowances;
     address public vaultAddress = address(0);
     mapping(address => uint256) public _creditBalances;
@@ -68,7 +69,6 @@ contract ActiveToken is ERC20 {
     mapping(address => bool) private whitelisted;
     mapping(address => bool) private blacklisted;
 
-    mapping(address => uint256) yieldEarned;
     mapping(address => int256) yieldExcl;
 
     uint256 private constant RESOLUTION_INCREASE = 1e9;
@@ -174,6 +174,16 @@ contract ActiveToken is ERC20 {
         if (_creditBalances[_account] == 0) return 0;
         return
             _creditBalances[_account].divPrecisely(_creditsPerToken(_account));
+    }
+
+    // add tokensPerCredit()
+
+    function creditsToBal(uint256 amount)
+        external
+        view
+        returns (uint256)
+    {
+        return amount.divPrecisely(_rebasingCreditsPerToken);
     }
 
     /**
@@ -669,6 +679,8 @@ contract ActiveToken is ERC20 {
             return;
         }
 
+        _totalYieldEarned += _newTotalSupply - _totalSupply;
+
         _totalSupply = _newTotalSupply > MAX_SUPPLY
             ? MAX_SUPPLY
             : _newTotalSupply;
@@ -705,6 +717,14 @@ contract ActiveToken is ERC20 {
         } else {
             return balanceOf(_account) - yieldExcl[_account].abs();
         }
+    }
+
+    function getTotalYieldEarned()
+        external
+        view
+        returns (uint256)
+    {
+        return _totalYieldEarned;
     }
 
     /**

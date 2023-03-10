@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 import { IStoa } from "./../interfaces/IStoa.sol";
 
+/// @notice Use 'Safe' in place of Vault to avoid confusion.
 /// @dev    A Safe supports one activeAsset [vault] and one creditAsset.
 struct Safe {
     address owner;
@@ -11,10 +12,7 @@ struct Safe {
     address creditAsset;    // [ERC20]. E.g., USDSC.
     uint256 bal;            // [shares].
     uint256 credit;         // [shares].
-    uint256 mFeeAppl;       // [assets].
-    uint256 rFeeAppl;       // [assets].
     uint8   status;
-    uint8   authorised;     // KYC (?)
 }
 
 struct VaultParams {
@@ -34,11 +32,19 @@ enum SafeStatus {
     closedByUser    // 4
 }
 
+struct Stake {
+    uint256 creditsIn;
+    uint256 pointsClaimed;
+}
+
 /// @dev    Stores variables used by two or more Facets.
 struct AppStorage {
 
     // E.g., USDST => [USDC, DAI].
     mapping(address => address[])   activeInputs;
+
+    // E.g., USDFI => [vUSDC, vDAI].
+    mapping(address => address[])   activeVaults;
 
     // E.g., USDC => USDSC; DAI => USDSC; USDST => USDSC; USDFI => USDSC; saUSDST => USDSC.
     mapping(address => address)     creditAsset;
@@ -122,11 +128,29 @@ struct AppStorage {
     mapping(address => VaultParams) vaultParams;
 
     // E.g., USDFI => vUSDC. Used for obtaining vault for Safe withdrawals.
-    mapping(address => address)     activeToVault;
+    // mapping(address => address)     activeToVault;
 
     mapping(address => uint8)       isAdmin;
 
     mapping(address => uint8)       isWhitelisted; // Leave for now, but include later.
+
+    // STOA points reward per 1*10**18 earned of activeAsset.
+    // Initial target 100 STOA per $1 of yield earned. Therefore pointsRate = 1,000,000 = 10,000% = 100x.
+    mapping(address => uint256) pointsRate;
+
+    mapping(address => uint256) pointsClaimed;
+
+    uint256 pointsEpoch;
+
+    mapping(address => mapping(address => Stake)) stake;
+
+    // Do not leave as constant for now.
+    address STOA;
+}
+
+struct AppStorageB {
+
+    uint256 number;
 }
 
 library LibAppStorage {
