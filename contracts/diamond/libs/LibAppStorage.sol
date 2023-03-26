@@ -4,32 +4,47 @@ pragma solidity 0.8.19;
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 import { IStoa } from "./../interfaces/IStoa.sol";
 
-/// @notice Use 'Safe' in place of Vault to avoid confusion.
-/// @dev    A Safe supports one activeAsset [vault] and one creditAsset.
-struct Safe {
-    address owner;
-    address store;          // [ERC4626]. E.g., saUSDST.
-    address creditAsset;    // [ERC20]. E.g., USDSC.
-    uint256 bal;            // [shares].
-    uint256 credit;         // [shares].
-    uint8   status;
-}
+// /// @notice Use 'Safe' in place of Vault to avoid confusion.
+// /// @dev    User-specific information (not system-wide).
+// /// @dev    This is the life-long Safe for the [account, collateral] combination
+// ///         (i.e., cannot create multiple yvDAI Safes under one address).
+// struct Safe {
+//     address owner;
+//     address collateral;     // [shares] e.g., yvDAI.
+//     uint256 bal;            // [shares].
+//     uint256 debt;           // [assets].
+//     uint8   status;
+// }
 
-struct VaultParams {
-    address input;
-    address active;
-    // If address(0), means loans are not enabled.
-    address credit;
-    uint8   enabled;
-}
+// /// @notice Used for SupplyFacet.
+// struct VaultParams {
+//     address credit;         // fiToken issued for vault.
+//     uint8   mintEnabled;    // fiToken can be minted from vault.
+//     uint8   redeemEnabled;  // inputAsset can be redeemed from vault.
+// }
 
-enum SafeStatus {
-    nonExistent,    // 0
-    active,         // 1
-    frozen,         // 2
-    // May leave out (3) and (4) if non-custodial.
-    closedByAdmin,  // 3
-    closedByUser    // 4
+// /// @notice Used for SafeFacet.
+// struct SafeParams {
+//     address credit;
+//     // uint8   depositEnabled;  // Handled by SafeStore.
+//     // uint8   withdrawEnabled; // Handled by SafeStore.
+//     uint8   borrowEnabled;
+//     uint8   repayEnabled;
+//     uint8   liquidateEnabled;
+// }
+
+// enum SafeStatus {
+//     nonExistent,    // 0
+//     active,         // 1
+//     frozen,         // 2
+//     // May leave out (3) and (4) if non-custodial.
+//     closedByAdmin,  // 3
+//     closedByUser    // 4
+// }
+
+struct Vault {
+    address vault;
+    uint32  allocation;
 }
 
 struct Stake {
@@ -40,14 +55,18 @@ struct Stake {
 /// @dev    Stores variables used by two or more Facets.
 struct AppStorage {
 
-    // E.g., USDST => [USDC, DAI].
-    mapping(address => address[])   activeInputs;
+    // E.g., USDC => [yvUSDC, aUSDC].
+    mapping(address => Vault[]) vaults;
 
-    // E.g., USDFI => [vUSDC, vDAI].
-    mapping(address => address[])   activeVaults;
+    // // E.g., USDST => [USDC, DAI].
+    // mapping(address => address[])   activeInputs;
 
-    // E.g., USDC => USDSC; DAI => USDSC; USDST => USDSC; USDFI => USDSC; saUSDST => USDSC.
-    mapping(address => address)     creditAsset;
+    // // E.g., USDFI => [vUSDC, vDAI].
+    // mapping(address => address[])   activeVaults;
+
+    // // E.g., yvUSDC => fiUSD; yvDAI => fiUSD.
+    // E.g., USDC => fiUSD.
+    mapping(address => address)     fiAsset;
 
     // E.g., USDC => 50; USDST => 50. Applies to whichever asset is being provided by the user.
     mapping(address => uint256)     minDeposit;
@@ -55,80 +74,57 @@ struct AppStorage {
     // E.g., USDST => USDC. Only apply minWithdraw when user is receiving the inputAsset.
     mapping(address => uint256)     minWithdraw;
 
-    // E.g., USDST => 1; USDSC => 1; USDFI => 1.
+    // If the fiAsset can be minted (at all, via any enabled vault).
     mapping(address => uint8)       mintEnabled;
 
     // E.g., USDST => 50bps.
     mapping(address => uint256)     mintFee;
 
-    // E.g., USDST => 1; USDSC => 1; USDFI => 1.
+    // If the fiAsset can be minted (at all, via any enabled vault).
     mapping(address => uint8)       redeemEnabled;
 
     // E.g., USDSTA => 100bps.
     mapping(address => uint256)     redeemFee;
 
-    // Retrieves creditAsset address if converting activeAsset is enabled.
-    // Only ONE creditAsset available per currency denomination (e.g., USD => USDST).
-    mapping(address => address)     activeConvertEnabled;
-
-    // E.g., USDSC => USDST => 1; USDSC => USDFI => 0.
-    // creditAssets can originate from 2+ activeAssets, hence the need for a double-mapping.
-    mapping(address => mapping(address => uint8)) creditConvertEnabled;
-
-    mapping(address => uint256)     mgmtFee;
+    // mapping(address => uint256)     mgmtFee;
 
     // E.g., USDSC => 50bps.
-    mapping(address => uint256)     origFee;
+    // mapping(address => uint256)     origFee;
 
-    // Used when manual movement of inputAssets is required.
-    // (At least to start with) consider the diamond as the inputStore.
-    // mapping(address => address)     inputStore;
+    // // E.g., yvDAI => vyvDAI;
+    // mapping(address => address)     safeStore;
 
-    // Fees accrue to this address. Not necessarily Admin.
-    // Only collects fees in activeAssets for now, which are backed by inputAssets held in diamond.
-    // address feeCollector;
+    /// @dev    May use Gnosis Safe.
+    address feeCollector;
 
-    // E.g., USDSC => USDST. The go-to Exchange backing asset of a creditAsset.
-    mapping(address => address)     primeBacking;
+    // Account => Collateral => Safe. E.g., 0x1234... => yvDAI => Safe.
+    // mapping(address => mapping(address => Safe)) safe;
 
-    // E.g., USDSC => USDFI. The go-to Vault backing asset of a creditAsset.
-    mapping(address => address)     primeVaultBacking;
-
-    // E.g., USDST => saUSDST.
-    mapping(address => address)     primeStore;
-
-    // mapping(address => address) primeActive;
-
-    // account => safeIndex => Safe. uint32 allows for circa 4.3m Safes created per address.
-    mapping(address => mapping(uint32 => Safe)) safe;
-
-    mapping(address => uint32)      safeIndex;
-
-    // E.g., USDST => 2_500.
-    mapping(address => uint256) LTV;
+    // E.g., yvUSDC = 50,000; aUSDC = 25,000.
+    // mapping(address => uint256) LTV;
 
     // // E.g., USDST => 0 (if no update performed to LTV). Used for gas savings.
     // mapping(address => uint32)  LTVUpdateIndex;
 
     // E.g., saUSDST => feesCollected.
-    mapping(address => uint256) origFeesCollected;
+    // mapping(address => uint256) origFeesCollected;
 
     // Enables transfers to non-active accounts that can later be claimed.
-    mapping(address => mapping(address => uint256)) pendingBal;
-    mapping(address => mapping(address => uint256)) pendingCredit;
+    // mapping(address => mapping(address => uint256)) pendingBal;
+    // mapping(address => mapping(address => uint256)) pendingCredit;
 
     // E.g., USDST => backing amount. The amount held as backing.
     // Only consider USDSC as the token being backed for now (to avoid double-mapping).
     mapping(address => uint256)     backingReserve;
 
-    // E.g., account => USDST => allowance.
-    mapping(address => mapping(address => uint256)) creditRedeemAllowance;
+    /// @notice E.g., Account => Vault (vUSDC) => 1,000.
+    mapping(address => mapping(address => uint256)) redeemAllowance;
 
-    // E.g., vUSDC => VaultParams.
-    mapping(address => VaultParams) vaultParams;
+    // E.g., yvUSDC => VaultParams.
+    // mapping(address => VaultParams) vaultParams;
 
-    // E.g., USDFI => vUSDC. Used for obtaining vault for Safe withdrawals.
-    // mapping(address => address)     activeToVault;
+    // E.g., yvUSDC => SafeParams.
+    // mapping(address => SafeParams)  safeParams;
 
     mapping(address => uint8)       isAdmin;
 
@@ -207,8 +203,8 @@ contract Modifiers is IStoa {
     //     _;
     // }
 
-    modifier activeSafe(address owner, uint32 index) {
-        require(s.safe[owner][index].status == 1, 'Safe not active');
+    modifier activeSafe(address owner, address asset) {
+        require(s.safe[owner][asset].status == 1, 'Safe not active');
         _;
     }
 

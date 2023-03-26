@@ -121,6 +121,14 @@ library LibToken {
     //     emit Transfer(address(permit.permitted.token), amount, transferFrom, recipient);
     // }
 
+    function _calcPercent(
+        uint256 amount,
+        uint256 percent
+    ) internal returns (uint256) {
+
+        return amount.percentMul(percent);
+    }
+
     /// @notice Executes a transfer operation in the context of Stoa.
     ///
     /// @param  asset       The asset to transfer.

@@ -34,6 +34,22 @@ library LibVault {
     // /// @param  vault   The address of the new vault.
     // error VaultMigrationFailed(address vault);
 
+    // Deposit / Redeem for allocations(?)
+    function _lookupDeposit(
+        address asset
+    ) internal returns (address) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        if (s.vaults.length < 1) return s.vaults[0].vault;
+
+        uint256[] allocations;
+
+        // Get current allocations.
+        for(uint i = 0; i < s.vaults.length + 1; ++i) {
+            allocations.push(IERC4626(s.vaults[i].vault).previewRedeem());
+        }
+    }
+
     /// @notice Wraps an inputAsset into share tokens issued by a vault.
     /// @dev    Stoa holds the share tokens issued by the vault.
     ///
@@ -84,6 +100,14 @@ library LibVault {
     ) internal view returns (uint256 assets) {
 
         assets = IERC4626(vault).previewRedeem(shares);
+    }
+
+    function _getShares(
+        uint256 assets,
+        address vault
+    ) internal view returns (uint256 shares) {
+
+        shares = IERC4626(vault).previewDeposit(assets);
     }
 
     /// @notice Gets total value of Stoa's holding of shares from vault.

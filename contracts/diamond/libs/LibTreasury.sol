@@ -16,13 +16,14 @@ library LibTreasury {
     /// @param  amount  The amount of backing assets.
     event BackingReserveUpdated(address asset, int256 amount);
 
+    /// @notice Fi-enabled.
     /// @notice Emitted when the creditRedeemAllowance of an account is updated.
     /// @notice Accounts that request to mint creditAssets directly can freely convert back.
     ///
     /// @param  account The updated account.
     /// @param  asset   The asset that is being backed.
     /// @param  amount  The amount the asset is being backed by.
-    event CreditRedeemAllowanceUpdated(address account, address asset, int256 amount);
+    event RedeemAllowanceUpdated(address account, address asset, int256 amount);
 
     /// @notice Emitted when an amount of reserve surplus is claimed of a backing asset.
     ///
@@ -49,26 +50,23 @@ library LibTreasury {
         return s.backingReserve[asset];
     }
 
-    ///
-
+    /// @notice Fi-enabled
     /// @notice Adjusts the creditRedeemAllowance of a given account for a particular asset.
     ///
-    /// @param  asset   The creditAsset which has the allowance (e.g., cUSDST).
+    /// @param  asset   The redemption asset (e.g., USDC).
     /// @param  account The account which has the allowance updated.
     /// @param  amount  The added allowance amount.
-    function _adjustCreditRedeemAllowance(
+    function _adjustRedeemAllowance(
         address asset,
         address account,
         int256  amount
-    ) internal returns (uint256) {
+    ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        if (amount >= 0) s.creditRedeemAllowance[account][asset] += LibAppStorage.abs(amount);
-        else s.creditRedeemAllowance[account][asset] -= LibAppStorage.abs(amount);
+        if (amount >= 0) s.redeemAllowance[account][asset] += LibAppStorage.abs(amount);
+        else s.redeemAllowance[account][asset] -= LibAppStorage.abs(amount);
 
-        emit CreditRedeemAllowanceUpdated(account, asset, amount);
-
-        return s.creditRedeemAllowance[account][asset];
+        emit RedeemAllowanceUpdated(account, asset, amount);
     }
 
     /// @notice Admin function for claiming origination fees from a given Safe store.

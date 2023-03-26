@@ -22,7 +22,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 // import { Initializable } from "../utils/Initializable.sol";
 import { ActiveToken } from "./ActiveToken.sol";
 
-contract Vault is ERC4626 {
+contract SafeStore is ERC4626 {
     using SafeERC20 for IERC20;
 
     constructor(
@@ -30,6 +30,8 @@ contract Vault is ERC4626 {
         string memory name_,
         string memory symbol_
     ) ERC20(name_, symbol_) ERC4626(underlying_) {}
+
+    uint8 enabled;
 
     /**
      * @notice Enable rebasing for this contract
@@ -45,19 +47,14 @@ contract Vault is ERC4626 {
         public
         returns (uint256 shares)
     {
+        // Check is here for if opening a Safe is enabled or not.
+        require(enabled == 1, 'SafeStore: Deposit disabled');
+
         shares = previewDeposit(assets);
 
         _deposit(depositor, receiver, assets, shares);
 
         emit Deposit(depositor, receiver, assets, shares);
-    }
-
-    function rebaseOptIn() public {
-        ActiveToken(address(asset())).rebaseOptIn();
-    }
-
-    function rebaseOptOut() public {
-        ActiveToken(address(asset())).rebaseOptOut();
     }
 
     // function name() public view override returns (string memory) {
