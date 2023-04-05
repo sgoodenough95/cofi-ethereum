@@ -6,7 +6,7 @@ import { PercentageMath } from "./external/PercentageMath.sol";
 import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import { GPv2SafeERC20 } from "./external/GPv2SafeERC20.sol";
 // import { IPermit2 } from "./../interfaces/IPermit2.sol";
-import { IStoaToken } from ".././interfaces/IStoaToken.sol";
+import { IFiToken } from ".././interfaces/IFiToken.sol";
 import 'hardhat/console.sol';
 
 library LibToken {
@@ -48,30 +48,6 @@ library LibToken {
     /// @param  asset   The asset submitted for redemption.
     /// @param  amount  The fee amount captured.
     event RedeemFeeCaptured(address asset, uint256 amount);
-
-    // /// @notice Indicates an operation failed because the deposit amount is not accepted.
-    // ///
-    // /// @param  asset   The address of the asset.
-    // /// @param  amount  The amount of assets.
-    // error InvalidDeposit(address asset, uint256 amount);
-
-    // /// @notice Indicates an operation failed because the deposit amount is not accepted.
-    // ///
-    // /// @param  asset   The address of the asset submitted for withdrawing (not the withdrawn asset).
-    // /// @param  amount  The amount of assets.
-    // error InvalidWithdraw(address asset, uint256 amount);
-
-    // /// @notice Indicates if a token is unavailable for minting.
-    // ///
-    // /// @param  asset   The asset to mint.
-    // error MintDisabled(address asset);
-
-    // /// @notice Indicates if an operation failed because the account has an inavlid credit redemption allowance.
-    // ///
-    // /// @param  account The account attempting to redeem for.
-    // /// @param  asset   The creditAsset to be redeemed.
-    // /// @param  amount  The amount of creditAssets.
-    // error InvalidCreditRedeemAllowance(address account, address asset, uint256 amount);
 
     /// @notice Executes a transferFrom operation in the context of Stoa.
     ///
@@ -121,14 +97,6 @@ library LibToken {
     //     emit Transfer(address(permit.permitted.token), amount, transferFrom, recipient);
     // }
 
-    function _calcPercent(
-        uint256 amount,
-        uint256 percent
-    ) internal returns (uint256) {
-
-        return amount.percentMul(percent);
-    }
-
     /// @notice Executes a transfer operation in the context of Stoa.
     ///
     /// @param  asset       The asset to transfer.
@@ -147,152 +115,97 @@ library LibToken {
         emit Transfer(asset, amount, address(this), recipient);
     }
 
-    /// @notice Executes a mint operation in the context of Stoa.
+    /// @notice Executes a mint operation in the context of CoFi.
     ///
-    /// @param  asset   The asset to mint.
+    /// @param  fiAsset The fiAsset to mint.
     /// @param  to      The account to mint to.
-    /// @param  amount  The amount of assets to mint.
+    /// @param  amount  The amount of fiAssets to mint.
     function _mint(
-        address asset,
+        address fiAsset,
         address to,
         uint256 amount
     ) internal {
 
-        IStoaToken(asset).mint(to, amount);
-        emit Mint(asset, amount, to);
+        IFiToken(fiAsset).mint(to, amount);
+        emit Mint(fiAsset, amount, to);
     }
 
-    /// @notice Executes a burn operation in the context of Stoa.
+    /// @notice Executes a burn operation in the context of CoFi.
     ///
-    /// @param  asset   The asset to burn.
+    /// @param  fiAsset The fiAsset to burn.
     /// @param  from    The account to burn from.
-    /// @param  amount  The amount of assets to burn.
+    /// @param  amount  The amount of fiAssets to burn.
     function _burn(
-        address asset,
+        address fiAsset,
         address from,
         uint256 amount
     ) internal {
 
-        IStoaToken(asset).burn(from, amount);
-        emit Burn(asset, amount, from);
+        IFiToken(fiAsset).burn(from, amount);
+        emit Burn(fiAsset, amount, from);
     }
 
     /// @notice Opts contract into receiving rebases.
     function _rebaseOptIn(
-        address asset
+        address fiAsset
     ) internal {
 
-        IStoaToken(asset).rebaseOptIn();
+        IFiToken(fiAsset).rebaseOptIn();
     }
 
     /// @notice Opts contract out of receiving rebases.
     function _rebaseOptOut(
-        address asset
+        address fiAsset
     ) internal {
         
-        IStoaToken(asset).rebaseOptOut();
+        IFiToken(fiAsset).rebaseOptOut();
     }
 
-    /// @notice Indicates if an asset is available for minting.
+    /// @notice Indicates if a fiAsset is available for minting.
     ///
-    /// @param  asset   The asset to mint.
+    /// @param  fiAsset The fiAsset to mint.
     function _isMintEnabled(
-        address asset
+        address fiAsset
     ) internal view returns (uint8) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        return s.mintEnabled[asset];
+        return s.mintEnabled[fiAsset];
     }
 
-    /// @notice Indicates if an asset is available for minting.
+    /// @notice Indicates if a fiAsset is available for redeeming.
     ///
-    /// @param  asset   The asset to mint.
+    /// @param  fiAsset The fiAsset to mint.
     function _isRedeemEnabled(
-        address asset
+        address fiAsset
     ) internal view returns (uint8) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        return s.mintEnabled[asset];
+        return s.mintEnabled[fiAsset];
     }
 
-    /// @notice Returns the mint fee for a given asset.
+    /// @notice Returns the mint fee for a given fiAsset.
     ///
-    /// @param  asset   The asset to mint.
-    /// @param  amount  The amount of assets to mint.
+    /// @param  fiAsset The fiAsset to mint.
+    /// @param  amount  The amount of fiAssets to mint.
     function _getMintFee(
-        address asset,
+        address fiAsset,
         uint256 amount
     ) internal view returns (uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        return amount.percentMul(s.mintFee[asset]);
+        return amount.percentMul(s.mintFee[fiAsset]);
     }
 
-    /// @notice Returns the redeem fee for a given asset.
+    /// @notice Returns the redeem fee for a given fiAsset.
     ///
-    /// @param  asset   The asset to submit for redemption.
-    /// @param  amount  The amount of assets to submit for redemption.
+    /// @param  fiAsset The fiAsset to submit for redemption.
+    /// @param  amount  The amount of fiAssets to submit for redemption.
     function _getRedeemFee(
-        address asset,
+        address fiAsset,
         uint256 amount
     ) internal view returns (uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        return amount.percentMul(s.redeemFee[asset]);
-    }
-
-    /// @notice Indicates if the input token is accepted to mint a specific asset for in return.
-    ///
-    /// @param  inputAsset  The asset to input (e.g., USDC).
-    /// @param  activeAsset       The asset to be returned for the input asset (e.g., USDSTA).
-    function _isValidActiveInput(
-        address inputAsset,
-        address activeAsset   // (?)
-    ) internal view returns (uint8) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        for (uint i = 0; i <= s.activeInputs[inputAsset].length; i++) {
-
-            if (s.activeInputs[activeAsset][i] == inputAsset) return 1;
-        }
-        return 0;
-    }
-
-    /// @notice Returns an array of accepted input assets for a given asset (e.g., [DAI, USDC]).
-    ///
-    /// @param  activeAsset The inputAsset to enquire for.
-    function _getActiveInputs(
-        address activeAsset
-    ) internal view returns (address[] memory) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        return s.activeInputs[activeAsset];
-    }
-
-    /// @notice Returns the creditAsset for a given inputAsset (returns address(0) if no creditAsset set).
-    ///
-    /// @dev    May use in AdminFacet.
-    ///
-    /// @param  asset   The asset to enquire for.
-    function _getCreditAsset(
-        address asset
-    ) internal view returns (address) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        return s.creditAsset[asset];
-    }
-
-    /// @notice Returns the inputAsset to service a redemption.
-    /// @dev    Used only w.r.t. ExchangeFacet, as asset can be identified in vault.
-    /// @dev    MVP will only provide first asset in inputs array.
-    /// @dev    Will later expand with more custom logic.
-    ///
-    /// @param  activeAsset The asset to submit for redemption.
-    function _getRedeemAsset(
-        address activeAsset
-    ) internal view returns (address) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        return s.activeInputs[activeAsset][0];
+        return amount.percentMul(s.redeemFee[fiAsset]);
     }
 }

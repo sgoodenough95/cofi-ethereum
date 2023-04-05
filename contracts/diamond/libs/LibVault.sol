@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import { VaultParams, AppStorage, LibAppStorage } from "./LibAppStorage.sol";
+import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { IERC4626 } from ".././interfaces/IERC4626.sol";
 import 'hardhat/console.sol';
 
@@ -24,32 +24,6 @@ library LibVault {
     /// @param  recipient   The recipient of the inputAssets.
     event Unwrap(uint256 amount, uint256 shares, address vault, uint256 assets, address recipient);
 
-    // /// @notice Indicates if an operation failed due to the address provided not signifying an enabled vault.
-    // ///
-    // /// @param  vault   The address of the vault.
-    // error VaultDisabled(address vault);
-
-    // /// @notice Indicates if a vault migration failed (e.g., due to a reduction in assets).
-    // ///
-    // /// @param  vault   The address of the new vault.
-    // error VaultMigrationFailed(address vault);
-
-    // Deposit / Redeem for allocations(?)
-    function _lookupDeposit(
-        address asset
-    ) internal returns (address) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        if (s.vaults.length < 1) return s.vaults[0].vault;
-
-        uint256[] allocations;
-
-        // Get current allocations.
-        for(uint i = 0; i < s.vaults.length + 1; ++i) {
-            allocations.push(IERC4626(s.vaults[i].vault).previewRedeem());
-        }
-    }
-
     /// @notice Wraps an inputAsset into share tokens issued by a vault.
     /// @dev    Stoa holds the share tokens issued by the vault.
     ///
@@ -67,9 +41,8 @@ library LibVault {
     }
 
     /// @notice Unwraps share tokens into inputAssets.
-    /// @dev    Stoa holds the share tokens.
     ///
-    /// @param  amount      The requested amount of inputAssets to receive. May slightly differ to assets received.
+    /// @param  amount      The requested amount of inputAssets to receive.
     /// @param  vault       The vault to unwrap from.
     /// @param  recipient   The recipient of the inputAssets.
     function _unwrap(
@@ -82,16 +55,6 @@ library LibVault {
 
         assets = IERC4626(vault).redeem(shares, recipient, address(this));
         emit Unwrap(amount, shares, vault, assets, recipient);
-    }
-
-    function _unwrapShares(
-        uint256 shares,
-        address vault,
-        address recipient
-    ) internal returns (uint256 assets) {
-
-        assets = IERC4626(vault).redeem(shares, recipient, address(this));
-        emit Unwrap(0, shares, vault, assets, recipient);
     }
 
     function _getAssets(
@@ -110,7 +73,7 @@ library LibVault {
         shares = IERC4626(vault).previewDeposit(assets);
     }
 
-    /// @notice Gets total value of Stoa's holding of shares from vault.
+    /// @notice Gets total value of CoFi's holding of shares from vault.
     function _totalValue(
         address vault
     ) internal view returns (uint256 assets) {

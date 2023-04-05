@@ -2,8 +2,7 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title wUSDSTa Token Contract
- * @dev ERC4626 that issues wUSDSTa as its share token.
+ * @title Vault Contract
  * @author Origin Protocol Inc & The Stoa Corporation Ltd.
  * @notice
  *  Forked from
@@ -20,7 +19,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 
 // import { Governable } from "../governance/Governable.sol";
 // import { Initializable } from "../utils/Initializable.sol";
-import { ActiveToken } from "./ActiveToken.sol";
 
 contract SafeStore is ERC4626 {
     using SafeERC20 for IERC20;

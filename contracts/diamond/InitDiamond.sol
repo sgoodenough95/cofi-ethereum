@@ -14,86 +14,62 @@ contract InitDiamond {
     AppStorage internal s;
 
     struct Args {
-        // address USDST;          // activeAsset
-        address USDFI;          // activeAsset [vault]
-        address USDSC;          // creditAsset
-        address USDC;           // inputAsset
-        address DAI;            // inputAsset
-        address vUSDC;          // shareToken [vault]
-        address vDAI;           // shareToken [vault]
-        address STOA;
+        address COFI;   // fiAsset [USD]
+        address COFIE;  // fiAsset [ETH]
+        address USDC;   // inputAsset [USD]
+        address DAI;    // inputAsset [USD]
+        address WETH;   // inputAsset [ETH]
+        address yvDAI;  // shareToken [USD]
+        address yvETH;  // shareToken [ETH]
     }
     
     function init(Args memory _args) external {
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
-        // adding ERC165 data
+        // Adding ERC165 data.
         ds.supportedInterfaces[type(IERC165).interfaceId]       = true;
         ds.supportedInterfaces[type(IDiamondCut).interfaceId]   = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IERC173).interfaceId]       = true;
 
-        // Rebase opt-in
-        // LibToken._rebaseOptIn(_args.USDST);
-        LibToken._rebaseOptIn(_args.USDFI);
+        // Rebase opt-in.
+        LibToken._rebaseOptIn(_args.COFI);
+        LibToken._rebaseOptIn(_args.COFIE);
 
-        s.vaultParams[_args.vUSDC].input    = _args.USDC;
-        s.vaultParams[_args.vUSDC].active   = _args.USDFI;
-        s.vaultParams[_args.vUSDC].credit   = _args.USDSC;
-        s.vaultParams[_args.vUSDC].enabled  = 1;
+        // Set min deposit/withdraw values.
+        s.minDeposit[_args.USDC]    = 20e18;    // 20 USDC.
+        s.minDeposit[_args.DAI]     = 20e18;    // 20 DAI.
+        s.minDeposit[_args.WETH]    = 1e16;     // 0.01 ETH.
 
-        s.activeVaults[_args.USDFI] = [_args.vUSDC, _args.vDAI];
+        // Set mint enabled.
+        s.mintEnabled[_args.COFI]   = 1;
+        s.mintEnabled[_args.COFIE]  = 1;
 
-        // s.activeInputs[_args.USDST] = [_args.USDC, _args.DAI];
+        // Set mint fee.
+        s.mintFee[_args.COFI]   = 10;
+        s.mintFee[_args.COFIE]  = 10;
 
-        s.creditAsset[_args.USDC] = _args.USDSC;
-        s.creditAsset[_args.DAI]  = _args.USDSC;
-        // Can add more.
+        // Set redeem enabled.
+        s.redeemEnabled[_args.COFI]     = 1;
+        s.redeemEnabled[_args.COFIE]    = 1;
 
-        s.minDeposit[_args.USDC]    = 50 * 10**18;
-        s.minDeposit[_args.DAI]     = 50 * 10**18;
-        // s.minDeposit[_args.USDST]   = 50 * 10**18;
-        s.minDeposit[_args.USDFI]   = 50 * 10**18;
-        s.minDeposit[_args.USDSC]   = 50 * 10**18;
-        // s.minWithdraw[_args.USDST]  = 50 * 10**18;
-        s.minWithdraw[_args.USDFI]  = 50 * 10**18;
-        s.minWithdraw[_args.USDSC]  = 50 * 10**18;
+        // Set redeem fee.
+        s.redeemFee[_args.COFI]     = 30;
+        s.redeemFee[_args.COFIE]    = 30;
 
-        // s.mintEnabled[_args.USDST]  = 1;
-        s.mintEnabled[_args.USDFI]  = 1;
-        s.mintEnabled[_args.USDSC]  = 1;
+        // Set service fee.
+        s.serviceFee[_args.COFI]    = 1e3;
+        s.serviceFee[_args.COFIE]   = 1e3;
 
-        // s.mintFee[_args.USDST]  = 100;
-        s.mintFee[_args.USDFI]  = 100;
-        s.mintFee[_args.USDSC]  = 100;
+        // Set points rate.
+        s.pointsRate[_args.COFI]    = 1e6;
+        s.pointsRate[_args.COFIE]   = 1e3;
 
-        // s.redeemEnabled[_args.USDST]    = 1;
-        s.redeemEnabled[_args.USDFI]    = 1;
-        s.redeemEnabled[_args.USDSC]    = 1;
+        // Set feeCollector.
+        s.feeCollector = msg.sender;
 
-        // s.redeemFee[_args.USDST]    = 100;
-        s.redeemFee[_args.USDFI]    = 100;
-        s.redeemFee[_args.USDSC]    = 100;
-
-        s.mgmtFee[_args.USDFI] = 1_000;
-        // Apply mgmtFee manually for USDST / off-chain yields.
-
-        // s.LTV[_args.USDST]  = 2_500;
-        s.LTV[_args.USDFI]  = 5_000;
-
-        // s.primeBacking[_args.USDSC]         = _args.USDST;
-        s.primeVaultBacking[_args.USDSC]    = _args.USDFI;
-
-        // s.activeConvertEnabled[_args.USDST] = _args.USDSC;
-        s.activeConvertEnabled[_args.USDFI] = _args.USDSC;
-        
-        // s.creditConvertEnabled[_args.USDSC][_args.USDST] = 1;
-        s.creditConvertEnabled[_args.USDSC][_args.USDFI] = 1;
-
-        s.pointsRate[_args.USDFI] = 1_000_000;
-        s.STOA = _args.STOA;
-
+        // Set admin.
         s.isAdmin[msg.sender] = 1;
     }
 }

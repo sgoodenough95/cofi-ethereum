@@ -10,100 +10,55 @@ import 'hardhat/console.sol';
 library LibTreasury {
     using GPv2SafeERC20 for IERC20;
 
-    /// @notice Emitted when the backing reserve of an asset is updated.
+    /// @notice Emitted when the backing reserve of a fiAsset is updated.
     ///
-    /// @param  asset   The asset being backed.           
+    /// @param  vault   The backing vault.         
     /// @param  amount  The amount of backing assets.
-    event BackingReserveUpdated(address asset, int256 amount);
+    event BackingReserveUpdated(address vault, int256 amount);
 
-    /// @notice Fi-enabled.
-    /// @notice Emitted when the creditRedeemAllowance of an account is updated.
-    /// @notice Accounts that request to mint creditAssets directly can freely convert back.
-    ///
-    /// @param  account The updated account.
-    /// @param  asset   The asset that is being backed.
-    /// @param  amount  The amount the asset is being backed by.
-    event RedeemAllowanceUpdated(address account, address asset, int256 amount);
+    // /// @notice Emitted when an amount of reserve surplus is claimed of a backing asset.
+    // ///
+    // /// @param  amount  The amount claimed.
+    // /// @param  asset   The asset claimed.
+    // event ReserveSurplusClaimed(uint256 amount, address asset);
 
-    /// @notice Emitted when an amount of reserve surplus is claimed of a backing asset.
+    /// @notice Adjusts the backing reserve of a fiAsset by a given backing asset (e.g., COFI => DAI).
     ///
-    /// @param  amount  The amount claimed.
-    /// @param  asset   The asset claimed.
-    event ReserveSurplusClaimed(uint256 amount, address asset);
-
-    /// @notice Adjusts the backing reserve of a particular asset by a backing asset (e.g., backing USDST with USDSTA).
-    ///
-    /// @param  asset           The asset being backed.
-    /// @param  amount          The amount of backing assets.
+    /// @param  vault   The backing asset (always a share token, e.g., yvDAI).
+    /// @param  amount  The amount of backing assets (denominated in assets, not shares, e.g., DAI).
     function _adjustBackingReserve(
-        address asset,
+        address vault,
         int256  amount
-    ) internal returns (uint256) {
+    )   internal
+        returns (uint256)
+    {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        if (amount >= 0) s.backingReserve[asset] += LibAppStorage.abs(amount);
+        if (amount >= 0) s.backing[vault] += LibAppStorage.abs(amount);
         
-        else s.backingReserve[asset] -= LibAppStorage.abs(amount);
+        else s.backing[vault] -= LibAppStorage.abs(amount);
 
-        emit BackingReserveUpdated(asset, amount);
+        emit BackingReserveUpdated(vault, amount);
 
-        return s.backingReserve[asset];
+        return s.backing[vault];
     }
 
-    /// @notice Fi-enabled
-    /// @notice Adjusts the creditRedeemAllowance of a given account for a particular asset.
-    ///
-    /// @param  asset   The redemption asset (e.g., USDC).
-    /// @param  account The account which has the allowance updated.
-    /// @param  amount  The added allowance amount.
-    function _adjustRedeemAllowance(
-        address asset,
-        address account,
-        int256  amount
-    ) internal {
-        AppStorage storage s = LibAppStorage.diamondStorage();
+    // /// @notice Admin function for claiming funds that are not held as backing.
+    // ///
+    // /// @param  asset   The backing reserve of the asset (e.g., USDST).
+    // /// @param  amount  The amount to claim. If above surplus then transfers entire surplus.
+    // function _claimReserveSurplus(
+    //     address asset,
+    //     uint256 amount
+    // ) internal {
+    //     AppStorage storage s = LibAppStorage.diamondStorage();
 
-        if (amount >= 0) s.redeemAllowance[account][asset] += LibAppStorage.abs(amount);
-        else s.redeemAllowance[account][asset] -= LibAppStorage.abs(amount);
+    //     uint256 surplus =
+    //         IERC20(asset).balanceOf(address(this)) - uint256(s.backingReserve[asset]);
 
-        emit RedeemAllowanceUpdated(account, asset, amount);
-    }
+    //     amount = amount > surplus ? surplus : amount;
 
-    /// @notice Admin function for claiming origination fees from a given Safe store.
-    ///
-    /// @param  store       The Safe store to claim fees from.
-    /// @param  recipient   The receiver of the fees.
-    /// @param  amount      The amount of fees to claim. If greater than allocation, return all.
-    function _claimOrigFees(
-        address store,
-        address recipient,
-        uint256 amount
-    ) internal {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        amount = amount > s.origFeesCollected[store] ? s.origFeesCollected[store] : amount;
-
-        IERC4626(store).redeem(amount, recipient, address(this));
-
-        s.origFeesCollected[store] -= amount;
-    }
-
-    /// @notice Admin function for claiming funds that are not held as backing.
-    ///
-    /// @param  asset   The backing reserve of the asset (e.g., USDST).
-    /// @param  amount  The amount to claim. If above surplus then transfers entire surplus.
-    function _claimReserveSurplus(
-        address asset,
-        uint256 amount
-    ) internal {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        uint256 surplus =
-            IERC20(asset).balanceOf(address(this)) - uint256(s.backingReserve[asset]);
-
-        amount = amount > surplus ? surplus : amount;
-
-        IERC20(asset).safeTransfer(msg.sender, amount);
-        emit ReserveSurplusClaimed(amount, asset);
-    }
+    //     IERC20(asset).safeTransfer(msg.sender, amount);
+    //     emit ReserveSurplusClaimed(amount, asset);
+    // }
 }

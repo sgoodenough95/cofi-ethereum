@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-interface IStoaErrors {
+interface ICoFiErrors {
 
     // /// @notice Indicates if a claim operation failed because the requested amount is larger than the backing reserve.
     // ///

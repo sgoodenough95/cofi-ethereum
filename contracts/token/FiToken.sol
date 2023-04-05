@@ -34,7 +34,7 @@ import 'hardhat/console.sol';
 
 // Add Permit.
 
-contract ActiveToken is ERC20 {
+contract FiToken is ERC20 {
     using SafeMath for uint256;
     using StableMath for uint256;
     using StableMath for int256;
