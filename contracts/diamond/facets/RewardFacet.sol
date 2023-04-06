@@ -72,7 +72,7 @@ contract RewardFacet is Modifiers {
             if (s.pointsCapture[accounts[i]].yield < yield) {
                 s.pointsCapture[accounts[i]].points +=
                     (yield - s.pointsCapture[accounts[i]].yield).percentMul(s.pointsRate[fiAsset]);
-                s.pointsCapture[accounts[i]].yield  += yield;
+                s.pointsCapture[accounts[i]].yield  = yield;
             }
         }
     }

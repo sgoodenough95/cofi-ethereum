@@ -22,11 +22,11 @@ library LibTreasury {
     // /// @param  asset   The asset claimed.
     // event ReserveSurplusClaimed(uint256 amount, address asset);
 
-    /// @notice Adjusts the backing reserve of a fiAsset by a given backing asset (e.g., COFI => DAI).
+    /// @notice Adjusts the backing of a fiAsset by a given share token (e.g., COFI => yvDAI).
     ///
     /// @param  vault   The backing asset (always a share token, e.g., yvDAI).
     /// @param  amount  The amount of backing assets (denominated in assets, not shares, e.g., DAI).
-    function _adjustBackingReserve(
+    function _adjustBacking(
         address vault,
         int256  amount
     )   internal
