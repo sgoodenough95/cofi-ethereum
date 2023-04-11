@@ -3,7 +3,7 @@
 const { getSelectors, FacetCutAction } = require('../scripts/libraries/diamond.js')
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers')
 const { expect } = require('chai')
-const { diamondAbi } = require('./Stoa-Diamond.json')
+// const { diamondAbi } = require('./Stoa-Diamond.json')
 const { ethers } = require('hardhat')
 const MAX_UINT = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 

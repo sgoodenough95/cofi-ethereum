@@ -19,9 +19,9 @@ pragma solidity 0.8.19;
 import { Modifiers } from '../libs/LibAppStorage.sol';
 import { LibToken } from '../libs/LibToken.sol';
 import { LibVault } from '../libs/LibVault.sol';
-import { LibTreasury } from '../libs/LibTreasury.sol';
 import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import { IERC4626 } from '.././interfaces/IERC4626.sol';
+import 'hardhat/console.sol';
 
 contract SupplyFacet is Modifiers {
 
@@ -68,10 +68,6 @@ contract SupplyFacet is Modifiers {
             LibToken._mint(s.fiAsset[inputAsset], s.feeCollector, fee);
             emit LibToken.MintFeeCaptured(s.fiAsset[inputAsset], fee);
         }
-
-        // Backing reserve will only ever be denominated in assets (not shares).
-        // E.g., yvDAI, 100,000 [DAI].
-        LibTreasury._adjustBackingReserve(s.vault[inputAsset], int256(assets));
 
         LibToken._mint(s.fiAsset[inputAsset], recipient, mintAfterFee);
     }
@@ -120,10 +116,6 @@ contract SupplyFacet is Modifiers {
             emit LibToken.MintFeeCaptured(s.fiAsset[inputAsset], fee);
         }
 
-        // Backing reserve will only ever be denominated in assets (not shares).
-        // E.g., yvDAI, 100,000 [DAI].
-        LibTreasury._adjustBackingReserve(vault, int256(assets));
-
         LibToken._mint(s.fiAsset[inputAsset], recipient, mintAfterFee);
     }
 
@@ -142,7 +134,7 @@ contract SupplyFacet is Modifiers {
         address recipient
     )   external
         isWhitelisted()
-        minWithdraw(amount, IERC4626(vault).asset())
+        // minWithdraw(amount, IERC4626(vault).asset())
         returns (uint256 burnAfterFee)
     {
         address inputAsset = IERC4626(vault).asset();
@@ -153,25 +145,23 @@ contract SupplyFacet is Modifiers {
         );
 
         LibToken._transferFrom(s.fiAsset[inputAsset], amount, depositFrom, s.feeCollector);
+        console.log('transferFrom amount: %s', amount);
 
         uint256 fee = LibToken._getRedeemFee(s.fiAsset[inputAsset], amount);
         burnAfterFee = amount - fee;
 
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(s.fiAsset[inputAsset], s.feeCollector, burnAfterFee);
+        console.log('burnAfterFee amount: %s', burnAfterFee);
         if (fee > 0) {
             emit LibToken.RedeemFeeCaptured(s.fiAsset[inputAsset], fee);
         }
-
-        LibTreasury._adjustBackingReserve(
-            vault,
-            -(int256(burnAfterFee)) // Reserve is still backing 'fee' portion.
-        );
 
         uint256 shares = LibVault._getShares(burnAfterFee, vault);
         require(shares >= minAmountOut, 'SupplyFacet: Slippage exceeded');
 
         LibToken._transfer(vault, shares, recipient);
+        console.log('transfer shares: %s', shares);
     }
 
     /// @notice Converts a fiAsset to its underlying inputAsset.
@@ -211,14 +201,9 @@ contract SupplyFacet is Modifiers {
             emit LibToken.RedeemFeeCaptured(s.fiAsset[inputAsset], fee);
         }
 
-        LibTreasury._adjustBackingReserve(
-            s.vault[s.fiAsset[inputAsset]],
-            -(int256(burnAfterFee)) // Reserve is still backing 'fee' portion.
-        );
-
         require(
             LibVault._unwrap(
-                amount,
+                burnAfterFee,
                 s.vault[s.fiAsset[inputAsset]],
                 recipient
             ) >= minAmountOut,

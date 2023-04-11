@@ -19,7 +19,6 @@ import { Modifiers } from "../libs/LibAppStorage.sol";
 import { PercentageMath } from "../libs/external/PercentageMath.sol";
 import { LibToken } from "../libs/LibToken.sol";
 import { LibVault } from "../libs/LibVault.sol";
-import { LibTreasury } from "../libs/LibTreasury.sol";
 import { IFiToken } from "../interfaces/IFiToken.sol";
 import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import { IERC4626 } from "../interfaces/IERC4626.sol";
@@ -28,6 +27,8 @@ import { GPv2SafeERC20 } from ".././libs/external/GPv2SafeERC20.sol";
 contract RewardFacet is Modifiers {
     using PercentageMath for uint256;
     using GPv2SafeERC20 for IERC20;
+
+    // add view function for Points - may require points epoch.
 
     function capturePoints(
         address account,
@@ -127,10 +128,6 @@ contract RewardFacet is Modifiers {
             assets < LibVault._totalValue(newVault),
             'AdminFacet: Vault migration slippage exceeded'
         );
-
-        // Update treasury.
-        s.backing[s.vault[fiAsset]] = 0;
-        s.backing[newVault]         = LibVault._totalValue(newVault);
 
         // Update vault for fiAsset.
         s.vault[fiAsset] = newVault;

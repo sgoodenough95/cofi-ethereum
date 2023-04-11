@@ -56,7 +56,7 @@ interface IERC4626 is IERC20 {
     /**
      * @dev Addition for depositing on behalf of depositor.
      */
-    function deposit(uint256 assets, address receiver, address depositor)
+    function deposit_(uint256 assets, address receiver, address depositor)
         external
         returns (uint256 shares);
 

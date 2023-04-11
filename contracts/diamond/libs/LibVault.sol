@@ -36,7 +36,7 @@ library LibVault {
         address depositFrom
     ) internal returns (uint256 shares) {
 
-        shares = IERC4626(vault).deposit(amount, address(this), depositFrom);
+        shares = IERC4626(vault).deposit_(amount, address(this), depositFrom);
         emit Wrap(amount, depositFrom, vault, shares);
     }
 

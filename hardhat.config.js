@@ -1,4 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
+// require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-ethers");
 require("hardhat-diamond-abi");
 require('dotenv').config();
 
@@ -13,11 +15,11 @@ module.exports = {
         enabled: true,
         runs: 1000,
       },
-      viaIR: true,
+      viaIR: false,
     },
   },
   diamondAbi: {
-    name: "Stoa-Diamond",
+    name: "COFIMoney",
     include: ["Facet"],
   },
   networks: {

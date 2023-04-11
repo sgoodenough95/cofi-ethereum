@@ -16,7 +16,7 @@ contract InitDiamond {
     struct Args {
         address COFI;   // fiAsset [USD]
         address COFIE;  // fiAsset [ETH]
-        address USDC;   // inputAsset [USD]
+        // address USDC;   // inputAsset [USD]
         address DAI;    // inputAsset [USD]
         address WETH;   // inputAsset [ETH]
         address yvDAI;  // shareToken [USD]
@@ -38,9 +38,15 @@ contract InitDiamond {
         LibToken._rebaseOptIn(_args.COFIE);
 
         // Set min deposit/withdraw values.
-        s.minDeposit[_args.USDC]    = 20e18;    // 20 USDC.
+        // s.minDeposit[_args.USDC]    = 20e18;    // 20 USDC.
         s.minDeposit[_args.DAI]     = 20e18;    // 20 DAI.
         s.minDeposit[_args.WETH]    = 1e16;     // 0.01 ETH.
+
+        s.fiAsset[_args.DAI]    = _args.COFI;
+        s.fiAsset[_args.WETH]   = _args.COFIE;
+
+        s.vault[_args.COFI]     = _args.yvDAI;
+        s.vault[_args.COFIE]    = _args.yvETH;
 
         // Set mint enabled.
         s.mintEnabled[_args.COFI]   = 1;
@@ -67,7 +73,7 @@ contract InitDiamond {
         s.pointsRate[_args.COFIE]   = 1e3;
 
         // Set feeCollector.
-        s.feeCollector = msg.sender;
+        s.feeCollector = address(this);
 
         // Set admin.
         s.isAdmin[msg.sender] = 1;
