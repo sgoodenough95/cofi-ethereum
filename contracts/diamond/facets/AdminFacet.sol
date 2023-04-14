@@ -29,6 +29,15 @@ contract AdminFacet is Modifiers {
         s.isWhitelisted[account] = whitelisted == 1 ? 1 : 0;
     }
 
+    function setAdmin(
+        address account,
+        uint8   isAdmin
+    )   external
+        onlyAdmin()
+    {
+        s.isWhitelisted[account] = isAdmin == 1 ? 1 : 0;
+    }
+
     function setMinDeposit(
         address inputAsset,
         uint256 amount
@@ -84,7 +93,7 @@ contract AdminFacet is Modifiers {
     }
 
     /// @dev    'batchPointsCapture()' must be called beforehand to ensure
-    ///         points have updated correctly from inception.
+    ///         points have updated correctly prior to a pointsRate change.
     function setPointsRate(
         address fiAsset,
         uint256 amount

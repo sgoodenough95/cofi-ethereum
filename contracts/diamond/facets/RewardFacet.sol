@@ -162,20 +162,20 @@ contract RewardFacet is Modifiers {
     ///         For the Stoa stablecoin product, an Admin will call changeSupply() directly.
     ///         For the COFIMoney MVP, however, this will not be the case.
     ///
-    // /// @notice Function for manually changing the supply of a fiAsset.
-    // ///
-    // /// @dev    'rebase()' must be called after for change to take effect.
-    // ///
-    // /// @param  fiAsset     The fiAsset to change supply for.
-    // /// @param  newSupply   The new supply of fiAssets (not accounting for CoFi's yield share).
-    // function changeSupply(
-    //     address fiAsset,
-    //     uint256 newSupply
-    // )   external
-    //     onlyAdmin()
-    // {
-    //     IFiToken(fiAsset).changeSupply(newSupply);
-    // }
+    /// @notice Function for manually changing the supply of a fiAsset.
+    ///
+    /// @dev    'rebase()' must be called after for change to take effect.
+    ///
+    /// @param  fiAsset     The fiAsset to change supply for.
+    /// @param  newSupply   The new supply of fiAssets (not accounting for CoFi's yield share).
+    function changeSupply(
+        address fiAsset,
+        uint256 newSupply
+    )   external
+        onlyAdmin()
+    {
+        IFiToken(fiAsset).changeSupply(newSupply);
+    }
 
     /// @notice Function for updating fiAssets originating from vaults.
     ///
@@ -187,6 +187,36 @@ contract RewardFacet is Modifiers {
     {
         uint256 currentSupply = IERC20(fiAsset).totalSupply();
         if (currentSupply == 0) return;
+
+        uint256 assets = LibVault._totalValue(s.vault[fiAsset]);
+
+        if (assets > currentSupply) {
+
+            uint256 yield = assets - currentSupply;
+
+            uint256 shareYield = yield.percentMul(1e4 - s.serviceFee[fiAsset]);
+
+            IFiToken(fiAsset).changeSupply(currentSupply + shareYield);
+
+            if (yield - shareYield > 0)
+                LibToken._mint(fiAsset, s.feeCollector, yield - shareYield);
+        }
+    }
+
+    function testRebase(
+        address fiAsset,
+        uint256 percentYield
+    )   external
+    {
+        uint256 currentSupply = IERC20(fiAsset).totalSupply();
+        if (currentSupply == 0) return;
+
+        if (percentYield > 0) {
+            IFiToken(IERC4626(s.vault[fiAsset]).asset()).mint(
+                s.vault[fiAsset],
+                LibVault._totalValue(s.vault[fiAsset]).percentMul(percentYield)
+            );
+        }
 
         uint256 assets = LibVault._totalValue(s.vault[fiAsset]);
 

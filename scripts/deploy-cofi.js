@@ -3,7 +3,7 @@
 
 const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
 
-async function deploy() {
+async function deployDiamond() {
   const accounts = await ethers.getSigners()
   const contractOwner = accounts[0]
 
@@ -25,6 +25,9 @@ async function deploy() {
   await dai.deployed()
   console.log('Dai deployed:', dai.address)
 
+  // Mint owner 1,000,000 DAI.
+  await dai.mint(contractOwner.address, '1000000000000000000000000')
+
   // Deploy USDC
   // const USDC = await ethers.getContractFactory('CreditToken')
   // const usdc = await USDC.deploy('USD Coin', 'USDC')
@@ -36,6 +39,9 @@ async function deploy() {
   const weth = await WETH.deploy('Wrapped Ethereum', 'WETH')
   await weth.deployed()
   console.log('wETH deployed:', weth.address)
+
+  // Mint owner 1,000,000 WETH.
+  await weth.mint(contractOwner.address, '1000000000000000000000000')
 
   // Deploy yvDAI
   const YVDAI = await ethers.getContractFactory('Vault')
@@ -122,7 +128,7 @@ async function deploy() {
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 if (require.main === module) {
-  deploy()
+  deployDiamond()
     .then(() => process.exit(0))
     .catch(error => {
       console.error(error)

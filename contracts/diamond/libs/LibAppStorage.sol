@@ -46,7 +46,7 @@ struct AppStorage {
     mapping(address => uint256) backing;
 
     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
-    mapping(address => uint256)         pointsRate;
+    mapping(address => uint256) pointsRate;
 
     mapping(address => mapping(address => PointsCapture)) pointsCapture;
 
