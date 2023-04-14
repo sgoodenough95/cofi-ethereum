@@ -7,6 +7,7 @@ import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 struct PointsCapture {
     uint256 yield;
     uint256 points;
+    uint256 spent;
 }
 
 struct AppStorage {
@@ -47,7 +48,7 @@ struct AppStorage {
     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
     mapping(address => uint256)         pointsRate;
 
-    mapping(address => PointsCapture)   pointsCapture;
+    mapping(address => mapping(address => PointsCapture)) pointsCapture;
 
     mapping(address => uint8)   isAdmin;
 

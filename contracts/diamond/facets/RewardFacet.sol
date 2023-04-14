@@ -28,7 +28,22 @@ contract RewardFacet is Modifiers {
     using PercentageMath for uint256;
     using GPv2SafeERC20 for IERC20;
 
-    // add view function for Points - may require points epoch.
+    function getPoints(
+        address account,
+        address fiAsset
+    )   external
+        view
+        returns (uint256)
+    {
+        uint256 yield = IFiToken(fiAsset).getYieldEarned(account);
+
+        uint256 capturedPoints = s.pointsCapture[account][fiAsset].points;
+
+        uint256 pendingPoints = (yield - s.pointsCapture[account][fiAsset].yield)
+            .percentMul(s.pointsRate[fiAsset]);
+
+        return capturedPoints + pendingPoints;
+    }
 
     function capturePoints(
         address account,
@@ -45,10 +60,11 @@ contract RewardFacet is Modifiers {
          */
         
         uint256 yield = IFiToken(fiAsset).getYieldEarned(account);
-        if (s.pointsCapture[account].yield < yield) {
-            s.pointsCapture[account].points +=
-                (yield - s.pointsCapture[account].yield).percentMul(s.pointsRate[fiAsset]);
-            s.pointsCapture[account].yield  = yield;
+        if (s.pointsCapture[account][fiAsset].yield < yield) {
+            s.pointsCapture[account][fiAsset].points +=
+                (yield - s.pointsCapture[account][fiAsset].yield)
+                    .percentMul(s.pointsRate[fiAsset]);
+            s.pointsCapture[account][fiAsset].yield  = yield;
         }
     }
 
@@ -70,10 +86,11 @@ contract RewardFacet is Modifiers {
         uint256 yield;
         for(uint i = 0; i < accounts.length; ++i) {
         yield = IFiToken(fiAsset).getYieldEarned(accounts[i]);
-            if (s.pointsCapture[accounts[i]].yield < yield) {
-                s.pointsCapture[accounts[i]].points +=
-                    (yield - s.pointsCapture[accounts[i]].yield).percentMul(s.pointsRate[fiAsset]);
-                s.pointsCapture[accounts[i]].yield  = yield;
+            if (s.pointsCapture[accounts[i]][fiAsset].yield < yield) {
+                s.pointsCapture[accounts[i]][fiAsset].points +=
+                    (yield - s.pointsCapture[accounts[i]][fiAsset].yield)
+                        .percentMul(s.pointsRate[fiAsset]);
+                s.pointsCapture[accounts[i]][fiAsset].yield = yield;
             }
         }
     }
@@ -119,13 +136,13 @@ contract RewardFacet is Modifiers {
         // Deploy funds to new vault.
         LibVault._wrap(
             IERC20(IERC4626(s.vault[fiAsset]).asset())
-                .balanceOf(address(this)) + buffer,
+                .balanceOf(address(this)),
             newVault,
             address(this)
         );
 
         require(
-            assets < LibVault._totalValue(newVault),
+            assets <= LibVault._totalValue(newVault),
             'AdminFacet: Vault migration slippage exceeded'
         );
 
@@ -141,20 +158,24 @@ contract RewardFacet is Modifiers {
          */
     }
 
-    /// @notice Function for manually changing the supply of a fiAsset.
+    /// @notice 'changeSupply()' is commented out, but left for reference.
+    ///         For the Stoa stablecoin product, an Admin will call changeSupply() directly.
+    ///         For the COFIMoney MVP, however, this will not be the case.
     ///
-    /// @dev    'rebase()' must be called after for change to take effect.
-    ///
-    /// @param  fiAsset     The fiAsset to change supply for.
-    /// @param  newSupply   The new supply of fiAssets (not accounting for CoFi's yield share).
-    function changeSupply(
-        address fiAsset,
-        uint256 newSupply
-    )   external
-        onlyAdmin()
-    {
-        IFiToken(fiAsset).changeSupply(newSupply);
-    }
+    // /// @notice Function for manually changing the supply of a fiAsset.
+    // ///
+    // /// @dev    'rebase()' must be called after for change to take effect.
+    // ///
+    // /// @param  fiAsset     The fiAsset to change supply for.
+    // /// @param  newSupply   The new supply of fiAssets (not accounting for CoFi's yield share).
+    // function changeSupply(
+    //     address fiAsset,
+    //     uint256 newSupply
+    // )   external
+    //     onlyAdmin()
+    // {
+    //     IFiToken(fiAsset).changeSupply(newSupply);
+    // }
 
     /// @notice Function for updating fiAssets originating from vaults.
     ///
