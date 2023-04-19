@@ -3,12 +3,8 @@ pragma solidity 0.8.19;
 
 /**
 
-    ╭━━━╮╱╱╭━━━╮
-    ┃╭━╮┃╱╱┃╭━━╯
-    ┃┃╱╰╋━━┫╰━━┳╮
-    ┃┃╱╭┫╭╮┃╭━━╋┫
-    ┃╰━╯┃╰╯┃┃╱╱┃┃
-    ╰━━━┻━━┻╯╱╱╰╯
+    █▀▀ █▀█ █▀▀ █
+    █▄▄ █▄█ █▀░ █
 
     @author cofi.money
     @title  Supply Facet
@@ -25,189 +21,194 @@ import 'hardhat/console.sol';
 
 contract SupplyFacet is Modifiers {
 
-    /// @notice Converts an accepted inputAsset into a fiAsset (e.g., DAI to COFI).
+    /// @notice Converts a supported underlyingAsset into a fiAsset (e.g., DAI to COFI).
     ///
-    /// @param  amount          The amount of inputAssets to deposit.
-    /// @param  inputAsset      The asset provided to mint fiAssets.
-    /// @param  depositFrom     The account to deposit inputAssets from.
+    /// @param  amount          The amount of underlyingAssets to deposit.
+    /// @param  fiAsset         The fiAsset to mint.
+    /// @param  depositFrom     The account to deposit underlyingAssets from.
     /// @param  recipient       The recipient of the fiAssets.
     /// @param  minAmountOut    The minimum amount of fiAssets received (before fees).
-    function inputToFi(
+    function underlyingToFi(
         uint256 amount,
         uint256 minAmountOut,
-        address inputAsset,
+        address fiAsset,
         address depositFrom,
         address recipient
     )
         external
         isWhitelisted()
-        minDeposit(amount, inputAsset)
+        minDeposit(amount, fiAsset)
         returns (uint256 mintAfterFee)
     {
         require(
-            LibToken._isMintEnabled(s.fiAsset[inputAsset]) == 1,
+            LibToken._isMintEnabled(fiAsset) == 1,
             'SupplyFacet: Mint for token disabled'
         );
 
         uint256 assets = LibVault._getAssets(
            LibVault._wrap(
                 amount,
-                s.vault[s.fiAsset[inputAsset]],
+                s.vault[fiAsset],
                 depositFrom
             ),
-            s.vault[s.fiAsset[inputAsset]]
+            s.vault[fiAsset]
         );
 
         require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
 
-        uint256 fee = LibToken._getMintFee(s.fiAsset[inputAsset], assets);
+        uint256 fee = LibToken._getMintFee(fiAsset, assets);
         mintAfterFee = assets - fee;
 
         // Capture mint fee in fiAssets.
         if (fee > 0) {
-            LibToken._mint(s.fiAsset[inputAsset], s.feeCollector, fee);
-            emit LibToken.MintFeeCaptured(s.fiAsset[inputAsset], fee);
+            LibToken._mint(fiAsset, s.feeCollector, fee);
+            emit LibToken.MintFeeCaptured(fiAsset, fee);
         }
 
-        LibToken._mint(s.fiAsset[inputAsset], recipient, mintAfterFee);
+        LibToken._mint(fiAsset, recipient, mintAfterFee);
     }
 
-    /// @notice Converts an accepted share token into a fiAsset (e.g., yvDAI to COFI).
+    /// @notice Converts a supported yieldAsset into a fiAsset (e.g., yvDAI to COFI).
     ///
-    /// @param  amount          The amount of inputAssets to deposit.
-    /// @param  vault           The share token provided to mint fiAssets.
-    /// @param  depositFrom     The account to deposit inputAssets from.
-    /// @param  recipient       The recipient of the fiAssets.
+    /// @param  amount          The amount of yieldAssets to deposit.
     /// @param  minAmountOut    The minimum amount of fiAssets received (before fees).
+    /// @param  fiAsset         The fiAsset to mint.
+    /// @param  depositFrom     The account to deposit yieldAssets from.
+    /// @param  recipient       The recipient of the fiAssets.
     function sharesToFi(
         uint256 amount,
         uint256 minAmountOut,
-        address vault,
+        address fiAsset,
         address depositFrom,
         address recipient
     )
         external
         isWhitelisted()
-        minDeposit(amount, IERC4626(vault).asset())
+        minDeposit(LibVault._getAssets(amount, s.vault[fiAsset]), fiAsset)
         returns (uint256 mintAfterFee)
     {
-        address inputAsset = IERC4626(vault).asset();
-
         require(
-            LibToken._isMintEnabled(s.fiAsset[inputAsset]) == 1,
+            LibToken._isMintEnabled(fiAsset) == 1,
             'SupplyFacet: Mint for token disabled'
         );
 
-        LibToken._transferFrom(vault, amount, depositFrom, address(this));
+        // Backing yieldAssets are held in the diamond contract.
+        LibToken._transferFrom(s.vault[fiAsset], amount, depositFrom, address(this));
 
-        uint256 assets = LibVault._getAssets(
-           amount,
-            s.vault[s.fiAsset[inputAsset]]
-        );
+        uint256 assets = LibVault._getAssets(amount, s.vault[fiAsset]);
 
         require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
 
-        uint256 fee = LibToken._getMintFee(s.fiAsset[inputAsset], assets);
+        uint256 fee = LibToken._getMintFee(fiAsset, assets);
         mintAfterFee = assets - fee;
 
         // Capture mint fee in fiAssets.
         if (fee > 0) {
-            LibToken._mint(s.fiAsset[inputAsset], s.feeCollector, fee);
-            emit LibToken.MintFeeCaptured(s.fiAsset[inputAsset], fee);
+            LibToken._mint(fiAsset, s.feeCollector, fee);
+            emit LibToken.MintFeeCaptured(fiAsset, fee);
         }
 
-        LibToken._mint(s.fiAsset[inputAsset], recipient, mintAfterFee);
+        LibToken._mint(fiAsset, recipient, mintAfterFee);
     }
 
-    /// @notice Converts a fiAsset to its underlying share token.
+    /// @notice Converts a fiAsset to its collateral yieldAsset.
     ///
     /// @param  amount          The amount of fiAssets to redeem.
     /// @param  depositFrom     The account to deposit fiAssets from.
-    /// @param  vault           The share token to redeem (e.g., yvDAI).
-    /// @param  recipient       The recipient of the share tokens.
-    /// @param  minAmountOut    The minimum amount of share tokens received (after fees).
+    /// @param  fiAsset         The fiAsset to redeem (e.g., COFI).
+    /// @param  recipient       The recipient of the yieldAssets.
+    /// @param  minAmountOut    The minimum amount of yieldAssets received (after fees).
     function fiToShares(
         uint256 amount,
         uint256 minAmountOut,
-        address vault,
+        address fiAsset,
         address depositFrom,
         address recipient
     )   external
         isWhitelisted()
-        // minWithdraw(amount, IERC4626(vault).asset())
+        minWithdraw(amount, fiAsset)
         returns (uint256 burnAfterFee)
     {
-        address inputAsset = IERC4626(vault).asset();
-
         require(
-            LibToken._isRedeemEnabled(s.fiAsset[inputAsset]) == 1,
+            LibToken._isRedeemEnabled(fiAsset) == 1,
             'SupplyFacet: Redeem for token disabled'
         );
 
-        LibToken._transferFrom(s.fiAsset[inputAsset], amount, depositFrom, s.feeCollector);
-        console.log('transferFrom amount: %s', amount);
+        LibToken._transferFrom(fiAsset, amount, depositFrom, s.feeCollector);
 
-        uint256 fee = LibToken._getRedeemFee(s.fiAsset[inputAsset], amount);
+        uint256 fee = LibToken._getRedeemFee(fiAsset, amount);
         burnAfterFee = amount - fee;
 
         // Redemption fee is captured by retaining 'fee' amount.
-        LibToken._burn(s.fiAsset[inputAsset], s.feeCollector, burnAfterFee);
-        console.log('burnAfterFee amount: %s', burnAfterFee);
+        LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
         if (fee > 0) {
-            emit LibToken.RedeemFeeCaptured(s.fiAsset[inputAsset], fee);
+            emit LibToken.RedeemFeeCaptured(fiAsset, fee);
         }
 
-        uint256 shares = LibVault._getShares(burnAfterFee, vault);
+        uint256 shares = LibVault._getShares(burnAfterFee, s.vault[fiAsset]);
         require(shares >= minAmountOut, 'SupplyFacet: Slippage exceeded');
 
-        LibToken._transfer(vault, shares, recipient);
-        console.log('transfer shares: %s', shares);
+        LibToken._transfer(s.vault[fiAsset], shares, recipient);
     }
 
-    /// @notice Converts a fiAsset to its underlying inputAsset.
+    /// @notice Converts a fiAsset to its collateral underlyingAsset.
     ///
-    /// @notice Can be used to make payments in underlying asset.
+    /// @notice Can be used to make payments in underlyingAsset.
     ///         E.g., send USDC from having COFI in your wallet.
     ///
     /// @param  amount          The amount of fiAssets to redeem.
     /// @param  depositFrom     The account to deposit fiAssets from.
-    /// @param  inputAsset      The asset to redeem (e.g., USDC).
-    /// @param  recipient       The recipient of the inputAssets.
-    /// @param  minAmountOut    The minimum amount of inputAssets received (after fees).
-    function fiToInput(
+    /// @param  fiAsset         The fiAsset to redeem (e.g., COFI).
+    /// @param  recipient       The recipient of the underlyingAssets.
+    /// @param  minAmountOut    The minimum amount of underlyingAssets received (after fees).
+    function fiToUnderlying(
         uint256 amount,
         uint256 minAmountOut,
-        address inputAsset,
+        address fiAsset,
         address depositFrom,
         address recipient
     )   public
         isWhitelisted()
-        minWithdraw(amount, inputAsset)
+        minWithdraw(amount, fiAsset)
         returns (uint256 burnAfterFee)
     {
         require(
-            LibToken._isRedeemEnabled(s.fiAsset[inputAsset]) == 1,
+            LibToken._isRedeemEnabled(fiAsset) == 1,
             'SupplyFacet: Redeem for token disabled'
         );
 
-        LibToken._transferFrom(s.fiAsset[inputAsset], amount, depositFrom, s.feeCollector);
+        LibToken._transferFrom(fiAsset, amount, depositFrom, s.feeCollector);
 
-        uint256 fee = LibToken._getRedeemFee(s.fiAsset[inputAsset], amount);
+        uint256 fee = LibToken._getRedeemFee(fiAsset, amount);
         burnAfterFee = amount - fee;
 
         // Redemption fee is captured by retaining 'fee' amount.
-        LibToken._burn(s.fiAsset[inputAsset], s.feeCollector, burnAfterFee);
+        LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
         if (fee > 0) {
-            emit LibToken.RedeemFeeCaptured(s.fiAsset[inputAsset], fee);
+            emit LibToken.RedeemFeeCaptured(fiAsset, fee);
         }
 
         require(
-            LibVault._unwrap(
-                burnAfterFee,
-                s.vault[s.fiAsset[inputAsset]],
-                recipient
-            ) >= minAmountOut,
+            LibVault._unwrap(burnAfterFee, s.vault[fiAsset], recipient) >= minAmountOut,
             'SupplyFacet: Slippage exceeded'
         );
+    }
+
+    function getUnderlyingAsset(
+        address fiAsset
+    )   external
+        view
+        returns (address)
+    {
+        return IERC4626(s.vault[fiAsset]).asset();
+    }
+
+    function getYieldAsset(
+        address fiAsset
+    )   external
+        view
+        returns (address)
+    {
+        return s.vault[fiAsset];
     }
 }

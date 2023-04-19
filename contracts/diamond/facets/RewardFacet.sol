@@ -3,12 +3,8 @@ pragma solidity 0.8.19;
 
 /**
 
-    ╭━━━╮╱╱╭━━━╮
-    ┃╭━╮┃╱╱┃╭━━╯
-    ┃┃╱╰╋━━┫╰━━┳╮
-    ┃┃╱╭┫╭╮┃╭━━╋┫
-    ┃╰━╯┃╰╯┃┃╱╱┃┃
-    ╰━━━┻━━┻╯╱╱╰╯
+    █▀▀ █▀█ █▀▀ █
+    █▄▄ █▄█ █▀░ █
 
     @author cofi.money
     @title  Reward Facet
@@ -96,7 +92,7 @@ contract RewardFacet is Modifiers {
     }
 
     /// @notice Function for migrating to a new Vault. The new Vault must support the
-    ///         same inputAsset (e.g., DAI).
+    ///         same underlyingAsset (e.g., DAI).
     ///
     /// @dev    Will only ever be called as part of a migration script, and therefore
     ///         requires that the relevant functions are called before and after.
@@ -187,36 +183,6 @@ contract RewardFacet is Modifiers {
     {
         uint256 currentSupply = IERC20(fiAsset).totalSupply();
         if (currentSupply == 0) return;
-
-        uint256 assets = LibVault._totalValue(s.vault[fiAsset]);
-
-        if (assets > currentSupply) {
-
-            uint256 yield = assets - currentSupply;
-
-            uint256 shareYield = yield.percentMul(1e4 - s.serviceFee[fiAsset]);
-
-            IFiToken(fiAsset).changeSupply(currentSupply + shareYield);
-
-            if (yield - shareYield > 0)
-                LibToken._mint(fiAsset, s.feeCollector, yield - shareYield);
-        }
-    }
-
-    function testRebase(
-        address fiAsset,
-        uint256 percentYield
-    )   external
-    {
-        uint256 currentSupply = IERC20(fiAsset).totalSupply();
-        if (currentSupply == 0) return;
-
-        if (percentYield > 0) {
-            IFiToken(IERC4626(s.vault[fiAsset]).asset()).mint(
-                s.vault[fiAsset],
-                LibVault._totalValue(s.vault[fiAsset]).percentMul(percentYield)
-            );
-        }
 
         uint256 assets = LibVault._totalValue(s.vault[fiAsset]);
 

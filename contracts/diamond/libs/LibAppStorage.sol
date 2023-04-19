@@ -15,9 +15,6 @@ struct AppStorage {
     // E.g., COFI => yvDAI; COFIE => aETH.
     mapping(address => address) vault;
 
-    // E.g., DAI => COFI; USDC => COFI; WETH => COFIE;
-    mapping(address => address) fiAsset;
-
     // E.g., DAI => 50*10**18. Applies to inputAsset only.
     mapping(address => uint256) minDeposit;
 
@@ -85,6 +82,7 @@ contract Modifiers {
         require(amount >= s.minWithdraw[asset], 'Insufficient withdraw amount');
         _;
     }
+    
     modifier onlyAdmin() {
         require(s.isAdmin[msg.sender] == 1, 'Caller not Admin');
         _;

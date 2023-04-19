@@ -16,9 +16,6 @@ contract InitDiamond {
     struct Args {
         address COFI;   // fiAsset [USD]
         address COFIE;  // fiAsset [ETH]
-        // address USDC;   // inputAsset [USD]
-        address DAI;    // inputAsset [USD]
-        address WETH;   // inputAsset [ETH]
         address yvDAI;  // shareToken [USD]
         address yvETH;  // shareToken [ETH]
     }
@@ -38,12 +35,10 @@ contract InitDiamond {
         LibToken._rebaseOptIn(_args.COFIE);
 
         // Set min deposit/withdraw values.
-        // s.minDeposit[_args.USDC]    = 20e18;    // 20 USDC.
-        s.minDeposit[_args.DAI]     = 20e18;    // 20 DAI.
-        s.minDeposit[_args.WETH]    = 1e16;     // 0.01 ETH.
-
-        s.fiAsset[_args.DAI]    = _args.COFI;
-        s.fiAsset[_args.WETH]   = _args.COFIE;
+        s.minDeposit[_args.COFI]     = 20e18;    // 20 DAI.
+        s.minDeposit[_args.COFIE]    = 1e16;     // 0.01 ETH.
+        s.minWithdraw[_args.COFI]    = 20e18;    // 20 DAI.
+        s.minWithdraw[_args.COFIE]   = 1e16;     // 0.01 ETH.
 
         s.vault[_args.COFI]     = _args.yvDAI;
         s.vault[_args.COFIE]    = _args.yvETH;
