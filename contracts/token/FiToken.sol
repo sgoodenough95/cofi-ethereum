@@ -2,26 +2,28 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title Activated Token Contract
- * @dev ERC20 compatible contract for Activated Token.
- * @dev Implements an elastic supply.
- * @author Origin Protocol Inc & The Stoa Corporation Ltd.
- * @notice
- *  Forked from
- *  https://github.com/OriginProtocol/origin-dollar/blob/master/contracts/contracts/token/OUSD.sol
- *  Additional methods added for Stability Pool transfers.
- * @dev
- *  Imports for Initializable and Governable removed at least for now.
+
+    █▀▀ █▀█ █▀▀ █
+    █▄▄ █▄█ █▀░ █
+
+    @author cofi.money
+    @title  Fi Token Contract
+    @notice Rebasing ERC20 contract.
+    @dev    TO-DO:
+            - Add Permit.
+            - Add Proxy.
+            - Add WL/BL.
  */
 
-import { SafeMath } from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import { Address } from "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { SafeMath } from '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import { Address } from '@openzeppelin/contracts/utils/Address.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import './utils/draft-ERC20Permit.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 // import { Initializable } from "../utils/Initializable.sol";
 // import { InitializableERC20Detailed } from "../utils/InitializableERC20Detailed.sol";
-import { StableMath } from "../utils/StableMath.sol";
+import { StableMath } from './utils/StableMath.sol';
 import 'hardhat/console.sol';
 // import { Governable } from "../governance/Governable.sol";
 
@@ -31,10 +33,7 @@ import 'hardhat/console.sol';
  * rebasing design. Any integrations with OUSD should be aware.
  */
 
-
-// Add Permit.
-
-contract FiToken is ERC20 {
+contract FiToken is ERC20Permit, ReentrancyGuard {
     using SafeMath for uint256;
     using StableMath for uint256;
     using StableMath for int256;
@@ -54,7 +53,7 @@ contract FiToken is ERC20 {
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
     uint256 public _totalSupply;
     uint256 public _totalYieldEarned;
-    mapping(address => mapping(address => uint256)) private _allowances;
+    // mapping(address => mapping(address => uint256)) private _allowances;
     address public vaultAddress = address(0);
     mapping(address => uint256) public _creditBalances;
     uint256 private _rebasingCredits;
@@ -73,16 +72,10 @@ contract FiToken is ERC20 {
 
     uint256 private constant RESOLUTION_INCREASE = 1e9;
 
-    /**
-     * @dev
-     *  Added types for Stoa's implementation.
-     */
-    address public controller;
-
     constructor(
         string memory _name,
         string memory _symbol
-    ) ERC20(_name, _symbol) {
+    ) ERC20(_name, _symbol) ERC20Permit(_name) {
         _rebasingCreditsPerToken = 1e18;
     }
 
@@ -95,26 +88,6 @@ contract FiToken is ERC20 {
     //     _rebasingCreditsPerToken = 1e18;
     //     vaultAddress = _vaultAddress;
     // }
-
-    // Reentrancy Guard logic.
-    uint256 private constant _NOT_ENTERED = 1;
-    uint256 private constant _ENTERED = 2;
-    uint256 private _status = _NOT_ENTERED;
-
-    modifier nonReentrant()
-    {
-        // On the first call to nonReentrant, _notEntered will be true
-        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
-
-        // Any calls to nonReentrant after this point will fail
-        _status = _ENTERED;
-
-        _;
-
-        // By storing the original value once again, a refund is triggered (see
-        // https://eips.ethereum.org/EIPS/eip-2200)
-        _status = _NOT_ENTERED;
-    }
 
     /**
      * @dev Verifies that the caller is the Vault contract
@@ -175,8 +148,6 @@ contract FiToken is ERC20 {
         return
             _creditBalances[_account].divPrecisely(_creditsPerToken(_account));
     }
-
-    // add tokensPerCredit()
 
     function creditsToBal(uint256 amount)
         external
