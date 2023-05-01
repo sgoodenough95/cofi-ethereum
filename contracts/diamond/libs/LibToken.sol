@@ -145,6 +145,17 @@ library LibToken {
         emit Burn(fiAsset, amount, from);
     }
 
+    /// @notice 
+    function _redeem(
+        address fiAsset,
+        address from,
+        uint256 amount
+    ) internal {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        IFiToken(fiAsset).redeem(from, s.feeCollector, amount);
+    }
+
     /// @notice Opts contract into receiving rebases.
     function _rebaseOptIn(
         address fiAsset

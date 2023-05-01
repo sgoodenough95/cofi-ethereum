@@ -6,7 +6,7 @@ async function mintErc20() {
     const owner = accounts[0]
 
     const token = await ethers.getContractAt(
-        'CreditToken',
+        'ERC20Token',
         '0x0E16C43Da43686EAeaAe69aDbE512b5ce9d50912'
     )
 

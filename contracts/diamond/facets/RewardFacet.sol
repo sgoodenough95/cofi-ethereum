@@ -24,24 +24,7 @@ contract RewardFacet is Modifiers {
     using PercentageMath for uint256;
     using GPv2SafeERC20 for IERC20;
 
-    function getPoints(
-        address account,
-        address fiAsset
-    )   external
-        view
-        returns (uint256)
-    {
-        uint256 yield = IFiToken(fiAsset).getYieldEarned(account);
-
-        uint256 capturedPoints = s.pointsCapture[account][fiAsset].points;
-
-        uint256 pendingPoints = (yield - s.pointsCapture[account][fiAsset].yield)
-            .percentMul(s.pointsRate[fiAsset]);
-
-        return capturedPoints + pendingPoints;
-    }
-
-    function capturePoints(
+    function captureYieldPoints(
         address account,
         address fiAsset
     )   external
@@ -56,11 +39,11 @@ contract RewardFacet is Modifiers {
          */
         
         uint256 yield = IFiToken(fiAsset).getYieldEarned(account);
-        if (s.pointsCapture[account][fiAsset].yield < yield) {
-            s.pointsCapture[account][fiAsset].points +=
-                (yield - s.pointsCapture[account][fiAsset].yield)
+        if (s.YPC[account][fiAsset].yield < yield) {
+            s.YPC[account][fiAsset].points +=
+                (yield - s.YPC[account][fiAsset].yield)
                     .percentMul(s.pointsRate[fiAsset]);
-            s.pointsCapture[account][fiAsset].yield  = yield;
+            s.YPC[account][fiAsset].yield  = yield;
         }
     }
 
@@ -74,7 +57,7 @@ contract RewardFacet is Modifiers {
     ///
     /// @param  accounts    The array of accounts to capture points for.
     /// @param  fiAsset     The fiAsset to capture points for.
-    function batchCapturePoints(
+    function batchCaptureYieldPoints(
         address[] memory    accounts,
         address             fiAsset
     )   external
@@ -82,11 +65,11 @@ contract RewardFacet is Modifiers {
         uint256 yield;
         for(uint i = 0; i < accounts.length; ++i) {
         yield = IFiToken(fiAsset).getYieldEarned(accounts[i]);
-            if (s.pointsCapture[accounts[i]][fiAsset].yield < yield) {
-                s.pointsCapture[accounts[i]][fiAsset].points +=
-                    (yield - s.pointsCapture[accounts[i]][fiAsset].yield)
+            if (s.YPC[accounts[i]][fiAsset].yield < yield) {
+                s.YPC[accounts[i]][fiAsset].points +=
+                    (yield - s.YPC[accounts[i]][fiAsset].yield)
                         .percentMul(s.pointsRate[fiAsset]);
-                s.pointsCapture[accounts[i]][fiAsset].yield = yield;
+                s.YPC[accounts[i]][fiAsset].yield = yield;
             }
         }
     }
@@ -106,7 +89,7 @@ contract RewardFacet is Modifiers {
         address newVault,
         uint256 buffer
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         // First, ensure minting/redeeming of fiAsset is disabled.
         require(
@@ -154,7 +137,9 @@ contract RewardFacet is Modifiers {
          */
     }
 
-    /// @notice 'changeSupply()' is commented out, but left for reference.
+    /// NOTE    ENABLED FOR TESTING PURPOSES(!)
+    ///
+    /// @notice 'changeSupply()' will be commented out, but left for reference.
     ///         For the Stoa stablecoin product, an Admin will call changeSupply() directly.
     ///         For the COFIMoney MVP, however, this will not be the case.
     ///
@@ -168,18 +153,18 @@ contract RewardFacet is Modifiers {
         address fiAsset,
         uint256 newSupply
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         IFiToken(fiAsset).changeSupply(newSupply);
     }
 
     /// @notice Function for updating fiAssets originating from vaults.
     ///
-    /// @param  fiAsset The fiAsset to distribute rewards for.
+    /// @param  fiAsset The fiAsset to distribute yield earnings for.
     function rebase(
         address fiAsset
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         uint256 currentSupply = IERC20(fiAsset).totalSupply();
         if (currentSupply == 0) return;
@@ -202,7 +187,7 @@ contract RewardFacet is Modifiers {
     function rebaseOptIn(
         address fiAsset
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         IFiToken(fiAsset).rebaseOptIn();
     }
@@ -210,8 +195,48 @@ contract RewardFacet is Modifiers {
     function rebaseOptOut(
         address fiAsset
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         IFiToken(fiAsset).rebaseOptOut();
+    }
+
+    /// @notice Returns the total number of points accrued for a given account
+    ///         (accrued through yield earnings and other means).
+    ///
+    /// @param  account     The address to enquire for.
+    /// @param  fiAssets    An array of fiAssets to retrieve data for.
+    function getPoints(
+        address             account,
+        address[] memory    fiAssets
+    )   public
+        view
+        returns (uint256 pointsTotal)
+    {
+        pointsTotal = getYieldPoints(account, fiAssets) + s.XPC[account];
+    }
+
+    /// @notice Returns the number of points accrued, through yield earnings, across
+    ///         a given number of fiAssets (e.g., [COFI, COFIE]).
+    ///
+    /// @param  account     The address to enquire for.
+    /// @param  fiAssets    An array of fiAssets to retrieve data for.
+    function getYieldPoints(
+        address             account,
+        address[] memory    fiAssets
+    )   public
+        view
+        returns (uint256 pointsTotal)
+    {
+        uint256 yield;
+        uint256 pointsCaptured;
+        uint256 pointsPending;
+
+        for(uint i = 0; i < fiAssets.length; ++i) {
+            yield           += IFiToken(fiAssets[i]).getYieldEarned(account);
+            pointsCaptured  += s.YPC[account][fiAssets[i]].points;
+            pointsPending   += (yield - s.YPC[account][fiAssets[i]].yield)
+                .percentMul(s.pointsRate[fiAssets[i]]);
+            pointsTotal     += pointsCaptured + pointsPending;
+        }
     }
 }

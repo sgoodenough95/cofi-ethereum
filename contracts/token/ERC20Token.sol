@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract CreditToken is ERC20 {
+contract ERC20Token is ERC20 {
 
     constructor(
         string memory _name,
@@ -17,10 +17,4 @@ contract CreditToken is ERC20 {
     function burn(address _from, uint _amount) external {
         _burn(_from, _amount);
     }
-
-    function sendToPool() external {}
-
-    function repay(uint index) external {}
-    
-    function returnFromPool() external {}
 }

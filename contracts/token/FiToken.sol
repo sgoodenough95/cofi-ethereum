@@ -6,6 +6,28 @@ pragma solidity ^0.8.0;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
+    SMART CONTRACTS LEFT TO DO:
+    - Add (+ test) upgradeability for FiToken contract.
+    - Create specialized ERC20 contract for COFI Points.
+        - 'balanceOf()' queries view fn on Diamond.
+        - Non-transferrable.
+        - Upgradeable.
+    - Decide on Points mechanics external to yield.
+        - E.g., for minting/redeeming, prizes, etc.
+    - Test 'pointsRate' update mechanism.
+        - Incl. gas testing for 'batchCapturePoints()'.
+    - Decide on 'pointsRate' approach for non-USD assets.
+    - Test Vault migration.
+    - Add Gnosis Safe contract for 'feeCollector'/governance.
+        - Decide on governance mechanism (e.g., 6 of 9 Multisig).
+    - Test Diamond upgradeability.
+        - Adding/removing Facets.
+    - Formalize code.
+    - Transak One integration.
+    - Set up dashboard/analytics/SubGraphs.
+    - Create tech docs.
+    - Fork mainnet and test using live applications.
+
     @author cofi.money
     @title  Fi Token Contract
     @notice Rebasing ERC20 contract.
@@ -51,23 +73,36 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     }
 
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
+
     uint256 public _totalSupply;
-    uint256 public _totalYieldEarned;
+
+    // NOTE '_allowances' has moved to base 'draft-ERC20Permit.sol' contract.
     // mapping(address => mapping(address => uint256)) private _allowances;
-    address public vaultAddress = address(0);
+    
     mapping(address => uint256) public _creditBalances;
+
     uint256 private _rebasingCredits;
+
     uint256 private _rebasingCreditsPerToken;
+
     // Frozen address/credits are non rebasing (value is held in contracts which
     // do not receive yield unless they explicitly opt in)
     uint256 public nonRebasingSupply;
+
     mapping(address => uint256) public nonRebasingCreditsPerToken;
+
     mapping(address => RebaseOptions) public rebaseState;
+
     mapping(address => uint256) public isUpgraded;
 
-    mapping(address => bool) private whitelisted;
-    mapping(address => bool) private blacklisted;
+    address diamond;
 
+    mapping(address => bool) private admin;
+
+    // Mapping for freezing accounts.
+    mapping(address => bool) private frozen;
+
+    // Used to track the total amount of yield earned via rebases for accounts.
     mapping(address => int256) yieldExcl;
 
     uint256 private constant RESOLUTION_INCREASE = 1e9;
@@ -90,10 +125,18 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     // }
 
     /**
-     * @dev Verifies that the caller is the Vault contract
+     * @dev Verifies that the caller is the Diamond contract
      */
-    modifier onlyVault() {
-        require(vaultAddress == msg.sender, "ActivatedToken: Caller is not the Vault");
+    modifier onlyDiamond() {
+        require(diamond == msg.sender, 'FiToken: Caller is not Diamond');
+        _;
+    }
+
+    /**
+     * @dev Verifies that the caller is an Admin.
+     */
+    modifier onlyAdmin() {
+        require(admin[msg.sender] == true, 'FiToken: Caller is not Admin');
         _;
     }
 
@@ -138,37 +181,24 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      * @return  A uint256 representing the amount of base units owned by the
      *          specified address.
      */
-    function balanceOf(address _account)
-        public
-        view
-        override
-        returns (uint256)
-    {
+    function balanceOf(address _account) public view override returns (uint256) {
         if (_creditBalances[_account] == 0) return 0;
         return
             _creditBalances[_account].divPrecisely(_creditsPerToken(_account));
     }
 
-    function creditsToBal(uint256 amount)
-        external
-        view
-        returns (uint256)
-    {
+    function creditsToBal(uint256 amount) external view returns (uint256) {
         return amount.divPrecisely(_rebasingCreditsPerToken);
     }
 
     /**
      * @dev Gets the credits balance of the specified address.
      * @dev Backwards compatible with old low res credits per token.
-     * @param _account The address to query the balance of.
-     * @return (uint256, uint256) Credit balance and credits per token of the
-     *         address
+     * @param _account  The address to query the balance of.
+     * @return          (uint256, uint256) Credit balance and credits per token of the
+     *                  address
      */
-    function creditsBalanceOf(address _account)
-        public
-        view
-        returns (uint256, uint256)
-    {
+    function creditsBalanceOf(address _account) public view returns (uint256, uint256) {
         uint256 cpt = _creditsPerToken(_account);
         if (cpt == 1e27) {
             // For a period before the resolution upgrade, we created all new
@@ -185,19 +215,11 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
 
     /**
      * @dev Gets the credits balance of the specified address.
-     * @param _account The address to query the balance of.
-     * @return (uint256, uint256, bool) Credit balance, credits per token of the
-     *         address, and isUpgraded
+     * @param _account  The address to query the balance of.
+     * @return          (uint256, uint256, bool) Credit balance, credits per token of the
+     *                  address, and isUpgraded
      */
-    function creditsBalanceOfHighres(address _account)
-        public
-        view
-        returns (
-            uint256,
-            uint256,
-            bool
-        )
-    {
+    function creditsBalanceOfHighres(address _account) public view returns (uint256, uint256, bool) {
         return (
             _creditBalances[_account],
             _creditsPerToken(_account),
@@ -207,20 +229,22 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
 
     /**
      * @dev Transfer tokens to a specified address.
-     * @param _to the address to transfer to.
-     * @param _value the amount to be transferred.
-     * @return true on success.
+     * @param _to       The address to transfer to.
+     * @param _value    The amount to be transferred.
+     * @return          True on success.
      */
     function transfer(address _to, uint256 _value)
         public
         override
         returns (bool)
     {
-        require(_to != address(0), "ActivatedToken: Transfer to zero address");
+        require(_to != address(0), 'FiToken: Transfer to zero address');
         require(
             _value <= balanceOf(msg.sender),
-            "ActivatedToken: Transfer greater than balance"
+            'FiToken: Transfer greater than balance'
         );
+        require(frozen[msg.sender] != true, 'FiToken: Caller is frozen');
+        require(frozen[_to] != true, 'FiToken: Recipient account is frozen');
 
         _executeTransfer(msg.sender, _to, _value);
 
@@ -231,17 +255,20 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
 
     /**
      * @dev Transfer tokens from one address to another.
-     * @param _from The address you want to send tokens from.
-     * @param _to The address you want to transfer to.
-     * @param _value The amount of tokens to be transferred.
+     * @param _from     The address you want to send tokens from.
+     * @param _to       The address you want to transfer to.
+     * @param _value    The amount of tokens to be transferred.
+     * @return          True on success.
      */
     function transferFrom(
         address _from,
         address _to,
         uint256 _value
     ) public override returns (bool) {
-        require(_to != address(0), "ActivatedToken: Transfer to zero address");
-        require(_value <= balanceOf(_from), "ActivatedToken: Transfer greater than balance");
+        require(_to != address(0), 'FiToken: Transfer to zero address');
+        require(_value <= balanceOf(_from), 'FiToken: Transfer greater than balance');
+        require(frozen[_from] != true, 'FiToken: Sender account is frozen');
+        require(frozen[_to] != true, 'FiToken: Recipient account is frozen');
 
         _allowances[_from][msg.sender] = _allowances[_from][msg.sender].sub(
             _value
@@ -255,10 +282,29 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     }
 
     /**
-     * @dev Update the count of non rebasing credits in response to a transfer
-     * @param _from The address you want to send tokens from.
-     * @param _to The address you want to transfer to.
-     * @param _value Amount of OUSD to transfer
+     * @notice  Redeem function, only callable from Diamond, to return fiAssets.
+     * @param _from     The address to redeem fiAssets from.
+     * @param _to       The 'feeCollector' address to receive fiAssets.
+     * @param _value    The amount of fiAssets to redeem.
+     * @return          True on success.
+     */
+    function redeem(
+        address _from,
+        address _to,
+        uint256 _value
+    ) external onlyDiamond returns (bool) {
+
+        _executeTransfer(_from, _to, _value);
+
+        emit Transfer(_from, _to, _value);
+
+        return true;
+    }
+
+    /**
+     * @param _from     The address you want to send tokens from.
+     * @param _to       The address you want to transfer to.
+     * @param _value    Amount of fiAssets to transfer
      */
     function _executeTransfer(
         address _from,
@@ -299,9 +345,9 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     /**
      * @dev Function to check the amount of tokens that _owner has allowed to
      *      `_spender`.
-     * @param _owner The address which owns the funds.
-     * @param _spender The address which will spend the funds.
-     * @return The number of tokens still available for the _spender.
+     * @param   _owner The address which owns the funds.
+     * @param   _spender The address which will spend the funds.
+     * @return  The number of tokens still available for the _spender.
      */
     function allowance(address _owner, address _spender)
         public
@@ -322,8 +368,8 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      *      may transfer both the old and the new allowance - if they are both
      *      greater than zero - if a transfer transaction is mined before the
      *      later approve() call is mined.
-     * @param _spender The address which will spend the funds.
-     * @param _value The amount of tokens to be spent.
+     * @param _spender  The address which will spend the funds.
+     * @param _value    The amount of tokens to be spent.
      */
     function approve(address _spender, uint256 _value)
         public
@@ -340,8 +386,8 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      *      `_spender`.
      *      This method should be used instead of approve() to avoid the double
      *      approval vulnerability described above.
-     * @param _spender The address which will spend the funds.
-     * @param _addedValue The amount of tokens to increase the allowance by.
+     * @param _spender      The address which will spend the funds.
+     * @param _addedValue   The amount of tokens to increase the allowance by.
      */
     function increaseAllowance(address _spender, uint256 _addedValue)
         public
@@ -357,9 +403,9 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     /**
      * @dev Decrease the amount of tokens that an owner has allowed to
             `_spender`.
-     * @param _spender The address which will spend the funds.
-     * @param _subtractedValue The amount of tokens to decrease the allowance
-     *        by.
+     * @param _spender          The address which will spend the funds.
+     * @param _subtractedValue  The amount of tokens to decrease the allowance
+     *                          by.
      */
     function decreaseAllowance(address _spender, uint256 _subtractedValue)
         public
@@ -379,8 +425,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     /**
      * @dev Mints new tokens, increasing totalSupply.
      */
-    // onlyVault
-    function mint(address _account, uint256 _amount) external {
+    function mint(address _account, uint256 _amount) external onlyDiamond {
         _mint(_account, _amount);
     }
 
@@ -422,7 +467,6 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     /**
      * @dev Burns tokens, decreasing totalSupply.
      */
-    // onlyVault
     function burn(address account, uint256 amount) external {
         _burn(account, amount);
     }
@@ -537,9 +581,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      * to upside and downside.
      */
     function rebaseOptIn() public nonReentrant {
-        console.log(msg.sender);
-        require(_isNonRebasingAccount(msg.sender), "ActivatedToken: Account has not opted out");
-        // require(whitelisted[msg.sender], "ActivatedToken: Account not whitelisted");
+        require(_isNonRebasingAccount(msg.sender), 'FiToken: Account has not opted out');
 
         // Convert balance into the same amount at the current exchange rate
         uint256 newCreditBalance = _creditBalances[msg.sender]
@@ -566,10 +608,8 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      * address's balance will be part of rebases and the account will be exposed
      * to upside and downside.
      */
-    function rebaseOptInExternal(address _account) public
-        // onlyGovernor
-        nonReentrant {
-        require(_isNonRebasingAccount(_account), "ActivatedToken: Account has not opted out");
+    function rebaseOptInExternal(address _account) public nonReentrant {
+        require(_isNonRebasingAccount(_account), 'FiToken: Account has not opted out');
 
         // Convert balance into the same amount at the current exchange rate
         uint256 newCreditBalance = _creditBalances[_account]
@@ -595,7 +635,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      * @dev Explicitly mark that an address is non-rebasing.
      */
     function rebaseOptOut() public nonReentrant {
-        require(!_isNonRebasingAccount(msg.sender), "ActivatedToken: Account has not opted in");
+        require(!_isNonRebasingAccount(msg.sender), 'FiToken: Account has not opted in');
 
         // Increase non rebasing supply
         nonRebasingSupply = nonRebasingSupply.add(balanceOf(msg.sender));
@@ -613,8 +653,8 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     /**
      * @dev Explicitly mark that an address is non-rebasing.
      */
-    function rebaseOptOutExternal(address _account) public nonReentrant {
-        require(!_isNonRebasingAccount(_account), "ActivatedToken: Account has not opted in");
+    function rebaseOptOutExternal(address _account) public nonReentrant onlyAdmin {
+        require(!_isNonRebasingAccount(_account), 'FiToken: Account has not opted in');
 
         // Increase non rebasing supply
         nonRebasingSupply = nonRebasingSupply.add(balanceOf(_account));
@@ -636,7 +676,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      */
     function changeSupply(uint256 _newTotalSupply)
         external
-        // onlyController
+        onlyDiamond
         nonReentrant
     {
         require(_totalSupply > 0, "ActivatedToken: Cannot increase 0 supply");
@@ -649,8 +689,6 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
             );
             return;
         }
-
-        _totalYieldEarned += _newTotalSupply - _totalSupply;
 
         _totalSupply = _newTotalSupply > MAX_SUPPLY
             ? MAX_SUPPLY
@@ -674,15 +712,13 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     }
 
     /**
-        yieldExcl[_account]:
-        - Increases for outgoing amount (transfer 1,000) = 1,000. E.g., burning 1,000 from = +1,000.
-        - Decreases for incoming amount (receive 1,000) = -1,000. E.g., minting 1,000 to = -1,000.
+     * @dev yieldExcl[_account]:
+     *      Increases for outgoing amount (transfer 1,000) = 1,000.
+     *      - E.g., burning 1,000 from = +1,000.
+     *      Decreases for incoming amount (receive 1,000) = -1,000.
+     *      - E.g., minting 1,000 to = -1,000.
      */
-    function getYieldEarned(address _account)
-        external
-        view
-        returns (uint256)
-    {
+    function getYieldEarned(address _account) external view returns (uint256) {
         if (yieldExcl[_account] >= 0) {
             return balanceOf(_account) + yieldExcl[_account].abs();
         } else {
@@ -690,76 +726,36 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         }
     }
 
-    function getTotalYieldEarned()
-        external
-        view
-        returns (uint256)
-    {
-        return _totalYieldEarned;
-    }
-
     /**
-     * @dev
-     *  Added functions for Stoa's implementation.
+     * @dev     Helper function to convert credit balance to token balance.
+     * @param   _creditBalance The credit balance to convert.
+     * @return  assets The amount converted to token balance.
      */
-
-    /**
-     * @dev Helper function to convert credit balance to token balance.
-     * @param _creditBalance The credit balance to convert.
-     * @return assets The amount converted to token balance.
-     */
-    function convertToAssets(
-        uint _creditBalance
-    ) public view returns (uint assets) {
+    function convertToAssets(uint _creditBalance) public view returns (uint assets) {
         assets = _creditBalance == 0
             ? 0
             : _creditBalance.divPrecisely(_rebasingCreditsPerToken);
     }
 
     /**
-     * @dev Helper function to convert token balance to credit balance.
-     * @param _tokenBalance The token balance to convert.
-     * @return credits The amount converted to credit balance.
+     * @dev     Helper function to convert token balance to credit balance.
+     * @param   _tokenBalance The token balance to convert.
+     * @return  credits The amount converted to credit balance.
      */
-    function convertToCredits(
-        uint _tokenBalance
-    ) public view returns (uint credits) {
+    function convertToCredits(uint _tokenBalance) public view returns (uint credits) {
         credits = _tokenBalance == 0
             ? 0
             : _tokenBalance.mulTruncate(_rebasingCreditsPerToken);
     }
 
-    function addToWhitelist(
-        address _account
-    ) external
-    // onlyGovernor
-    {
-        whitelisted[_account] = true;
+    function toggleAdmin(address _account) external onlyAdmin {
+        admin[_account] = !admin[_account];
     }
 
-    function removeFromWhitelist(
-        address _account
-    ) external
-    // onlyGovernor
-    {
-        whitelisted[_account] = false;
+    /**
+     * @dev If freezing, ensure account is not receiving rebases beforehand.
+     */
+    function toggleFreeze(address _account) external onlyAdmin {
+        frozen[_account] = !frozen[_account];
     }
-
-    function addToBlacklist(
-        address _account
-    ) external
-    // onlyGovernor
-    {
-        blacklisted[_account] = true;
-
-        // Revoke whitelist in case.
-        whitelisted[_account] = false;
-
-        // remove rebase opt in
-        // transfer funds in separate function
-    }
-
-    function sendToPool(uint _amount) external {}
-
-    function returnFromPool(uint _amount) external {}
 }

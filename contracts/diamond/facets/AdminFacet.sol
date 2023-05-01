@@ -12,7 +12,6 @@ pragma solidity 0.8.19;
  */
 
 import { Modifiers } from "../libs/LibAppStorage.sol";
-import { ICoFi } from "../interfaces/ICoFi.sol";
 
 contract AdminFacet is Modifiers {
 
@@ -20,7 +19,7 @@ contract AdminFacet is Modifiers {
         address account,
         uint8   whitelisted
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.isWhitelisted[account] = whitelisted == 1 ? 1 : 0;
     }
@@ -29,7 +28,7 @@ contract AdminFacet is Modifiers {
         address account,
         uint8   isAdmin
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.isWhitelisted[account] = isAdmin == 1 ? 1 : 0;
     }
@@ -38,7 +37,7 @@ contract AdminFacet is Modifiers {
         address inputAsset,
         uint256 amount
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.minDeposit[inputAsset] = amount;
     }
@@ -47,7 +46,7 @@ contract AdminFacet is Modifiers {
         address inputAsset,
         uint256 amount
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.minWithdraw[inputAsset] = amount;
     }
@@ -56,7 +55,7 @@ contract AdminFacet is Modifiers {
         address fiAsset,
         uint256 amount
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.mintFee[fiAsset] = amount;
     }
@@ -65,7 +64,7 @@ contract AdminFacet is Modifiers {
         address fiAsset,
         uint8   enabled
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.mintEnabled[fiAsset] = enabled;
     }
@@ -74,7 +73,7 @@ contract AdminFacet is Modifiers {
         address fiAsset,
         uint256 amount
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.redeemFee[fiAsset] = amount;
     }
@@ -83,7 +82,7 @@ contract AdminFacet is Modifiers {
         address fiAsset,
         uint8   enabled
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.redeemEnabled[fiAsset] = enabled;
     }
@@ -94,7 +93,7 @@ contract AdminFacet is Modifiers {
         address fiAsset,
         uint256 amount
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.pointsRate[fiAsset] = amount;
     }
@@ -102,17 +101,8 @@ contract AdminFacet is Modifiers {
     function setFeeCollector(
         address feeCollector
     )   external
-        onlyAdmin()
+        onlyAdmin
     {
         s.feeCollector = feeCollector;
-    }
-
-    function getBacking(
-        address fiAsset
-    )   external
-        view
-        returns (uint256, address)
-    {
-        return (s.backing[s.vault[fiAsset]], s.vault[fiAsset]);
     }
 }

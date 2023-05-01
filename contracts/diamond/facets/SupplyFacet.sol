@@ -30,13 +30,13 @@ contract SupplyFacet is Modifiers {
     /// @param  minAmountOut    The minimum amount of fiAssets received (before fees).
     function underlyingToFi(
         uint256 amount,
-        uint256 minAmountOut,
+        uint256 minAmountOut, // 1,000 * 0.9975 = 997.50. Auto-set to 0.25%.
         address fiAsset,
         address depositFrom,
         address recipient
     )
         external
-        isWhitelisted()
+        // isWhitelisted    Disable for testing.
         minDeposit(amount, fiAsset)
         returns (uint256 mintAfterFee)
     {
@@ -46,7 +46,8 @@ contract SupplyFacet is Modifiers {
         );
 
         uint256 assets = LibVault._getAssets(
-           LibVault._wrap(
+            // Add permit for Vault transfer.
+            LibVault._wrap(
                 amount,
                 s.vault[fiAsset],
                 depositFrom
@@ -83,7 +84,7 @@ contract SupplyFacet is Modifiers {
         address recipient
     )
         external
-        isWhitelisted()
+        // isWhitelisted
         minDeposit(LibVault._getAssets(amount, s.vault[fiAsset]), fiAsset)
         returns (uint256 mintAfterFee)
     {
@@ -125,7 +126,7 @@ contract SupplyFacet is Modifiers {
         address depositFrom,
         address recipient
     )   external
-        isWhitelisted()
+        // isWhitelisted
         minWithdraw(amount, fiAsset)
         returns (uint256 burnAfterFee)
     {
@@ -134,7 +135,7 @@ contract SupplyFacet is Modifiers {
             'SupplyFacet: Redeem for token disabled'
         );
 
-        LibToken._transferFrom(fiAsset, amount, depositFrom, s.feeCollector);
+        LibToken._redeem(fiAsset, depositFrom, amount);
 
         uint256 fee = LibToken._getRedeemFee(fiAsset, amount);
         burnAfterFee = amount - fee;
@@ -168,7 +169,7 @@ contract SupplyFacet is Modifiers {
         address depositFrom,
         address recipient
     )   public
-        isWhitelisted()
+        // isWhitelisted
         minWithdraw(amount, fiAsset)
         returns (uint256 burnAfterFee)
     {
@@ -194,6 +195,9 @@ contract SupplyFacet is Modifiers {
         );
     }
 
+    /// @notice Returns the underlyingAsset (variable) for a given fiAsset.
+    ///
+    /// @param  fiAsset The fiAsset to query for.
     function getUnderlyingAsset(
         address fiAsset
     )   external
@@ -203,6 +207,9 @@ contract SupplyFacet is Modifiers {
         return IERC4626(s.vault[fiAsset]).asset();
     }
 
+    /// @notice Returns the yieldAsset (variable) for a given fiAsset.
+    ///
+    /// @param  fiAsset The fiAsset to query for. 
     function getYieldAsset(
         address fiAsset
     )   external

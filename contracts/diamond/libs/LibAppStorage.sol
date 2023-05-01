@@ -4,10 +4,9 @@ pragma solidity 0.8.19;
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 // import { ICoFi } from "./../interfaces/ICoFi.sol";
 
-struct PointsCapture {
+struct YieldPointsCapture {
     uint256 yield;
     uint256 points;
-    uint256 spent;
 }
 
 struct AppStorage {
@@ -39,13 +38,14 @@ struct AppStorage {
     // Gnosis Safe contract.
     address feeCollector;
 
-    // E.g., yvDAI => backing amount [DAI].
-    mapping(address => uint256) backing;
-
     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
     mapping(address => uint256) pointsRate;
 
-    mapping(address => mapping(address => PointsCapture)) pointsCapture;
+    // Yield points capture (determined via yield earnings).
+    mapping(address => mapping(address => YieldPointsCapture)) YPC;
+
+    // External points capture (to yield earnings).
+    mapping(address => uint256) XPC;
 
     mapping(address => uint8)   isAdmin;
 

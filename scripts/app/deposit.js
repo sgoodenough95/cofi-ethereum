@@ -6,7 +6,7 @@ async function depositDai() {
     const owner = accounts[0]
 
     const dai = await ethers.getContractAt(
-        'CreditToken',
+        'ERC20Token',
         '0x0E16C43Da43686EAeaAe69aDbE512b5ce9d50912'    // Dai address
     )
 
