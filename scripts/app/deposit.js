@@ -20,10 +20,10 @@ async function depositDai() {
         '1000000000000000000000000'
     )
 
-    await diamond.inputToFi(
+    await diamond.underlyingToFi(
         '1000000000000000000000',
         '997500000000000000000',
-        dai.address,
+        '', // Enter COFI token address here.
         owner.address,
         owner.address
     )

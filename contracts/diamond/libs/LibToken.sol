@@ -145,7 +145,8 @@ library LibToken {
         emit Burn(fiAsset, amount, from);
     }
 
-    /// @notice 
+    /// @notice Calls redeem operation on FiToken contract.
+    /// @dev    Skips approval check.
     function _redeem(
         address fiAsset,
         address from,

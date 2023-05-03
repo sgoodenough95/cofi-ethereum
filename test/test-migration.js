@@ -20,12 +20,6 @@ describe('First test', function() {
     await cofi.deployed()
     console.log('COFI Dollar deployed:', cofi.address)
       
-    // Deploy COFI Ethereum
-    // const COFIE = await ethers.getContractFactory('FiToken')
-    // const cofie = await COFIE.deploy('COFI Ethreum', 'COFIE')
-    // await cofie.deployed()
-    // console.log('COFIE Ethereum deployed:', cofie.address)
-      
     // Deploy DAI
     const DAI = await ethers.getContractFactory('ERC20Token')
     const dai = await DAI.deploy('Dai', 'DAI')
@@ -38,17 +32,17 @@ describe('First test', function() {
     // await usdc.deployed()
     // console.log('USDC deployed:', usdc.address)
       
-    // Deploy WETH
-    // const WETH = await ethers.getContractFactory('CreditToken')
-    // const weth = await WETH.deploy('Wrapped Ethereum', 'WETH')
-    // await weth.deployed()
-    // console.log('wETH deployed:', weth.address)
-      
     // Deploy yvDAI
     const YVDAI = await ethers.getContractFactory('Vault')
     const yvdai = await YVDAI.deploy(dai.address, 'Yearn Vault Dai', 'yvDAI')
     await yvdai.deployed()
     console.log('yvDAI deployed:', yvdai.address)
+
+    // Deploy aDAI
+    const ADAI = await ethers.getContractFactory('Vault')
+    const adai = await ADAI.deploy(dai.address, 'Aave Dai', 'aDAI')
+    await adai.deployed()
+    console.log('aDAI deployed:', adai.address)
       
     // Deploy yvETH
     // const YVETH = await ethers.getContractFactory('Vault')
@@ -104,9 +98,7 @@ describe('First test', function() {
       
     const initArgs = [{
       COFI:   cofi.address,
-      // COFIE:  cofie.address,
-      yvDAI:  yvdai.address,
-      // yvETH:  yveth.address
+      yvDAI:  yvdai.address
     }]
       
     // upgrade diamond with facets
@@ -132,9 +124,9 @@ describe('First test', function() {
 
   describe('SupplyFacet', function() {
 
-    it('Should exchange DAI for COFI, rebase, and back again', async function() {
+    it('Should migrate from yvDAI to aDAI', async function() {
 
-      const { owner, diamond, cofi, dai, yvdai } = await loadFixture(deploy)
+      const { owner, diamond, cofi, dai, yvdai, adai } = await loadFixture(deploy)
 
       // Mint owner 1,000 DAI
       await dai.mint(owner.address, '1000000000000000000000')
@@ -177,23 +169,13 @@ describe('First test', function() {
       console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
       console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
 
-      const minAmountOutT2 = Number(userCOFIBalT1 * 0.9975)
+      // Do migration procedure (T2):
+      // First, pause minting/redeeming of COFI.
+      await cofiMoney.setMintEnabled(cofi.address, 0)
+      await cofiMoney.setRedeemEnabled(cofi.address, 0)
 
-      // Convert back to DAI (redeem operation on FiToken contract skips approval check).
-      await cofiMoney.fiToUnderlying(
-        userCOFIBalT1.toString(),
-        '1083465450000000000849',
-        cofi.address,
-        owner.address,
-        owner.address
-      )
+      
 
-      // T2 End Outputs:
-      console.log('User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('User DAI bal: ' + await dai.balanceOf(owner.address))
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
     })
   })
 })

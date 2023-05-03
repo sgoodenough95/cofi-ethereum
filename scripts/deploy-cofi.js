@@ -7,6 +7,7 @@ async function deployDiamond() {
   const accounts = await ethers.getSigners()
   const contractOwner = accounts[0]
 
+  // First deploy tokens
   // Deploy COFI Dollar
   const COFI = await ethers.getContractFactory('FiToken')
   const cofi = await COFI.deploy('COFI Dollar', 'COFI')
@@ -20,7 +21,7 @@ async function deployDiamond() {
   console.log('COFIE Ethereum deployed:', cofie.address)
 
   // Deploy DAI
-  const DAI = await ethers.getContractFactory('CreditToken')
+  const DAI = await ethers.getContractFactory('ERC20Token')
   const dai = await DAI.deploy('Dai', 'DAI')
   await dai.deployed()
   console.log('Dai deployed:', dai.address)
@@ -35,13 +36,13 @@ async function deployDiamond() {
   // console.log('USDC deployed:', usdc.address)
 
   // Deploy WETH
-  const WETH = await ethers.getContractFactory('CreditToken')
-  const weth = await WETH.deploy('Wrapped Ethereum', 'WETH')
-  await weth.deployed()
-  console.log('wETH deployed:', weth.address)
+  // const WETH = await ethers.getContractFactory('CreditToken')
+  // const weth = await WETH.deploy('Wrapped Ethereum', 'WETH')
+  // await weth.deployed()
+  // console.log('wETH deployed:', weth.address)
 
   // Mint owner 1,000,000 WETH.
-  await weth.mint(contractOwner.address, '1000000000000000000000000')
+  // await weth.mint(contractOwner.address, '1000000000000000000000000')
 
   // Deploy yvDAI
   const YVDAI = await ethers.getContractFactory('Vault')
@@ -50,10 +51,10 @@ async function deployDiamond() {
   console.log('yvDAI deployed:', yvdai.address)
 
   // Deploy yvETH
-  const YVETH = await ethers.getContractFactory('Vault')
-  const yveth = await YVETH.deploy(weth.address, 'Yearn Vault Ethereum', 'yvETH')
-  await yveth.deployed()
-  console.log('yvETH deployed:', yveth.address)
+  // const YVETH = await ethers.getContractFactory('Vault')
+  // const yveth = await YVETH.deploy(weth.address, 'Yearn Vault Ethereum', 'yvETH')
+  // await yveth.deployed()
+  // console.log('yvETH deployed:', yveth.address)
 
   // deploy DiamondCutFacet
   const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
@@ -83,6 +84,7 @@ async function deployDiamond() {
     'OwnershipFacet',
     'SupplyFacet',
     'RewardFacet',
+    'LoupeFacet',
     'AdminFacet'
   ]
   const cut = []
@@ -100,11 +102,11 @@ async function deployDiamond() {
 
   const initArgs = [{
     COFI:   cofi.address,
-    COFIE:  cofie.address,
+    // COFIE:  cofie.address,
     DAI:    dai.address,
-    WETH:   weth.address,
+    // WETH:   weth.address,
     yvDAI:  yvdai.address,
-    yvETH:  yveth.address
+    // yvETH:  yveth.address
   }]
 
   // upgrade diamond with facets

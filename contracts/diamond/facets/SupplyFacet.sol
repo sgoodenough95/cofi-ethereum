@@ -135,6 +135,7 @@ contract SupplyFacet is Modifiers {
             'SupplyFacet: Redeem for token disabled'
         );
 
+        // Redeem operation in FiToken contract skips approval check.
         LibToken._redeem(fiAsset, depositFrom, amount);
 
         uint256 fee = LibToken._getRedeemFee(fiAsset, amount);
@@ -178,7 +179,8 @@ contract SupplyFacet is Modifiers {
             'SupplyFacet: Redeem for token disabled'
         );
 
-        LibToken._transferFrom(fiAsset, amount, depositFrom, s.feeCollector);
+        // Redeem operation in FiToken contract skips approval check.
+        LibToken._redeem(fiAsset, depositFrom, amount);
 
         uint256 fee = LibToken._getRedeemFee(fiAsset, amount);
         burnAfterFee = amount - fee;

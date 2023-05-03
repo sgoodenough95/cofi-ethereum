@@ -87,6 +87,7 @@ describe('First test', function() {
       'OwnershipFacet',
       'SupplyFacet',
       'RewardFacet',
+      'LoupeFacet',
       'AdminFacet'
     ]
     const cut = []
@@ -130,70 +131,26 @@ describe('First test', function() {
     }
   }
 
-  describe('SupplyFacet', function() {
+  describe('LoupeFacet', function() {
 
-    it('Should exchange DAI for COFI, rebase, and back again', async function() {
+    it('Should return storage variables', async function() {
 
-      const { owner, diamond, cofi, dai, yvdai } = await loadFixture(deploy)
-
-      // Mint owner 1,000 DAI
-      await dai.mint(owner.address, '1000000000000000000000')
-
-      // Approve DAI spend for Vault contract.
-      await dai.approve(yvdai.address, '1000000000000000000000')
+      const { owner, diamond, cofi } = await loadFixture(deploy)
 
       signer = ethers.provider.getSigner(owner.address)
 
       const cofiMoney = (await ethers.getContractAt('COFIMoney', diamond.address)).connect(signer)
 
-      // Whitelist disabled in contract for now.
-      // await cofiMoney.setWhitelist(owner.address, 1)
-
-      await cofiMoney.underlyingToFi(
-        '1000000000000000000000', // amount:        1,000 DAI.
-        '997500000000000000000',  // minAmountOut:  1,000 * 0.9975.
-        cofi.address,             // fiAsset
-        owner.address,            // depositFrom
-        owner.address             // recipient
-      )
-
-      // T0 End Outputs:
-      console.log('User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
-
-      // Simulate 100 DAI yield earned by Vault
-      await dai.mint(yvdai.address, '100000000000000000000')
-
-      // Rebase
-      await cofiMoney.rebase(cofi.address)
-
-      const userCOFIBalT1 = await cofi.balanceOf(owner.address)
-
-      // T1 End Outputs:
-      console.log('User COFI bal: ' + userCOFIBalT1.toString())
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
-
-      const minAmountOutT2 = Number(userCOFIBalT1 * 0.9975)
-
-      // Convert back to DAI (redeem operation on FiToken contract skips approval check).
-      await cofiMoney.fiToUnderlying(
-        userCOFIBalT1.toString(),
-        '1083465450000000000849',
-        cofi.address,
-        owner.address,
-        owner.address
-      )
-
-      // T2 End Outputs:
-      console.log('User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('User DAI bal: ' + await dai.balanceOf(owner.address))
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      console.log('Whitelist status: ' + await cofiMoney.getWhitelistStatus(owner.address))
+      console.log('Admin status: ' + await cofiMoney.getAdminStatus())
+      console.log('COFI Min Deposit: ' + await cofiMoney.getMinDeposit(cofi.address))
+      console.log('COFI Min Withdraw: ' + await cofiMoney.getMinWithdraw(cofi.address))
+      console.log('COFI Mint Fee: ' + await cofiMoney.getMintFee(cofi.address))
+      console.log('COFI Mint enabled: ' + await cofiMoney.getMintEnabled(cofi.address))
+      console.log('COFI Redeem Fee: ' + await cofiMoney.getRedeemFee(cofi.address))
+      console.log('COFI Redeem enabled: ' + await cofiMoney.getRedeemEnabled(cofi.address))
+      console.log('COFI Points rate: ' + await cofiMoney.getPointsRate(cofi.address))
+      console.log('Fee Collector status: ' + await cofiMoney.getFeeCollectorStatus())
     })
   })
 })

@@ -1,6 +1,8 @@
 /* global ethers */
 /* eslint prefer-const: "off" */
 
+// NOTE: Whitelist disabled for testing purposes, so no need to run this script.
+
 async function whitelist() {
     const accounts = await ethers.getSigners()
     const owner = accounts[0]

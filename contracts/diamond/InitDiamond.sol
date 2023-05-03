@@ -15,9 +15,9 @@ contract InitDiamond {
 
     struct Args {
         address COFI;   // fiAsset [USD]
-        address COFIE;  // fiAsset [ETH]
+        // address COFIE;  // fiAsset [ETH]
         address yvDAI;  // shareToken [USD]
-        address yvETH;  // shareToken [ETH]
+        // address yvETH;  // shareToken [ETH]
     }
     
     function init(Args memory _args) external {
@@ -32,43 +32,43 @@ contract InitDiamond {
 
         // Rebase opt-in.
         LibToken._rebaseOptIn(_args.COFI);
-        LibToken._rebaseOptIn(_args.COFIE);
+        // LibToken._rebaseOptIn(_args.COFIE);
 
         // Set min deposit/withdraw values.
         s.minDeposit[_args.COFI]     = 20e18;    // 20 DAI.
-        s.minDeposit[_args.COFIE]    = 1e16;     // 0.01 ETH.
+        // s.minDeposit[_args.COFIE]    = 1e16;     // 0.01 ETH.
         s.minWithdraw[_args.COFI]    = 20e18;    // 20 DAI.
-        s.minWithdraw[_args.COFIE]   = 1e16;     // 0.01 ETH.
+        // s.minWithdraw[_args.COFIE]   = 1e16;     // 0.01 ETH.
 
         s.vault[_args.COFI]     = _args.yvDAI;
-        s.vault[_args.COFIE]    = _args.yvETH;
+        // s.vault[_args.COFIE]    = _args.yvETH;
 
         // Set mint enabled.
         s.mintEnabled[_args.COFI]   = 1;
-        s.mintEnabled[_args.COFIE]  = 1;
+        // s.mintEnabled[_args.COFIE]  = 1;
 
         // Set mint fee.
         s.mintFee[_args.COFI]   = 10;
-        s.mintFee[_args.COFIE]  = 10;
+        // s.mintFee[_args.COFIE]  = 10;
 
         // Set redeem enabled.
         s.redeemEnabled[_args.COFI]     = 1;
-        s.redeemEnabled[_args.COFIE]    = 1;
+        // s.redeemEnabled[_args.COFIE]    = 1;
 
         // Set redeem fee.
         s.redeemFee[_args.COFI]     = 30;
-        s.redeemFee[_args.COFIE]    = 30;
+        // s.redeemFee[_args.COFIE]    = 30;
 
         // Set service fee.
         s.serviceFee[_args.COFI]    = 1e3;
-        s.serviceFee[_args.COFIE]   = 1e3;
+        // s.serviceFee[_args.COFIE]   = 1e3;
 
         // Set points rate.
         s.pointsRate[_args.COFI]    = 1e6;
-        s.pointsRate[_args.COFIE]   = 1e3;
+        // s.pointsRate[_args.COFIE]   = 1e3;
 
         // Set feeCollector.
-        s.feeCollector = address(this);
+        s.feeCollector = address(this); // Change to Gnosis Safe contract.
 
         // Set admin.
         s.isAdmin[msg.sender] = 1;

@@ -27,6 +27,8 @@ pragma solidity ^0.8.0;
     - Set up dashboard/analytics/SubGraphs.
     - Create tech docs.
     - Fork mainnet and test using live applications.
+    - Require logic to determine whether to invoke approve() or permit().
+        - DAI => permit(); WETH => approve(); WBTC => approve(); USDC => permit().
 
     @author cofi.money
     @title  Fi Token Contract
@@ -111,6 +113,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         string memory _name,
         string memory _symbol
     ) ERC20(_name, _symbol) ERC20Permit(_name) {
+        admin[msg.sender] = true;
         _rebasingCreditsPerToken = 1e18;
     }
 
@@ -757,5 +760,9 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      */
     function toggleFreeze(address _account) external onlyAdmin {
         frozen[_account] = !frozen[_account];
+    }
+
+    function setDiamond(address _diamond) external onlyAdmin {
+        diamond = _diamond;
     }
 }

@@ -1,9 +1,9 @@
 /* global ethers */
 /* eslint prefer-const: "off" */
 
-/* Run command: npx hardhat run scripts/app/mint.js --network mumbai */
+/* Run command: npx hardhat run scripts/app/approve.js --network mumbai */
 
-async function mintErc20() {
+async function approveErc20() {
     const accounts = await ethers.getSigners()
     const user = accounts[0]
 
@@ -12,16 +12,21 @@ async function mintErc20() {
         '0x0E16C43Da43686EAeaAe69aDbE512b5ce9d50912'    // Enter contract here.
     )
 
-    await token.mint(
-        user.address,
-        '1000000000000000000000000'
+    const vault = await ethers.getContractAt(
+        'Vault',
+        ''  // Enter Vault address here (e.g., yvDAI).
+    )
+
+    await token.approve(
+        '', // Spender address (for depositing, this will be the Vault address).
+        '115792089237316195423570985008687907853269984665640564039457584007913129639935'    // Max uint256.
     )
 }
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 if (require.main === module) {
-    mintErc20()
+    approveErc20()
       .then(() => process.exit(0))
       .catch(error => {
         console.error(error)
@@ -29,4 +34,4 @@ if (require.main === module) {
       })
   }
   
-  exports.mintErc20 = mintErc20
+  exports.approveErc20 = approveErc20

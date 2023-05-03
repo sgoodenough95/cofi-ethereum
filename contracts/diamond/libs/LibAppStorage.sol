@@ -14,10 +14,10 @@ struct AppStorage {
     // E.g., COFI => yvDAI; COFIE => aETH.
     mapping(address => address) vault;
 
-    // E.g., DAI => 50*10**18. Applies to inputAsset only.
+    // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
     mapping(address => uint256) minDeposit;
 
-    // E.g., DAI => 50*10**18. Applies to inputAsset only.
+    // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
     mapping(address => uint256) minWithdraw;
 
     // E.g., COFI => 1.
@@ -73,13 +73,13 @@ contract Modifiers {
         _;
     }
 
-    modifier minDeposit(uint256 amount, address asset) {
-        require(amount >= s.minDeposit[asset], 'Insufficient deposit amount');
+    modifier minDeposit(uint256 amount, address fiAsset) {
+        require(amount >= s.minDeposit[fiAsset], 'Insufficient deposit amount');
         _;
     }
 
-    modifier minWithdraw(uint256 amount, address asset) {
-        require(amount >= s.minWithdraw[asset], 'Insufficient withdraw amount');
+    modifier minWithdraw(uint256 amount, address fiAsset) {
+        require(amount >= s.minWithdraw[fiAsset], 'Insufficient withdraw amount');
         _;
     }
     

@@ -30,25 +30,27 @@ contract AdminFacet is Modifiers {
     )   external
         onlyAdmin
     {
-        s.isWhitelisted[account] = isAdmin == 1 ? 1 : 0;
+        s.isAdmin[account] = isAdmin == 1 ? 1 : 0;
     }
 
+    /// @notice minDeposit applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
     function setMinDeposit(
-        address inputAsset,
+        address fiAsset,
         uint256 amount
     )   external
         onlyAdmin
     {
-        s.minDeposit[inputAsset] = amount;
+        s.minDeposit[fiAsset] = amount;
     }
 
+    /// @notice minWithdraw applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
     function setMinWithdraw(
-        address inputAsset,
+        address fiAsset,
         uint256 amount
     )   external
         onlyAdmin
     {
-        s.minWithdraw[inputAsset] = amount;
+        s.minWithdraw[fiAsset] = amount;
     }
 
     function setMintFee(

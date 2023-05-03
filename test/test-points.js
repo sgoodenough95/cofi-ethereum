@@ -10,29 +10,23 @@ const hre = require("hardhat");
 
 describe('First test', function() {
 
-    async function deploy() {
-        const accounts = await ethers.getSigners()
-        const owner = accounts[0]
-        const alice = accounts[1]
-        const bob = accounts [2]
+  async function deploy() {
+    const accounts = await ethers.getSigners()
+    const owner = accounts[0]
+    const alice = accounts[1]
+    const bob = accounts [2]
       
-        // Deploy COFI Dollar
-        const COFI = await ethers.getContractFactory('FiToken')
-        const cofi = await COFI.deploy('COFI Dollar', 'COFI')
-        await cofi.deployed()
-        console.log('COFI Dollar deployed:', cofi.address)
+    // Deploy COFI Dollar
+    const COFI = await ethers.getContractFactory('FiToken')
+    const cofi = await COFI.deploy('COFI Dollar', 'COFI')
+    await cofi.deployed()
+    console.log('COFI Dollar deployed:', cofi.address)
       
-        // Deploy COFI Ethereum
-        const COFIE = await ethers.getContractFactory('FiToken')
-        const cofie = await COFIE.deploy('COFI Ethreum', 'COFIE')
-        await cofie.deployed()
-        console.log('COFIE Ethereum deployed:', cofie.address)
-      
-        // Deploy DAI
-        const DAI = await ethers.getContractFactory('CreditToken')
-        const dai = await DAI.deploy('Dai', 'DAI')
-        await dai.deployed()
-        console.log('Dai deployed:', dai.address)
+    // Deploy DAI
+    const DAI = await ethers.getContractFactory('CreditToken')
+    const dai = await DAI.deploy('Dai', 'DAI')
+    await dai.deployed()
+    console.log('Dai deployed:', dai.address)
       
         // Deploy USDC
         // const USDC = await ethers.getContractFactory('CreditToken')

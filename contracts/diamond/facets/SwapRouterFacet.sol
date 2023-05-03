@@ -16,6 +16,7 @@ interface IERC20 {
 
 contract SwapRouterFacet {
 
+    /// @dev    Define within Facet contract or in LibAppStorage(?)
     address public constant routerAddress =
         0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
