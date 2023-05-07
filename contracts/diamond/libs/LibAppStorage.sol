@@ -41,10 +41,11 @@ struct AppStorage {
     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
     mapping(address => uint256) pointsRate;
 
-    // Yield points capture (determined via yield earnings).
+    // Yield points capture (determined via yield earnings from fiAsset).
+    // E.g., 0x1234... => COFI => YieldPointsCapture.
     mapping(address => mapping(address => YieldPointsCapture)) YPC;
 
-    // External points capture (to yield earnings).
+    // External points capture (to yield earnings). Maps to account only (not fiAsset).
     mapping(address => uint256) XPC;
 
     mapping(address => uint8)   isAdmin;

@@ -44,12 +44,6 @@ describe('First test', function() {
     await adai.deployed()
     console.log('aDAI deployed:', adai.address)
       
-    // Deploy yvETH
-    // const YVETH = await ethers.getContractFactory('Vault')
-    // const yveth = await YVETH.deploy(weth.address, 'Yearn Vault Ethereum', 'yvETH')
-    // await yveth.deployed()
-    // console.log('yvETH deployed:', yveth.address)
-      
     // deploy DiamondCutFacet
     const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
     const diamondCutFacet = await DiamondCutFacet.deploy()
@@ -81,6 +75,7 @@ describe('First test', function() {
       'OwnershipFacet',
       'SupplyFacet',
       'RewardFacet',
+      'LoupeFacet',
       'AdminFacet'
     ]
     const cut = []
@@ -118,11 +113,11 @@ describe('First test', function() {
     console.log('Completed diamond cut')
 
     return {
-      owner, diamond, cofi, dai, yvdai
+      owner, diamond, cofi, dai, yvdai, adai
     }
   }
 
-  describe('SupplyFacet', function() {
+  describe('RewardFacet', function() {
 
     it('Should migrate from yvDAI to aDAI', async function() {
 
@@ -138,22 +133,19 @@ describe('First test', function() {
 
       const cofiMoney = (await ethers.getContractAt('COFIMoney', diamond.address)).connect(signer)
 
-      // Whitelist disabled in contract for now.
-      // await cofiMoney.setWhitelist(owner.address, 1)
-
       await cofiMoney.underlyingToFi(
         '1000000000000000000000', // amount:        1,000 DAI.
-        '997500000000000000000',  // minAmountOut:  1,000 * 0.9975.
+        '997500000000000000000',  // minAmountOut:  1,000 * 0.9975 (0.25% slippage).
         cofi.address,             // fiAsset
         owner.address,            // depositFrom
         owner.address             // recipient
       )
 
       // T0 End Outputs:
-      console.log('User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      console.log('t0 User COFI bal: ' + await cofi.balanceOf(owner.address))
+      console.log('t0 Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
+      console.log('t0 Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
+      console.log('t0 Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
 
       // Simulate 100 DAI yield earned by Vault
       await dai.mint(yvdai.address, '100000000000000000000')
@@ -161,21 +153,37 @@ describe('First test', function() {
       // Rebase
       await cofiMoney.rebase(cofi.address)
 
-      const userCOFIBalT1 = await cofi.balanceOf(owner.address)
-
       // T1 End Outputs:
-      console.log('User COFI bal: ' + userCOFIBalT1.toString())
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      console.log('t1 User COFI bal: ' + await cofi.balanceOf(owner.address))
+      console.log('t1 Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
+      console.log('t1 Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
+      console.log('t1 Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
 
       // Do migration procedure (T2):
-      // First, pause minting/redeeming of COFI.
-      await cofiMoney.setMintEnabled(cofi.address, 0)
-      await cofiMoney.setRedeemEnabled(cofi.address, 0)
+      // Add 1 DAI buffer to Diamond
+      await dai.mint(cofiMoney.address, '1000000000000000000')
 
-      
+      // Pause minting/redeeming of COFI
+      await cofiMoney.toggleMintEnabled(cofi.address)
+      await cofiMoney.toggleRedeemEnabled(cofi.address)
 
+      // Migrate DAI to new Vault
+      await cofiMoney.migrateVault(cofi.address, adai.address)
+
+      // Rebase to sync to new Vault
+      await cofiMoney.rebase(cofi.address)
+
+      // Resume minting/redeeming of COFI
+      await cofiMoney.toggleMintEnabled(cofi.address)
+      await cofiMoney.toggleRedeemEnabled(cofi.address)
+
+      // T2 End Outputs:
+      console.log('t2 User COFI bal: ' + await cofi.balanceOf(owner.address))
+      console.log('t2 Old Vault (yvDAI) DAI bal: ' + await dai.balanceOf(yvdai.address))
+      console.log('t2 New Vault (aDAI) DAI bal: ' + await dai.balanceOf(adai.address))
+      console.log('t2 Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
+      console.log('t2 Diamond aDAI bal: ' + await adai.balanceOf(diamond.address))
+      console.log('t2 Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
     })
   })
 })

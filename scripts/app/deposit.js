@@ -15,6 +15,8 @@ async function depositDai() {
         '0x8954c3667cCc22162b3272E39a9678FaAe18decF'
     )
 
+    // Try permit, catch approve.
+
     await dai.approve(
         '0x925df5d5F3edD6B1b2C03dB83955f30dE70Ea49E',   // yvDAI
         '1000000000000000000000000'

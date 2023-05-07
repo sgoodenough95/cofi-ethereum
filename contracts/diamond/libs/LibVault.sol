@@ -73,7 +73,7 @@ library LibVault {
         shares = IERC4626(vault).previewDeposit(assets);
     }
 
-    /// @notice Gets total value of CoFi's holding of shares from vault.
+    /// @notice Gets total value of Diamond's holding of shares from vault.
     function _totalValue(
         address vault
     ) internal view returns (uint256 assets) {

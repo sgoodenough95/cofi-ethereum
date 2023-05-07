@@ -9,7 +9,6 @@ pragma solidity 0.8.19;
     @author cofi.money
     @title  Loupe Facet
     @notice View functions for data retrieval (e.g., mintFee, etc.).
-    @dev    Is LoupeFacet required, or can simply make variables public in LibAppStorage(?)
  */
 
 import { Modifiers } from "../libs/LibAppStorage.sol";

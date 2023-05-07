@@ -5,15 +5,15 @@
 
 async function mintErc20() {
     const accounts = await ethers.getSigners()
-    const user = accounts[0]
+    const owner = accounts[0]
 
     const token = await ethers.getContractAt(
         'ERC20Token',
-        '0x0E16C43Da43686EAeaAe69aDbE512b5ce9d50912'    // Enter contract here.
+        '0x091028e40d6b4c3C5D4F462D52bAE4842A0F9cD2'    // Enter contract here.
     )
 
     await token.mint(
-        user.address,
+        '0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3',   // MA address.
         '1000000000000000000000000'
     )
 }

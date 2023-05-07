@@ -47,17 +47,17 @@ contract InitDiamond {
         s.mintEnabled[_args.COFI]   = 1;
         // s.mintEnabled[_args.COFIE]  = 1;
 
-        // Set mint fee.
-        s.mintFee[_args.COFI]   = 10;
-        // s.mintFee[_args.COFIE]  = 10;
+        // // Set mint fee.
+        // s.mintFee[_args.COFI]   = 10;
+        // // s.mintFee[_args.COFIE]  = 10;
 
         // Set redeem enabled.
         s.redeemEnabled[_args.COFI]     = 1;
         // s.redeemEnabled[_args.COFIE]    = 1;
 
-        // Set redeem fee.
-        s.redeemFee[_args.COFI]     = 30;
-        // s.redeemFee[_args.COFIE]    = 30;
+        // // Set redeem fee.
+        // s.redeemFee[_args.COFI]     = 30;
+        // // s.redeemFee[_args.COFIE]    = 30;
 
         // Set service fee.
         s.serviceFee[_args.COFI]    = 1e3;

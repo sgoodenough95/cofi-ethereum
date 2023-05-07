@@ -715,6 +715,9 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     }
 
     /**
+     * @notice  Returns the amount of yield earned by ignoring account
+     *          balance changes resulting from mint/burn/transfer.
+     *
      * @dev yieldExcl[_account]:
      *      Increases for outgoing amount (transfer 1,000) = 1,000.
      *      - E.g., burning 1,000 from = +1,000.
@@ -756,7 +759,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     }
 
     /**
-     * @dev If freezing, ensure account is not receiving rebases beforehand.
+     * @dev If freezing, first ensure account is opted out of rebases.
      */
     function toggleFreeze(address _account) external onlyAdmin {
         frozen[_account] = !frozen[_account];

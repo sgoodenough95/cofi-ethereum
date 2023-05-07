@@ -15,22 +15,20 @@ import { Modifiers } from "../libs/LibAppStorage.sol";
 
 contract AdminFacet is Modifiers {
 
-    function setWhitelist(
-        address account,
-        uint8   whitelisted
+    function toggleWhitelist(
+        address account
     )   external
         onlyAdmin
     {
-        s.isWhitelisted[account] = whitelisted == 1 ? 1 : 0;
+        s.isWhitelisted[account] = s.isWhitelisted[account] == 0 ? 1 : 0;
     }
 
-    function setAdmin(
-        address account,
-        uint8   isAdmin
+    function toggleAdmin(
+        address account
     )   external
         onlyAdmin
     {
-        s.isAdmin[account] = isAdmin == 1 ? 1 : 0;
+        s.isAdmin[account] = s.isAdmin[account] == 0 ? 1 : 0;
     }
 
     /// @notice minDeposit applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
@@ -62,13 +60,12 @@ contract AdminFacet is Modifiers {
         s.mintFee[fiAsset] = amount;
     }
 
-    function setMintEnabled(
-        address fiAsset,
-        uint8   enabled
+    function toggleMintEnabled(
+        address fiAsset
     )   external
         onlyAdmin
     {
-        s.mintEnabled[fiAsset] = enabled;
+        s.mintEnabled[fiAsset] = s.mintEnabled[fiAsset] == 0 ? 1 : 0;
     }
 
     function setRedeemFee(
@@ -80,24 +77,12 @@ contract AdminFacet is Modifiers {
         s.redeemFee[fiAsset] = amount;
     }
 
-    function setRedeemEnabled(
-        address fiAsset,
-        uint8   enabled
+    function toggleRedeemEnabled(
+        address fiAsset
     )   external
         onlyAdmin
     {
-        s.redeemEnabled[fiAsset] = enabled;
-    }
-
-    /// @dev    'batchPointsCapture()' must be called beforehand to ensure
-    ///         points have updated correctly prior to a pointsRate change.
-    function setPointsRate(
-        address fiAsset,
-        uint256 amount
-    )   external
-        onlyAdmin
-    {
-        s.pointsRate[fiAsset] = amount;
+        s.redeemEnabled[fiAsset] = s.redeemEnabled[fiAsset] == 0 ? 1 : 0;
     }
 
     function setFeeCollector(

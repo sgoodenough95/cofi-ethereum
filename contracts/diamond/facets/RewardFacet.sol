@@ -11,18 +11,60 @@ pragma solidity 0.8.19;
     @notice Provides logic for distributing and handling rewards, such as yield and points.
  */
 
-import { Modifiers } from "../libs/LibAppStorage.sol";
-import { PercentageMath } from "../libs/external/PercentageMath.sol";
-import { LibToken } from "../libs/LibToken.sol";
-import { LibVault } from "../libs/LibVault.sol";
-import { IFiToken } from "../interfaces/IFiToken.sol";
+import { Modifiers } from '../libs/LibAppStorage.sol';
+import { PercentageMath } from '../libs/external/PercentageMath.sol';
+import { LibToken } from '../libs/LibToken.sol';
+import { LibVault } from '../libs/LibVault.sol';
+import { IFiToken } from '../interfaces/IFiToken.sol';
 import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
-import { IERC4626 } from "../interfaces/IERC4626.sol";
-import { GPv2SafeERC20 } from ".././libs/external/GPv2SafeERC20.sol";
+import { IERC4626 } from '../interfaces/IERC4626.sol';
+import { GPv2SafeERC20 } from '.././libs/external/GPv2SafeERC20.sol';
+import 'hardhat/console.sol';
 
 contract RewardFacet is Modifiers {
     using PercentageMath for uint256;
     using GPv2SafeERC20 for IERC20;
+
+    /// @notice This function must be called after the last rebase of a pointsRate
+    ///         and before the application of a new pointsRate for a given fiAsset,
+    ///         for every account that is eliigble for yield/points. If not, the new
+    ///         pointsRate will apply to yield earned during the previous, different
+    ///         pointsRate epoch - which we want to avoid.
+    ///
+    /// @dev    This function may be required to be called multiple times, as per the
+    ///         size limit for passing addresses, in order for all relevant accounts
+    ///         to be updated.
+    ///
+    /// @param  accounts    The array of accounts to capture points for.
+    /// @param  fiAsset     The fiAsset to capture points for.
+    function batchCaptureYieldPoints(
+        address[] memory    accounts,
+        address             fiAsset
+    )   external
+    {
+        /**
+
+            DETERMINE WHICH ACCOUNTS TO PASS:
+
+            1.  Take a snapshot of all holders immediately after each rebase
+                for the current points epoch.
+            2.  If a new address is dectected, add to array, otherwise skip.
+            3.  After the last rebase of the current points epoch, capture yield
+                for all addresses in array.
+            4.  Start with empty array for next points epoch.
+         */
+        uint256 yield;
+        for(uint i = 0; i < accounts.length; ++i) {
+        yield = IFiToken(fiAsset).getYieldEarned(accounts[i]);
+            // If the account has earned yield since the last yield capture event.
+            if (s.YPC[accounts[i]][fiAsset].yield < yield) {
+                s.YPC[accounts[i]][fiAsset].points +=
+                    (yield - s.YPC[accounts[i]][fiAsset].yield)
+                        .percentMul(s.pointsRate[fiAsset]);
+                s.YPC[accounts[i]][fiAsset].yield = yield;
+            }
+        }
+    }
 
     function captureYieldPoints(
         address account,
@@ -47,30 +89,29 @@ contract RewardFacet is Modifiers {
         }
     }
 
-    /// @notice This function must be called after the last rebase of a pointsRate
-    ///         and before the application of a new pointsRate for a given fiAsset,
-    ///         for every account that is eliigble for yield/points.
-    ///
-    /// @dev    This function may be required to be called multiple times, as per the
-    ///         size limit for passing addresses, in order for all relevant accounts
-    ///         to be updated.
-    ///
-    /// @param  accounts    The array of accounts to capture points for.
-    /// @param  fiAsset     The fiAsset to capture points for.
-    function batchCaptureYieldPoints(
-        address[] memory    accounts,
-        address             fiAsset
+    /// @dev    Yield points must be captured beforehand to ensure they
+    ///         have updated correctly prior to a pointsRate change.
+    function setPointsRate(
+        address fiAsset,
+        uint256 amount
     )   external
+        onlyAdmin
     {
-        uint256 yield;
+        s.pointsRate[fiAsset] = amount;
+    }
+
+    /// @notice Function for distributing points not intrinsically linked to yield.
+    ///
+    /// @param  accounts    The array of accounts to distribute points for.
+    /// @param  points      The amount of points to distribute to each account.
+    function reward(
+        address[] memory    accounts,
+        uint256             points
+    )   external
+        onlyAdmin
+    {
         for(uint i = 0; i < accounts.length; ++i) {
-        yield = IFiToken(fiAsset).getYieldEarned(accounts[i]);
-            if (s.YPC[accounts[i]][fiAsset].yield < yield) {
-                s.YPC[accounts[i]][fiAsset].points +=
-                    (yield - s.YPC[accounts[i]][fiAsset].yield)
-                        .percentMul(s.pointsRate[fiAsset]);
-                s.YPC[accounts[i]][fiAsset].yield = yield;
-            }
+            s.XPC[accounts[i]] += points;
         }
     }
 
@@ -80,14 +121,14 @@ contract RewardFacet is Modifiers {
     /// @dev    Will only ever be called as part of a migration script, and therefore
     ///         requires that the relevant functions are called before and after.
     ///
+    /// @dev    Ensure that a buffer of the underlyingAsset has been transferred to the
+    ///         Diamond beforehand to account for slippage.
+    ///
     /// @param  fiAsset     The fiAsset to migrate vault backing for.
     /// @param  newVault    The vault to migrate to (must adhere to ERC4626).
-    /// @param  buffer      An additional amount of inputAssets supplied by the caller to
-    ///                     ensure the migration does not result in loss of funds from slippage.
     function migrateVault(
         address fiAsset,
-        address newVault,
-        uint256 buffer
+        address newVault
     )   external
         onlyAdmin
     {
@@ -108,9 +149,9 @@ contract RewardFacet is Modifiers {
             address(this)
         );
 
-        // Transfer buffer.
+        // Approve newVault spend for Diamond.
         IERC20(IERC4626(s.vault[fiAsset]).asset())
-            .safeTransferFrom(msg.sender, address(this), buffer);
+            .approve(newVault, IERC20(IERC4626(s.vault[fiAsset]).asset()).balanceOf(address(this)));
 
         // Deploy funds to new vault.
         LibVault._wrap(
@@ -131,9 +172,8 @@ contract RewardFacet is Modifiers {
         /**
             TO FINALISE MIGRATION:
 
-            1.  Call 'changeSupply()' passing new supply.
-            2.  Call 'rebase()'.
-            3.  Enable minting/redeeming.
+            1.  Call 'rebase()'.
+            2.  Enable minting/redeeming.
          */
     }
 
@@ -238,5 +278,14 @@ contract RewardFacet is Modifiers {
                 .percentMul(s.pointsRate[fiAssets[i]]);
             pointsTotal     += pointsCaptured + pointsPending;
         }
+    }
+
+    function getExternalPoints(
+        address account
+    )   public
+        view
+        returns (uint256)
+    {
+        return s.XPC[account];
     }
 }
