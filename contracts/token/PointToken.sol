@@ -15,7 +15,8 @@ interface ICOFIMoney {
 
     @author cofi.money
     @title  Point Token Facet
-    @notice Provides ERC20 representation for Points whilst removing/adjusting functionality such as transfer op.
+    @notice Merely provides ERC20 representation and therefore ensures Points are viewable in browser wallet.
+            Transfer methods are effectively renounced.
  */
 
 contract PointToken is ERC20 {
@@ -34,17 +35,12 @@ contract PointToken is ERC20 {
     address     diamond;
     address[]   fiAssets;
 
-    mapping(address => bool)    admin;
+    mapping(address => bool) admin;
 
-    event TransferDisabled(address _from, address _to, uint256 _value);
-
-    function mint(address _to, uint _amount) external isAdmin {
-        _mint(_to, _amount);
-    }
-
-    function burn(address _from, uint _amount) external {
-        _burn(_from, _amount);
-    }
+    /**
+     * NOTE This contract does not include 'mint'/'burn' functions as does not have a token supply.
+            By extension, 'transfer' and 'transferFrom' will not execute.
+     */
 
     function balanceOf(address _account)
         public
@@ -53,24 +49,6 @@ contract PointToken is ERC20 {
         returns (uint256)
     {
         return ICOFIMoney(diamond).getPoints(_account, fiAssets);
-    }
-
-    function transfer(address _to, uint256 _value)
-        public
-        override
-        returns (bool)
-    {
-        emit TransferDisabled(msg.sender, _to, _value);
-        return false;
-    }
-
-    function transferFrom(address _from, address _to, uint256 _value)
-        public
-        override
-        returns (bool)
-    {
-        emit TransferDisabled(_from, _to, _value);
-        return false;
     }
 
     function setFiAssets(address[] memory _fiAssets) external isAdmin {

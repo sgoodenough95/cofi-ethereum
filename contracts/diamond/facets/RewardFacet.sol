@@ -288,4 +288,14 @@ contract RewardFacet is Modifiers {
     {
         return s.XPC[account];
     }
+
+    /// @return The pointsRate denominated in basis points.
+    function getPointsRate(
+        address fiAsset
+    )   external
+        view
+        returns (uint256)
+    {
+        return s.pointsRate[fiAsset];
+    }
 }

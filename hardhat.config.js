@@ -1,10 +1,11 @@
 require("@nomicfoundation/hardhat-toolbox");
+// require("@nomicfoundation/hardhat-verify");
 // require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-ethers");
 require("hardhat-diamond-abi");
 require('dotenv').config();
 
-const { API_KEY, PRIV_KEY, PRIV_KEY_1, PRIV_KEY_MM } = process.env;
+const { API_KEY, PRIV_KEY, PRIV_KEY_1, PRIV_KEY_MM, PSCAN_KEY } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -32,6 +33,12 @@ module.exports = {
       accounts: [`${PRIV_KEY_1}`]
     }
   },
+  etherscan: {
+    apiKey: {
+      polygonMumbai: 'NS6NWWVRV449MRM2GJ7GTNEGSAGMBWKMXG'
+    }
+  }
+
   // settings: {
   //   optimizer: {
   //     enabled: true,

@@ -6,55 +6,22 @@ pragma solidity ^0.8.0;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    SMART CONTRACTS LEFT TO DO:
-    - Add (+ test) upgradeability for FiToken contract.
-    - Create specialized ERC20 contract for COFI Points.
-        - 'balanceOf()' queries view fn on Diamond.
-        - Non-transferrable.
-        - Upgradeable.
-    - Decide on Points mechanics external to yield.
-        - E.g., for minting/redeeming, prizes, etc.
-    - Test 'pointsRate' update mechanism.
-        - Incl. gas testing for 'batchCapturePoints()'.
-    - Decide on 'pointsRate' approach for non-USD assets.
-    - Test Vault migration.
-    - Add Gnosis Safe contract for 'feeCollector'/governance.
-        - Decide on governance mechanism (e.g., 6 of 9 Multisig).
-    - Test Diamond upgradeability.
-        - Adding/removing Facets.
-    - Formalize code.
-    - Transak One integration.
-    - Set up dashboard/analytics/SubGraphs.
-    - Create tech docs.
-    - Fork mainnet and test using live applications.
-    - Require logic to determine whether to invoke approve() or permit().
-        - DAI => permit(); WETH => approve(); WBTC => approve(); USDC => permit().
-
     @author cofi.money
     @title  Fi Token Contract
     @notice Rebasing ERC20 contract.
-    @dev    TO-DO:
-            - Add Permit.
-            - Add Proxy.
-            - Add WL/BL.
  */
 
 import { SafeMath } from '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import { Address } from '@openzeppelin/contracts/utils/Address.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import './utils/draft-ERC20Permit.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-
-// import { Initializable } from "../utils/Initializable.sol";
-// import { InitializableERC20Detailed } from "../utils/InitializableERC20Detailed.sol";
+import { ERC20Permit } from './utils/draft-ERC20Permit.sol';
 import { StableMath } from './utils/StableMath.sol';
-import 'hardhat/console.sol';
-// import { Governable } from "../governance/Governable.sol";
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 /**
  * NOTE that this is an ERC20 token but the invariant that the sum of
  * balanceOf(x) for all x is not >= totalSupply(). This is a consequence of the
- * rebasing design. Any integrations with OUSD should be aware.
+ * rebasing design. Any integrations should be aware.
  */
 
 contract FiToken is ERC20Permit, ReentrancyGuard {
@@ -79,7 +46,6 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     uint256 public _totalSupply;
 
     // NOTE '_allowances' has moved to base 'draft-ERC20Permit.sol' contract.
-    // mapping(address => mapping(address => uint256)) private _allowances;
     
     mapping(address => uint256) public _creditBalances;
 
@@ -104,6 +70,8 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     // Mapping for freezing accounts.
     mapping(address => bool) private frozen;
 
+    bool paused;
+
     // Used to track the total amount of yield earned via rebases for accounts.
     mapping(address => int256) yieldExcl;
 
@@ -116,16 +84,6 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         admin[msg.sender] = true;
         _rebasingCreditsPerToken = 1e18;
     }
-
-    // function initialize(
-    //     string calldata _nameArg,
-    //     string calldata _symbolArg,
-    //     address _vaultAddress
-    // ) external onlyGovernor initializer {
-    //     InitializableERC20Detailed._initialize(_nameArg, _symbolArg, 18);
-    //     _rebasingCreditsPerToken = 1e18;
-    //     vaultAddress = _vaultAddress;
-    // }
 
     /**
      * @dev Verifies that the caller is the Diamond contract
@@ -242,12 +200,10 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         returns (bool)
     {
         require(_to != address(0), 'FiToken: Transfer to zero address');
-        require(
-            _value <= balanceOf(msg.sender),
-            'FiToken: Transfer greater than balance'
-        );
-        require(frozen[msg.sender] != true, 'FiToken: Caller is frozen');
-        require(frozen[_to] != true, 'FiToken: Recipient account is frozen');
+        require(!paused, 'FiToken: Token paused');
+        require(_value <= balanceOf(msg.sender), 'FiToken: Transfer greater than balance');
+        require(!frozen[msg.sender], 'FiToken: Caller is frozen');
+        require(!frozen[_to], 'FiToken: Recipient account is frozen');
 
         _executeTransfer(msg.sender, _to, _value);
 
@@ -269,9 +225,10 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         uint256 _value
     ) public override returns (bool) {
         require(_to != address(0), 'FiToken: Transfer to zero address');
+        require(!paused, 'FiToken: Token paused');
         require(_value <= balanceOf(_from), 'FiToken: Transfer greater than balance');
-        require(frozen[_from] != true, 'FiToken: Sender account is frozen');
-        require(frozen[_to] != true, 'FiToken: Recipient account is frozen');
+        require(!frozen[_from], 'FiToken: Sender account is frozen');
+        require(!frozen[_to], 'FiToken: Recipient account is frozen');
 
         _allowances[_from][msg.sender] = _allowances[_from][msg.sender].sub(
             _value
@@ -286,6 +243,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
 
     /**
      * @notice  Redeem function, only callable from Diamond, to return fiAssets.
+     * @dev     Skips approval check.
      * @param _from     The address to redeem fiAssets from.
      * @param _to       The 'feeCollector' address to receive fiAssets.
      * @param _value    The amount of fiAssets to redeem.
@@ -296,6 +254,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         address _to,
         uint256 _value
     ) external onlyDiamond returns (bool) {
+        // Ignore 'paused' check, as this is covered by 'redeemEnabled' in Diamond.
 
         _executeTransfer(_from, _to, _value);
 
@@ -316,6 +275,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     ) internal {
         bool isNonRebasingTo = _isNonRebasingAccount(_to);
         bool isNonRebasingFrom = _isNonRebasingAccount(_from);
+        // Added this to track yield.
         yieldExcl[_from] += int256(_value);
         yieldExcl[_to] -= int256(_value);
 
@@ -326,7 +286,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
 
         _creditBalances[_from] = _creditBalances[_from].sub(
             creditsDeducted,
-            "ActivatedToken: Transfer amount exceeds balance"
+            'FiToken: Transfer amount exceeds balance'
         );
         _creditBalances[_to] = _creditBalances[_to].add(creditsCredited);
 
@@ -429,6 +389,8 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      * @dev Mints new tokens, increasing totalSupply.
      */
     function mint(address _account, uint256 _amount) external onlyDiamond {
+        // Ignore 'paused' check, as this is covered by 'mintEnabled' in Diamond.
+        require(frozen[_account] != true, 'FiToken: Recipient account is frozen');
         _mint(_account, _amount);
     }
 
@@ -443,7 +405,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      * - `to` cannot be the zero address.
      */
     function _mint(address _account, uint256 _amount) internal override nonReentrant {
-        require(_account != address(0), "ActivatedToken: Mint to the zero address");
+        require(_account != address(0), 'FiToken: Mint to the zero address');
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
 
@@ -462,15 +424,18 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
 
         _totalSupply = _totalSupply.add(_amount);
 
-        require(_totalSupply < MAX_SUPPLY, "ActivatedToken: Max supply");
+        require(_totalSupply < MAX_SUPPLY, 'FiToken: Max supply');
 
         emit Transfer(address(0), _account, _amount);
     }
 
     /**
      * @dev Burns tokens, decreasing totalSupply.
+     *      When an account burns tokens without redeeming, the amount burned is
+     *      essentially redistributed to the remaining holders upon the next rebase.
      */
     function burn(address account, uint256 amount) external {
+        require(!paused, 'FiToken: Token paused');
         _burn(account, amount);
     }
 
@@ -486,7 +451,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      * - `_account` must have at least `_amount` tokens.
      */
     function _burn(address _account, uint256 _amount) internal override nonReentrant {
-        require(_account != address(0), "ActivatedToken: Burn from the zero address");
+        require(_account != address(0), 'FiToken: Burn from the zero address');
         if (_amount == 0) {
             return;
         }
@@ -508,7 +473,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
                 creditAmount
             );
         } else {
-            revert("ActivatedToken: Remove exceeds balance");
+            revert('FiToken: Remove exceeds balance');
         }
 
         // Remove from the credit tallies and non-rebasing supply
@@ -682,7 +647,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         onlyDiamond
         nonReentrant
     {
-        require(_totalSupply > 0, "ActivatedToken: Cannot increase 0 supply");
+        require(_totalSupply > 0, 'FiToken: Cannot increase 0 supply');
 
         if (_totalSupply == _newTotalSupply) {
             emit TotalSupplyUpdatedHighres(
@@ -701,7 +666,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
             _totalSupply.sub(nonRebasingSupply)
         );
 
-        require(_rebasingCreditsPerToken > 0, "ActivatedToken: Invalid change in supply");
+        require(_rebasingCreditsPerToken > 0, 'FiToken: Invalid change in supply');
 
         _totalSupply = _rebasingCredits
             .divPrecisely(_rebasingCreditsPerToken)
@@ -763,6 +728,10 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      */
     function toggleFreeze(address _account) external onlyAdmin {
         frozen[_account] = !frozen[_account];
+    }
+
+    function togglePaused() external onlyAdmin {
+        paused = !paused;
     }
 
     function setDiamond(address _diamond) external onlyAdmin {

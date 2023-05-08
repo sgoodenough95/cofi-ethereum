@@ -68,6 +68,9 @@ async function deployDiamond() {
   await diamond.deployed()
   console.log('Diamond deployed:', diamond.address)
 
+  // Set Diamond address in FiToken contract(s).
+  await cofi.setDiamond(diamond.address)
+
   // deploy DiamondInit
   // DiamondInit provides a function that is called when the diamond is upgraded to initialize state variables
   // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions

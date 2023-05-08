@@ -30,7 +30,7 @@ contract SupplyFacet is Modifiers {
     /// @param  minAmountOut    The minimum amount of fiAssets received (before fees).
     function underlyingToFi(
         uint256 amount,
-        uint256 minAmountOut, // 1,000 * 0.9975 = 997.50. Auto-set to 0.25%.
+        uint256 minAmountOut, // E.g., 1,000 * 0.9975 = 997.50. Auto-set to 0.25%.
         address fiAsset,
         address depositFrom,
         address recipient
@@ -195,6 +195,114 @@ contract SupplyFacet is Modifiers {
             LibVault._unwrap(burnAfterFee, s.vault[fiAsset], recipient) >= minAmountOut,
             'SupplyFacet: Slippage exceeded'
         );
+    }
+
+    /// @notice minDeposit applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
+    function setMinDeposit(
+        address fiAsset,
+        uint256 amount
+    )   external
+        onlyAdmin
+    {
+        s.minDeposit[fiAsset] = amount;
+    }
+
+    /// @notice minWithdraw applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
+    function setMinWithdraw(
+        address fiAsset,
+        uint256 amount
+    )   external
+        onlyAdmin
+    {
+        s.minWithdraw[fiAsset] = amount;
+    }
+
+    function setMintFee(
+        address fiAsset,
+        uint256 amount
+    )   external
+        onlyAdmin
+    {
+        s.mintFee[fiAsset] = amount;
+    }
+
+    function toggleMintEnabled(
+        address fiAsset
+    )   external
+        onlyAdmin
+    {
+        s.mintEnabled[fiAsset] = s.mintEnabled[fiAsset] == 0 ? 1 : 0;
+    }
+
+    function setRedeemFee(
+        address fiAsset,
+        uint256 amount
+    )   external
+        onlyAdmin
+    {
+        s.redeemFee[fiAsset] = amount;
+    }
+
+    function toggleRedeemEnabled(
+        address fiAsset
+    )   external
+        onlyAdmin
+    {
+        s.redeemEnabled[fiAsset] = s.redeemEnabled[fiAsset] == 0 ? 1 : 0;
+    }
+
+    function getMinDeposit(
+        address fiAsset
+    )   external
+        view
+        returns (uint256)
+    {
+        return s.minDeposit[fiAsset];
+    }
+
+    function getMinWithdraw(
+        address fiAsset
+    )   external
+        view
+        returns (uint256)
+    {
+        return s.minWithdraw[fiAsset];
+    }
+
+    function getMintFee(
+        address fiAsset
+    )   external
+        view
+        returns (uint256)
+    {
+        return s.mintFee[fiAsset];
+    }
+
+    function getMintEnabled(
+        address fiAsset
+    )   external
+        view
+        returns (bool)
+    {
+        return s.mintEnabled[fiAsset] == 1 ? true : false;
+    }
+
+    function getRedeemFee(
+        address fiAsset
+    )   external
+        view
+        returns (uint256)
+    {
+        return s.redeemFee[fiAsset];
+    }
+
+    function getRedeemEnabled(
+        address fiAsset
+    )   external
+        view
+        returns (bool)
+    {
+        return s.redeemEnabled[fiAsset] == 1 ? true : false;
     }
 
     /// @notice Returns the underlyingAsset (variable) for a given fiAsset.
