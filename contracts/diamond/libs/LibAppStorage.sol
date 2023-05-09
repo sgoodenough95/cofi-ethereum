@@ -11,7 +11,7 @@ struct YieldPointsCapture {
 
 struct AppStorage {
 
-    // E.g., COFI => yvDAI; COFIE => aETH.
+    // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
     mapping(address => address) vault;
 
     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
