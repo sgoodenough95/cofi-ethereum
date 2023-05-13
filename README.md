@@ -7,8 +7,11 @@ On day 1, these are as follows:
 
 inputAsset  | fiAsset
 ------------- | -------------
-DAI, USDC, yvDAI, yvUSDC  | COFI
-ETH, wETH, yvwETH  | COFIE
+DAI/USDC, vDAI/vUSDC  | COFI
+wETH, vwETH  | fiETH
+wBTC, vwBTC  | fiBTC
+
+"vTKN" refers to whichever Vault the underlyingAsset is currently deployed in.
 
 fiAssets are rebasing, in accordance with the yield earned from the underlying Vault.
 
