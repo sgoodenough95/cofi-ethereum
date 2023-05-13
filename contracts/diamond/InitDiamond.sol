@@ -14,10 +14,13 @@ contract InitDiamond {
     AppStorage internal s;
 
     struct Args {
-        address COFI;   // fiAsset [USD]
-        // address COFIE;  // fiAsset [ETH]
-        address yvDAI;  // shareToken [USD]
-        // address yvETH;  // shareToken [ETH]
+        address     COFI;   // fiAsset [USD]
+        address     fiETH;  // fiAsset [ETH]
+        address     fiBTC;  // fiAsset [BTC]
+        address     vDAI;   // yieldAsset [USD]
+        address     vETH;   // yieldAsset [ETH]
+        address     vBTC;   // yieldAsset [BTC]
+        address[]   admins;
     }
     
     function init(Args memory _args) external {
@@ -32,45 +35,57 @@ contract InitDiamond {
 
         // Rebase opt-in.
         LibToken._rebaseOptIn(_args.COFI);
-        // LibToken._rebaseOptIn(_args.COFIE);
+        LibToken._rebaseOptIn(_args.fiETH);
+        LibToken._rebaseOptIn(_args.fiBTC);
 
         // Set min deposit/withdraw values.
-        s.minDeposit[_args.COFI]     = 20e18;    // 20 DAI.
-        // s.minDeposit[_args.COFIE]    = 1e16;     // 0.01 ETH.
+        s.minDeposit[_args.COFI]     = 20e18;    // 20 USD.
+        s.minDeposit[_args.fiETH]    = 1e16;     // 0.01 ETH.
+        s.minDeposit[_args.fiBTC]    = 1e15;     // 0.001 BTC.
         s.minWithdraw[_args.COFI]    = 20e18;    // 20 DAI.
-        // s.minWithdraw[_args.COFIE]   = 1e16;     // 0.01 ETH.
+        s.minWithdraw[_args.fiETH]   = 1e16;     // 0.01 ETH.
+        s.minWithdraw[_args.fiBTC]   = 1e15;     // 0.001 BTC.
 
-        s.vault[_args.COFI]     = _args.yvDAI;
-        // s.vault[_args.COFIE]    = _args.yvETH;
+        s.vault[_args.COFI]     = _args.vDAI;
+        s.vault[_args.fiETH]    = _args.vETH;
+        s.vault[_args.fiETH]    = _args.vBTC;
 
         // Set mint enabled.
         s.mintEnabled[_args.COFI]   = 1;
-        // s.mintEnabled[_args.COFIE]  = 1;
+        s.mintEnabled[_args.fiETH]  = 1;
+        s.mintEnabled[_args.fiBTC]  = 1;
 
-        // // Set mint fee.
-        // s.mintFee[_args.COFI]   = 10;
-        // // s.mintFee[_args.COFIE]  = 10;
+        // Set mint fee.
+        s.mintFee[_args.COFI]   = 10;
+        s.mintFee[_args.fiETH]  = 10;
+        s.mintFee[_args.fiBTC]  = 10;
 
         // Set redeem enabled.
         s.redeemEnabled[_args.COFI]     = 1;
-        // s.redeemEnabled[_args.COFIE]    = 1;
+        s.redeemEnabled[_args.fiETH]    = 1;
+        s.redeemEnabled[_args.fiBTC]    = 1;
 
-        // // Set redeem fee.
-        // s.redeemFee[_args.COFI]     = 30;
-        // // s.redeemFee[_args.COFIE]    = 30;
+        // Set redeem fee.
+        s.redeemFee[_args.COFI]     = 10;
+        s.redeemFee[_args.fiETH]    = 10;
+        s.redeemFee[_args.fiBTC]    = 10;
 
         // Set service fee.
         s.serviceFee[_args.COFI]    = 1e3;
-        // s.serviceFee[_args.COFIE]   = 1e3;
+        s.serviceFee[_args.fiETH]   = 1e3;
+        s.serviceFee[_args.fiBTC]   = 1e3;
 
         // Set points rate.
-        s.pointsRate[_args.COFI]    = 1e6;
-        // s.pointsRate[_args.COFIE]   = 1e3;
+        s.pointsRate[_args.COFI]    = 1e6;  // 100 points/COFI earned.
+        s.pointsRate[_args.fiETH]   = 1e9;  // 100 points/0.001 fiETH earned.
+        s.pointsRate[_args.fiBTC]   = 1e10; // 100 points/0.0001 fiBTC earned.
 
         // Set feeCollector.
-        s.feeCollector = address(this); // Change to Gnosis Safe contract.
+        s.feeCollector = address(this);
 
-        // Set admin.
-        s.isAdmin[msg.sender] = 1;
+        // Set admins.
+        for(uint i = 1; i < _args.admins.length; ++i) {
+            s.isAdmin[_args.admins[i]] = 1;
+        }
     }
 }

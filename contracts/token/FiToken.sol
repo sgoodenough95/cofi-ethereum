@@ -6,9 +6,9 @@ pragma solidity ^0.8.0;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    @author cofi.money
+    @author Samuel Goodenough, Origin Protocol Inc
     @title  Fi Token Contract
-    @notice Rebasing ERC20 contract.
+    @notice Rebasing ERC20 contract. Repurposed from OUSD.sol contract.
  */
 
 import { SafeMath } from '@openzeppelin/contracts/utils/math/SafeMath.sol';
@@ -233,28 +233,6 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         _allowances[_from][msg.sender] = _allowances[_from][msg.sender].sub(
             _value
         );
-
-        _executeTransfer(_from, _to, _value);
-
-        emit Transfer(_from, _to, _value);
-
-        return true;
-    }
-
-    /**
-     * @notice  Redeem function, only callable from Diamond, to return fiAssets.
-     * @dev     Skips approval check.
-     * @param _from     The address to redeem fiAssets from.
-     * @param _to       The 'feeCollector' address to receive fiAssets.
-     * @param _value    The amount of fiAssets to redeem.
-     * @return          True on success.
-     */
-    function redeem(
-        address _from,
-        address _to,
-        uint256 _value
-    ) external onlyDiamond returns (bool) {
-        // Ignore 'paused' check, as this is covered by 'redeemEnabled' in Diamond.
 
         _executeTransfer(_from, _to, _value);
 
@@ -621,7 +599,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     /**
      * @dev Explicitly mark that an address is non-rebasing.
      */
-    function rebaseOptOutExternal(address _account) public nonReentrant onlyAdmin {
+    function rebaseOptOutExternal(address _account) external onlyAdmin {
         require(!_isNonRebasingAccount(_account), 'FiToken: Account has not opted in');
 
         // Increase non rebasing supply
@@ -724,14 +702,17 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     }
 
     /**
-     * @dev If freezing, first ensure account is opted out of rebases.
+     * @dev     If freezing, first ensure account is opted out of rebases.
+     * @return  bool Indicating true if frozen.
      */
-    function toggleFreeze(address _account) external onlyAdmin {
+    function toggleFrozen(address _account) external onlyAdmin returns (bool) {
         frozen[_account] = !frozen[_account];
+        return frozen[_account];
     }
 
-    function togglePaused() external onlyAdmin {
+    function togglePaused() external onlyAdmin returns (bool) {
         paused = !paused;
+        return paused;
     }
 
     function setDiamond(address _diamond) external onlyAdmin {

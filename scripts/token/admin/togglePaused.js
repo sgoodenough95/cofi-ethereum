@@ -1,27 +1,26 @@
 /* global ethers */
 /* eslint prefer-const: "off" */
 
-async function setDiamond() {
-    const accounts = await ethers.getSigners()
-    const owner = accounts[0]
+async function togglePaused() {
 
     const cofi = await ethers.getContractAt(
-        'FiToken',
-        '0xFA2dC5b3C09a97DE541ac6D80338C58D3dbF60a6'    // fiAsset address
+      'FiToken',
+      '0xFA2dC5b3C09a97DE541ac6D80338C58D3dbF60a6'    // fiAsset address
     )
-
-    await cofi.setDiamond('0x64Cab9754b96fB62F7A3eD04EECf93c59B5eaa67')
+  
+    // Caller must be admin. Returns true if paused.
+    console.log(await cofi.togglePaused())
 }
-
+  
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 if (require.main === module) {
-    setDiamond()
+    togglePaused()
       .then(() => process.exit(0))
       .catch(error => {
         console.error(error)
         process.exit(1)
-      })
-  }
-  
-  exports.setDiamond = setDiamond
+    })
+}
+    
+exports.togglePaused = togglePaused

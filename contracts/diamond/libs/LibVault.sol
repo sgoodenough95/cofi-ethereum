@@ -9,27 +9,27 @@ library LibVault {
 
     /// @notice Emitted when a wrap operation is executed.
     ///
-    /// @param  amount      The amount of inputAssets wrapped.
-    /// @param  depositFrom The account which supplied the inputAssets.
-    /// @param  vault       The wrapped inputAsset.
-    /// @param  shares      The amount of share tokens issued.
+    /// @param  amount      The amount of underlyingAssets wrapped.
+    /// @param  depositFrom The account which supplied the underlyingAssets.
+    /// @param  vault       The ERC4626 Vault.
+    /// @param  shares      The amount of shares minted.
     event Wrap(uint256 amount, address depositFrom, address vault, uint256 shares);
 
     /// @notice Emitted when an unwrap operation is executed.
     ///
-    /// @param  amount      The requested amount of inputAssets to receive.
-    /// @param  shares      The amount of share tokens, calculated through convertToShares(amount).
-    /// @param  vault       The vault holding inputAssets.
-    /// @param  assets      The actual amount of inputAssets received.
-    /// @param  recipient   The recipient of the inputAssets.
+    /// @param  amount      The amount of fiAssets redeemed.
+    /// @param  shares      The amount of shares burned.
+    /// @param  vault       The ERC4626 Vault.
+    /// @param  assets      The amount of underlyingAssets received from the Vault.
+    /// @param  recipient   The recipient of the underlyingAssets.
     event Unwrap(uint256 amount, uint256 shares, address vault, uint256 assets, address recipient);
 
-    /// @notice Wraps an inputAsset into share tokens issued by a vault.
-    /// @dev    Stoa holds the share tokens issued by the vault.
+    /// @notice Wraps an underlyingAsset into shares via a Vault.
+    /// @dev    Shares reside at the Diamond at all times.
     ///
-    /// @param  amount      The amount of inputAssets to wrap.
-    /// @param  vault       The vault to wrap inputAssets for.
-    /// @param  depositFrom The account to wrap inputAssets from.
+    /// @param  amount      The amount of underlyingAssets to wrap.
+    /// @param  vault       The ERC4626 Vault.
+    /// @param  depositFrom The account to wrap underlyingAssets from.
     function _wrap(
         uint256 amount,
         address vault,
@@ -40,17 +40,18 @@ library LibVault {
         emit Wrap(amount, depositFrom, vault, shares);
     }
 
-    /// @notice Unwraps share tokens into inputAssets.
+    /// @notice Unwraps shares into underlyingAssets via the relevant Vault.
     ///
-    /// @param  amount      The requested amount of inputAssets to receive.
-    /// @param  vault       The vault to unwrap from.
-    /// @param  recipient   The recipient of the inputAssets.
+    /// @param  amount      The amount of fiAssets to redeem (target 1:1 correlation to underlyingAssets).
+    /// @param  vault       The ERC4626 Vault.
+    /// @param  recipient   The recipient of the underlyingAssets.
     function _unwrap(
         uint256 amount,
         address vault,
         address recipient
     ) internal returns (uint256 assets) {
 
+        // Retrieve the corresponding number of shares for the amount of fiAssets provided.
         uint256 shares = IERC4626(vault).previewDeposit(amount);
 
         assets = IERC4626(vault).redeem(shares, recipient, address(this));
@@ -73,7 +74,7 @@ library LibVault {
         shares = IERC4626(vault).previewDeposit(assets);
     }
 
-    /// @notice Gets total value of Diamond's holding of shares from vault.
+    /// @notice Gets total value of Diamond's holding of shares from the relevant Vault.
     function _totalValue(
         address vault
     ) internal view returns (uint256 assets) {
