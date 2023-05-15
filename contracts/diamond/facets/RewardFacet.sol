@@ -15,15 +15,12 @@ import { Modifiers } from '../libs/LibAppStorage.sol';
 import { PercentageMath } from '../libs/external/PercentageMath.sol';
 import { LibToken } from '../libs/LibToken.sol';
 import { LibVault } from '../libs/LibVault.sol';
-import { IFiToken } from '../interfaces/IFiToken.sol';
-import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import { IERC4626 } from '../interfaces/IERC4626.sol';
-import { GPv2SafeERC20 } from '.././libs/external/GPv2SafeERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import 'hardhat/console.sol';
 
 contract RewardFacet is Modifiers {
     using PercentageMath for uint256;
-    using GPv2SafeERC20 for IERC20;
 
     /// @notice This function must be called after the last rebase of a pointsRate
     ///         and before the application of a new pointsRate for a given fiAsset,
@@ -41,6 +38,7 @@ contract RewardFacet is Modifiers {
         address[] memory    accounts,
         address             fiAsset
     )   external
+        returns (bool)
     {
         /**
 
@@ -55,7 +53,7 @@ contract RewardFacet is Modifiers {
          */
         uint256 yield;
         for(uint i = 0; i < accounts.length; ++i) {
-        yield = IFiToken(fiAsset).getYieldEarned(accounts[i]);
+        yield = LibToken._getYieldEarned(accounts[i], fiAsset);
             // If the account has earned yield since the last yield capture event.
             if (s.YPC[accounts[i]][fiAsset].yield < yield) {
                 s.YPC[accounts[i]][fiAsset].points +=
@@ -64,12 +62,14 @@ contract RewardFacet is Modifiers {
                 s.YPC[accounts[i]][fiAsset].yield = yield;
             }
         }
+        return true;
     }
 
     function captureYieldPoints(
         address account,
         address fiAsset
     )   external
+        returns (uint256)
     {
         /**
             POINTS CAPTURE:
@@ -80,13 +80,14 @@ contract RewardFacet is Modifiers {
             3.  Update yield earned.
          */
         
-        uint256 yield = IFiToken(fiAsset).getYieldEarned(account);
+        uint256 yield = LibToken._getYieldEarned(account, fiAsset);
         if (s.YPC[account][fiAsset].yield < yield) {
             s.YPC[account][fiAsset].points +=
                 (yield - s.YPC[account][fiAsset].yield)
                     .percentMul(s.pointsRate[fiAsset]);
             s.YPC[account][fiAsset].yield  = yield;
         }
+        return s.YPC[account][fiAsset].yield;
     }
 
     /// @dev    Yield points must be captured beforehand to ensure they
@@ -96,8 +97,10 @@ contract RewardFacet is Modifiers {
         uint256 amount
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.pointsRate[fiAsset] = amount;
+        return true;
     }
 
     /// @notice Function for distributing points not intrinsically linked to yield.
@@ -109,10 +112,12 @@ contract RewardFacet is Modifiers {
         uint256             points
     )   external
         onlyAdmin
+        returns (bool)
     {
         for(uint i = 0; i < accounts.length; ++i) {
             s.XPC[accounts[i]] += points;
         }
+        return true;
     }
 
     /// @notice Function for migrating to a new Vault. The new Vault must support the
@@ -130,9 +135,13 @@ contract RewardFacet is Modifiers {
         address fiAsset,
         address newVault
     )   external
-        onlyAdmin
+        returns (bool)
     {
-        // First, ensure minting/redeeming of fiAsset is disabled.
+        require(
+            s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
+            'RewardFacet: Caller not Upkeep or Admin'
+        );
+        // Ensure minting/redeeming of fiAsset is disabled.
         require(
             s.mintEnabled[fiAsset] == 0,
             'RewardFacet: Require mint to be disabled'
@@ -169,6 +178,7 @@ contract RewardFacet is Modifiers {
         // Update vault for fiAsset.
         s.vault[fiAsset] = newVault;
 
+        return true;
         /**
             TO FINALISE MIGRATION:
 
@@ -177,26 +187,24 @@ contract RewardFacet is Modifiers {
          */
     }
 
-    /// NOTE    ENABLED FOR TESTING PURPOSES(!)
-    ///
-    /// @notice 'changeSupply()' will be commented out, but left for reference.
-    ///         For the Stoa stablecoin product, an Admin will call changeSupply() directly.
-    ///         For the COFIMoney MVP, however, this will not be the case.
-    ///
-    /// @notice Function for manually changing the supply of a fiAsset.
-    ///
-    /// @dev    'rebase()' must be called after for change to take effect.
-    ///
-    /// @param  fiAsset     The fiAsset to change supply for.
-    /// @param  newSupply   The new supply of fiAssets (not accounting for CoFi's yield share).
-    function changeSupply(
-        address fiAsset,
-        uint256 newSupply
-    )   external
-        onlyAdmin
-    {
-        IFiToken(fiAsset).changeSupply(newSupply);
-    }
+    // /// @notice 'changeSupply()' will be commented out, but left for reference.
+    // ///         For the Stoa stablecoin product, an Admin will call changeSupply() directly.
+    // ///         For the COFIMoney MVP, however, this will not be the case.
+    // ///
+    // /// @notice Function for manually changing the supply of a fiAsset.
+    // ///
+    // /// @dev    'rebase()' must be called after for change to take effect.
+    // ///
+    // /// @param  fiAsset     The fiAsset to change supply for.
+    // /// @param  newSupply   The new supply of fiAssets (not accounting for CoFi's yield share).
+    // function changeSupply(
+    //     address fiAsset,
+    //     uint256 newSupply
+    // )   external
+    //     onlyAdmin
+    // {
+    //     IFiToken(fiAsset).changeSupply(newSupply);
+    // }
 
     /// @notice Function for updating fiAssets originating from vaults.
     ///
@@ -204,10 +212,14 @@ contract RewardFacet is Modifiers {
     function rebase(
         address fiAsset
     )   external
-        onlyAdmin
+        returns (bool)
     {
+        require(
+            s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
+            'RewardFacet: Caller not Upkeep or Admin'
+        );
         uint256 currentSupply = IERC20(fiAsset).totalSupply();
-        if (currentSupply == 0) return;
+        if (currentSupply == 0) return false;
 
         uint256 assets = LibVault._totalValue(s.vault[fiAsset]);
 
@@ -217,10 +229,14 @@ contract RewardFacet is Modifiers {
 
             uint256 shareYield = yield.percentMul(1e4 - s.serviceFee[fiAsset]);
 
-            IFiToken(fiAsset).changeSupply(currentSupply + shareYield);
+            LibToken._changeSupply(fiAsset, currentSupply + shareYield);
 
             if (yield - shareYield > 0)
                 LibToken._mint(fiAsset, s.feeCollector, yield - shareYield);
+
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -228,16 +244,20 @@ contract RewardFacet is Modifiers {
         address fiAsset
     )   external
         onlyAdmin
+        returns (bool)
     {
-        IFiToken(fiAsset).rebaseOptIn();
+        LibToken._rebaseOptIn(fiAsset);
+        return true;
     }
 
     function rebaseOptOut(
         address fiAsset
     )   external
         onlyAdmin
+        returns (bool)
     {
-        IFiToken(fiAsset).rebaseOptOut();
+        LibToken._rebaseOptOut(fiAsset);
+        return true;
     }
 
     /// @notice Returns the total number of points accrued for a given account
@@ -272,7 +292,7 @@ contract RewardFacet is Modifiers {
         uint256 pointsPending;
 
         for(uint i = 0; i < fiAssets.length; ++i) {
-            yield           += IFiToken(fiAssets[i]).getYieldEarned(account);
+            yield           += LibToken._getYieldEarned(account, fiAssets[i]);
             pointsCaptured  += s.YPC[account][fiAssets[i]].points;
             pointsPending   += (yield - s.YPC[account][fiAssets[i]].yield)
                 .percentMul(s.pointsRate[fiAssets[i]]);

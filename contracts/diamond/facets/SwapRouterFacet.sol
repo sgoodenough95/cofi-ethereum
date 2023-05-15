@@ -25,6 +25,8 @@ contract SwapRouterFacet {
     ///         Look on Discord / GitHub.
     function swapExactInputSingle(
         uint256 amountIn,
+        uint256 amountOutMinimum,
+        uint256 deadline,   // Can pass current block height (?)
         address tokenIn,
         address tokenOut,
         uint24  poolFee
@@ -40,9 +42,9 @@ contract SwapRouterFacet {
                 tokenOut: tokenOut,
                 fee: poolFee,
                 recipient: address(this),
-                deadline: block.timestamp,
+                deadline: deadline,
                 amountIn: amountIn,
-                amountOutMinimum: 0,
+                amountOutMinimum: amountOutMinimum,
                 sqrtPriceLimitX96: 0
             });
 
@@ -52,6 +54,7 @@ contract SwapRouterFacet {
     function swapExactOutputSingle(
         uint256 amountOut,
         uint256 amountInMaximum,
+        uint256 deadline,
         address tokenIn,
         address tokenOut,
         uint24  poolFee
@@ -67,7 +70,7 @@ contract SwapRouterFacet {
                 tokenOut: tokenOut,
                 fee: poolFee,
                 recipient: address(this),
-                deadline: block.timestamp,
+                deadline: deadline,
                 amountOut: amountOut,
                 amountInMaximum: amountInMaximum,
                 sqrtPriceLimitX96: 0

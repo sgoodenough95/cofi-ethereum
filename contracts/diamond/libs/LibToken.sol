@@ -3,15 +3,13 @@ pragma solidity 0.8.19;
 
 import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { PercentageMath } from "./external/PercentageMath.sol";
-import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
-import { GPv2SafeERC20 } from "./external/GPv2SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // import { IPermit2 } from "./../interfaces/IPermit2.sol";
 import { IFiToken } from ".././interfaces/IFiToken.sol";
 import 'hardhat/console.sol';
 
 library LibToken {
     using PercentageMath for uint256;
-    using GPv2SafeERC20 for IERC20;
 
     // IPermit2 constant PERMIT2 = IPermit2(0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B);
 
@@ -62,7 +60,8 @@ library LibToken {
         address recipient
     )   internal {
 
-        IERC20(asset).safeTransferFrom(
+        SafeERC20.safeTransferFrom(
+            IERC20(asset),
             transferFrom,
             recipient,
             amount
@@ -108,7 +107,8 @@ library LibToken {
         address recipient
     ) internal {
 
-        IERC20(asset).safeTransfer(
+        SafeERC20.safeTransfer(
+            IERC20(asset),
             recipient,
             amount
         );
@@ -157,44 +157,6 @@ library LibToken {
         IFiToken(fiAsset).redeem(from, s.feeCollector, amount);
     }
 
-    /// @notice Opts contract into receiving rebases.
-    function _rebaseOptIn(
-        address fiAsset
-    ) internal {
-
-        IFiToken(fiAsset).rebaseOptIn();
-    }
-
-    /// @notice Opts contract out of receiving rebases.
-    function _rebaseOptOut(
-        address fiAsset
-    ) internal {
-        
-        IFiToken(fiAsset).rebaseOptOut();
-    }
-
-    /// @notice Indicates if a fiAsset is available for minting.
-    ///
-    /// @param  fiAsset The fiAsset to mint.
-    function _isMintEnabled(
-        address fiAsset
-    ) internal view returns (uint8) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        return s.mintEnabled[fiAsset];
-    }
-
-    /// @notice Indicates if a fiAsset is available for redeeming.
-    ///
-    /// @param  fiAsset The fiAsset to mint.
-    function _isRedeemEnabled(
-        address fiAsset
-    ) internal view returns (uint8) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        return s.mintEnabled[fiAsset];
-    }
-
     /// @notice Returns the mint fee for a given fiAsset.
     ///
     /// @param  fiAsset The fiAsset to mint.
@@ -219,5 +181,39 @@ library LibToken {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         return amount.percentMul(s.redeemFee[fiAsset]);
+    }
+
+    /// @notice Opts contract into receiving rebases.
+    function _rebaseOptIn(
+        address fiAsset
+    ) internal {
+
+        IFiToken(fiAsset).rebaseOptIn();
+    }
+
+    /// @notice Opts contract out of receiving rebases.
+    function _rebaseOptOut(
+        address fiAsset
+    ) internal {
+        
+        IFiToken(fiAsset).rebaseOptOut();
+    }
+
+    /// @notice Updates the total supply of the fiAsset.
+    function _changeSupply(
+        address fiAsset,
+        uint256 amount
+    ) internal {
+        
+        IFiToken(fiAsset).changeSupply(amount);
+    }
+
+    /// @notice Retrieves yield earned of fiAsset for account.
+    function _getYieldEarned(
+        address account,
+        address fiAsset
+    ) internal view returns (uint256) {
+        
+        return IFiToken(fiAsset).getYieldEarned(account);
     }
 }

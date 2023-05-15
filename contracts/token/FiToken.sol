@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    @author Samuel Goodenough, Origin Protocol Inc
+    @author The Stoa Corporation Ltd, Origin Protocol Inc
     @title  Fi Token Contract
     @notice Rebasing ERC20 contract. Repurposed from OUSD.sol contract.
  */
@@ -16,6 +16,7 @@ import { Address } from '@openzeppelin/contracts/utils/Address.sol';
 import { ERC20Permit } from './utils/draft-ERC20Permit.sol';
 import { StableMath } from './utils/StableMath.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/access/Ownable2Step.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 /**
@@ -24,7 +25,7 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
  * rebasing design. Any integrations should be aware.
  */
 
-contract FiToken is ERC20Permit, ReentrancyGuard {
+contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
     using SafeMath for uint256;
     using StableMath for uint256;
     using StableMath for int256;
@@ -94,10 +95,10 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     }
 
     /**
-     * @dev Verifies that the caller is an Admin.
+     * @dev Verifies that the caller is Owner or Admin.
      */
-    modifier onlyAdmin() {
-        require(admin[msg.sender] == true, 'FiToken: Caller is not Admin');
+    modifier onlyAuthorized() {
+        require(admin[msg.sender] || msg.sender == owner(), 'FiToken: Caller is not authorized');
         _;
     }
 
@@ -223,16 +224,44 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
         address _from,
         address _to,
         uint256 _value
-    ) public override returns (bool) {
+    )   public
+        override
+        returns (bool)
+    {
         require(_to != address(0), 'FiToken: Transfer to zero address');
         require(!paused, 'FiToken: Token paused');
         require(_value <= balanceOf(_from), 'FiToken: Transfer greater than balance');
         require(!frozen[_from], 'FiToken: Sender account is frozen');
         require(!frozen[_to], 'FiToken: Recipient account is frozen');
 
-        _allowances[_from][msg.sender] = _allowances[_from][msg.sender].sub(
-            _value
-        );
+        if (_from != msg.sender || _allowances[_from][msg.sender] != type(uint256).max) {
+            _allowances[_from][msg.sender] = _allowances[_from][msg.sender].sub(_value);
+        }
+
+        _executeTransfer(_from, _to, _value);
+
+        emit Transfer(_from, _to, _value);
+
+        return true;
+    }
+
+    /**
+     * @notice  Redeem function, only callable from Diamond, to return fiAssets.
+     * @dev     Skips approval check.
+     * @param _from     The address to redeem fiAssets from.
+     * @param _to       The 'feeCollector' address to receive fiAssets.
+     * @param _value    The amount of fiAssets to redeem.
+     * @return          True on success.
+     */
+    function redeem(
+        address _from,
+        address _to,
+        uint256 _value
+    )   external
+        onlyDiamond
+        returns (bool)
+    {
+        // Ignore 'paused' check, as this is covered by 'redeemEnabled' in Diamond.
 
         _executeTransfer(_from, _to, _value);
 
@@ -413,6 +442,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      *      essentially redistributed to the remaining holders upon the next rebase.
      */
     function burn(address account, uint256 amount) external {
+        if (msg.sender != diamond) require(account == msg.sender, 'FiToken: Caller not owner');
         require(!paused, 'FiToken: Token paused');
         _burn(account, amount);
     }
@@ -554,7 +584,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
      * address's balance will be part of rebases and the account will be exposed
      * to upside and downside.
      */
-    function rebaseOptInExternal(address _account) public nonReentrant {
+    function rebaseOptInExternal(address _account) public onlyAuthorized {
         require(_isNonRebasingAccount(_account), 'FiToken: Account has not opted out');
 
         // Convert balance into the same amount at the current exchange rate
@@ -599,7 +629,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
     /**
      * @dev Explicitly mark that an address is non-rebasing.
      */
-    function rebaseOptOutExternal(address _account) external onlyAdmin {
+    function rebaseOptOutExternal(address _account) public onlyAuthorized {
         require(!_isNonRebasingAccount(_account), 'FiToken: Account has not opted in');
 
         // Increase non rebasing supply
@@ -697,25 +727,27 @@ contract FiToken is ERC20Permit, ReentrancyGuard {
             : _tokenBalance.mulTruncate(_rebasingCreditsPerToken);
     }
 
-    function toggleAdmin(address _account) external onlyAdmin {
+    function toggleAdmin(address _account) external onlyAuthorized returns (bool) {
         admin[_account] = !admin[_account];
+        return admin[_account];
     }
 
     /**
      * @dev     If freezing, first ensure account is opted out of rebases.
      * @return  bool Indicating true if frozen.
      */
-    function toggleFrozen(address _account) external onlyAdmin returns (bool) {
+    function toggleFrozen(address _account) external onlyAuthorized returns (bool) {
+        require(!_isNonRebasingAccount(_account), 'FiToken: Account must be opted out before freezing');
         frozen[_account] = !frozen[_account];
         return frozen[_account];
     }
 
-    function togglePaused() external onlyAdmin returns (bool) {
+    function togglePaused() external onlyAuthorized returns (bool) {
         paused = !paused;
         return paused;
     }
 
-    function setDiamond(address _diamond) external onlyAdmin {
+    function setDiamond(address _diamond) external onlyAuthorized {
         diamond = _diamond;
     }
 }

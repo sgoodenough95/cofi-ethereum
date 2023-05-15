@@ -4,6 +4,18 @@ pragma solidity 0.8.19;
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 // import { ICoFi } from "./../interfaces/ICoFi.sol";
 
+// struct FiAssetParams {
+//     uint256 minDeposit;     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
+//     uint256 minWithdraw;    // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
+//     uint256 mintFee;        // E.g., COFI => 10bps (=0.1%). Applies to fiAsset only.
+//     uint256 redeemFee;      // E.g., COFI => 10bps (=0.1%). Applies to fiAsset only.
+//     uint256 serviceFee;     // E.g., COFI => 1,000bps (=10%). Applies to fiAsset only.
+//     uint256 pointsRate;     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
+//     address vault;          // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
+//     uint8   mintEnabled;    // E.g., COFI => 1.
+//     uint8   redeemEnabled;  // E.g., COFI => 1.
+// }
+
 struct YieldPointsCapture {
     uint256 yield;
     uint256 points;
@@ -11,23 +23,14 @@ struct YieldPointsCapture {
 
 struct AppStorage {
 
-    // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
-    mapping(address => address) vault;
-
     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
     mapping(address => uint256) minDeposit;
 
     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
     mapping(address => uint256) minWithdraw;
 
-    // E.g., COFI => 1.
-    mapping(address => uint8)   mintEnabled;
-
     // E.g., COFI => 10bps. Applies to fiAsset only.
     mapping(address => uint256) mintFee;
-
-    // E.g., COFI => 1.
-    mapping(address => uint8)   redeemEnabled;
 
     // E.g., COFI => 10bps. Applies to fiAsset only.
     mapping(address => uint256) redeemFee;
@@ -35,11 +38,17 @@ struct AppStorage {
     // E.g., COFI => 1,000bps. Applies to fiAsset only.
     mapping(address => uint256) serviceFee;
 
-    // Gnosis Safe contract.
-    address feeCollector;
-
     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
     mapping(address => uint256) pointsRate;
+
+    // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
+    mapping(address => address) vault;
+
+    // E.g., COFI => 1.
+    mapping(address => uint8)   mintEnabled;
+
+    // E.g., COFI => 1.
+    mapping(address => uint8)   redeemEnabled;
 
     // Yield points capture (determined via yield earnings from fiAsset).
     // E.g., 0x1234... => COFI => YieldPointsCapture.
@@ -48,9 +57,14 @@ struct AppStorage {
     // External points capture (to yield earnings). Maps to account only (not fiAsset).
     mapping(address => uint256) XPC;
 
+    mapping(address => uint8)   isWhitelisted;
+
     mapping(address => uint8)   isAdmin;
 
-    mapping(address => uint8)   isWhitelisted; // Leave for now, but include later.
+    mapping(address => uint8)   isUpkeep;
+
+    // Gnosis Safe contract.
+    address feeCollector;
 }
 
 library LibAppStorage {
@@ -81,6 +95,16 @@ contract Modifiers {
 
     modifier minWithdraw(uint256 amount, address fiAsset) {
         require(amount >= s.minWithdraw[fiAsset], 'Insufficient withdraw amount');
+        _;
+    }
+
+    modifier mintEnabled(address fiAsset) {
+        require(s.mintEnabled[fiAsset] == 1, 'Mint not enabled');
+        _;
+    }
+
+    modifier redeemEnabled(address fiAsset) {
+        require(s.redeemEnabled[fiAsset] == 1, 'Redeem not enabled');
         _;
     }
     

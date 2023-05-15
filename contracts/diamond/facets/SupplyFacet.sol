@@ -6,7 +6,7 @@ pragma solidity 0.8.19;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    @author cofi.money
+    @author The Stoa Corporation Ltd
     @title  Supply Facet
     @notice User-operated functions for minting fiAssets.
             Backing assets are deployed to respective Vault as per schema.
@@ -15,7 +15,6 @@ pragma solidity 0.8.19;
 import { Modifiers } from '../libs/LibAppStorage.sol';
 import { LibToken } from '../libs/LibToken.sol';
 import { LibVault } from '../libs/LibVault.sol';
-import { IERC20 } from '@openzeppelin/contracts/interfaces/IERC20.sol';
 import { IERC4626 } from '.././interfaces/IERC4626.sol';
 import 'hardhat/console.sol';
 
@@ -36,15 +35,11 @@ contract SupplyFacet is Modifiers {
         address recipient
     )
         external
-        // isWhitelisted    Disable for testing.
+        isWhitelisted
+        mintEnabled(fiAsset)
         minDeposit(amount, fiAsset)
         returns (uint256 mintAfterFee)
     {
-        require(
-            LibToken._isMintEnabled(fiAsset) == 1,
-            'SupplyFacet: Mint for token disabled'
-        );
-
         uint256 assets = LibVault._getAssets(
             // Add permit for Vault transfer.
             LibVault._wrap(
@@ -84,15 +79,11 @@ contract SupplyFacet is Modifiers {
         address recipient
     )
         external
-        // isWhitelisted
+        isWhitelisted
+        mintEnabled(fiAsset)
         minDeposit(LibVault._getAssets(amount, s.vault[fiAsset]), fiAsset)
         returns (uint256 mintAfterFee)
     {
-        require(
-            LibToken._isMintEnabled(fiAsset) == 1,
-            'SupplyFacet: Mint for token disabled'
-        );
-
         // Backing yieldAssets are held in the diamond contract.
         LibToken._transferFrom(s.vault[fiAsset], amount, depositFrom, address(this));
 
@@ -126,26 +117,21 @@ contract SupplyFacet is Modifiers {
         address depositFrom,
         address recipient
     )   external
-        // isWhitelisted
+        isWhitelisted
+        redeemEnabled(fiAsset)
         minWithdraw(amount, fiAsset)
         returns (uint256 burnAfterFee)
     {
-        require(
-            LibToken._isRedeemEnabled(fiAsset) == 1,
-            'SupplyFacet: Redeem for token disabled'
-        );
-
-        // Redeem operation in FiToken contract skips approval check.
-        LibToken._redeem(fiAsset, depositFrom, amount);
+        depositFrom == msg.sender ?
+            LibToken._redeem(fiAsset, msg.sender, amount) :
+            LibToken._transferFrom(fiAsset, amount, depositFrom, s.feeCollector);
 
         uint256 fee = LibToken._getRedeemFee(fiAsset, amount);
         burnAfterFee = amount - fee;
 
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
-        if (fee > 0) {
-            emit LibToken.RedeemFeeCaptured(fiAsset, fee);
-        }
+        if (fee > 0) emit LibToken.RedeemFeeCaptured(fiAsset, fee);
 
         uint256 shares = LibVault._getShares(burnAfterFee, s.vault[fiAsset]);
         require(shares >= minAmountOut, 'SupplyFacet: Slippage exceeded');
@@ -170,26 +156,21 @@ contract SupplyFacet is Modifiers {
         address depositFrom,
         address recipient
     )   public
-        // isWhitelisted
+        isWhitelisted
+        redeemEnabled(fiAsset)
         minWithdraw(amount, fiAsset)
         returns (uint256 burnAfterFee)
     {
-        require(
-            LibToken._isRedeemEnabled(fiAsset) == 1,
-            'SupplyFacet: Redeem for token disabled'
-        );
-
-        // Redeem operation in FiToken contract skips approval check.
-        LibToken._redeem(fiAsset, depositFrom, amount);
+        depositFrom == msg.sender ?
+            LibToken._redeem(fiAsset, msg.sender, amount) :
+            LibToken._transferFrom(fiAsset, amount, depositFrom, s.feeCollector);
 
         uint256 fee = LibToken._getRedeemFee(fiAsset, amount);
         burnAfterFee = amount - fee;
 
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
-        if (fee > 0) {
-            emit LibToken.RedeemFeeCaptured(fiAsset, fee);
-        }
+        if (fee > 0) emit LibToken.RedeemFeeCaptured(fiAsset, fee);
 
         require(
             LibVault._unwrap(burnAfterFee, s.vault[fiAsset], recipient) >= minAmountOut,

@@ -19,24 +19,40 @@ contract AccessFacet is Modifiers {
         address account
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.isWhitelisted[account] = s.isWhitelisted[account] == 0 ? 1 : 0;
+        return s.isWhitelisted[account] == 1 ? true : false;
     }
 
     function toggleAdmin(
         address account
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.isAdmin[account] = s.isAdmin[account] == 0 ? 1 : 0;
+        return s.isAdmin[account] == 1 ? true : false;
+    }
+
+    function toggleUpkeep(
+        address account
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.isUpkeep[account] = s.isUpkeep[account] == 0 ? 1 : 0;
+        return s.isUpkeep[account] == 1 ? true : false;
     }
 
     function setFeeCollector(
         address feeCollector
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.feeCollector = feeCollector;
+        return true;
     }
 
     function getWhitelistStatus(
@@ -48,13 +64,24 @@ contract AccessFacet is Modifiers {
         return s.isWhitelisted[account] == 1 ? true : false;
     }
 
-    /// @dev    Only return for caller to prevent sharing of Admin public keys.
     function getAdminStatus(
+        address account
     )   external
+        onlyAdmin
         view
         returns (bool)
     {
-        return s.isAdmin[msg.sender] == 1 ? true : false;
+        return s.isAdmin[account] == 1 ? true : false;
+    }
+
+    function getUpkeepStatus(
+        address account
+    )   external
+        onlyAdmin
+        view
+        returns (bool)
+    {
+        return s.isUpkeep[account] == 1 ? true : false;
     }
 
     function getFeeCollectorStatus(

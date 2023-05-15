@@ -11,13 +11,9 @@ pragma solidity ^0.8.0;
     @notice Test Vault contract
  */
 
-import { ERC4626 } from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./utils/ERC4626.sol";
 
 contract Vault is ERC4626 {
-    using SafeERC20 for IERC20;
 
     constructor(
         ERC20 underlying_,
