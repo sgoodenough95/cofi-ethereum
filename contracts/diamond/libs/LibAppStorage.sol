@@ -50,6 +50,10 @@ struct AppStorage {
     // E.g., COFI => 1.
     mapping(address => uint8)   redeemEnabled;
 
+    uint256 initReward;
+
+    mapping(address => uint8)   initRewardClaimed;
+
     // Yield points capture (determined via yield earnings from fiAsset).
     // E.g., 0x1234... => COFI => YieldPointsCapture.
     mapping(address => mapping(address => YieldPointsCapture)) YPC;

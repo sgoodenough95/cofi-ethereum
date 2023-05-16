@@ -15,37 +15,56 @@ library LibToken {
 
     /// @notice Emitted when a transfer is executed.
     ///
-    /// @param  asset           The asset transferred.
+    /// @param  asset           The asset transferred (underlyingAsset, yieldAsset, or fiAsset).
     /// @param  amount          The amount transferred.
     /// @param  transferFrom    The account the asset was transferred from.
     /// @param  recipient       The recipient of the transfer.
-    event Transfer(address asset, uint256 amount, address transferFrom, address recipient);
+    event Transfer(address indexed asset, uint256 amount, address indexed transferFrom, address indexed recipient);
 
-    /// @notice Emitted when a token is minted.
+    /// @notice Emitted when a fiAsset is minted.
     ///
-    /// @param  asset   The address of the minted token.
-    /// @param  amount  The amount of tokens minted.
-    /// @param  to      The recipient of the minted tokens.
-    event Mint(address asset, uint256 amount, address to);
+    /// @param  fiAsset The address of the minted fiAsset.
+    /// @param  amount  The amount of fiAssets minted.
+    /// @param  to      The recipient of the minted fiAssets.
+    event Mint(address indexed fiAsset, uint256 amount, address indexed to);
 
-    /// @notice Emitted when a token is minted.
+    /// @notice Emitted when a fiAsset is burned.
     ///
-    /// @param  asset   The address of the minted token.
-    /// @param  amount  The amount of tokens minted.
-    /// @param  from    The recipient of the minted tokens.
-    event Burn(address asset, uint256 amount, address from);
+    /// @param  fiAsset The address of the burned fiAsset.
+    /// @param  amount  The amount of fiAssets burned.
+    /// @param  from    The account burned from.
+    event Burn(address indexed fiAsset, uint256 amount, address indexed from);
+
+    /// @notice Emitted when a fiAsset supply update is executed.
+    ///
+    /// @param  fiAsset The fiAsset with updated supply.
+    /// @param  assets  The new total supply.
+    /// @param  yield   The amount of yield added.
+    event TotalSupplyUpdated(address indexed fiAsset, uint256 assets, uint256 yield);
+
+    /// @notice Emitted when external points are distributed (not tied to yield).
+    ///
+    /// @param  account The recipient of the points.
+    /// @param  amount  The amount of points distributed.
+    event ExternalPointsDistributed(address indexed account, uint256 amount);
 
     /// @notice Emitted when a mint fee is captured.
     ///
-    /// @param  asset   The minted asset.
-    /// @param  amount  The fee amount captured.
-    event MintFeeCaptured(address asset, uint256 amount);
+    /// @param  fiAsset The minted fiAsset.
+    /// @param  amount  The mint fee amount captured in fiAssets.
+    event MintFeeCaptured(address indexed fiAsset, uint256 amount);
 
     /// @notice Emitted when a redemption fee is captured.
     ///
-    /// @param  asset   The asset submitted for redemption.
-    /// @param  amount  The fee amount captured.
-    event RedeemFeeCaptured(address asset, uint256 amount);
+    /// @param  fiAsset The redeemed fiAsset.
+    /// @param  amount  The redeem fee amount captured in fiAssets.
+    event RedeemFeeCaptured(address indexed fiAsset, uint256 amount);
+
+    /// @notice Emitted when a service fee is captured from a yield distribution.
+    ///
+    /// @param  fiAsset The fiAsset to capture yield from.
+    /// @param  amount  The service fee amount captured in fiAssets.
+    event ServiceFeeCaptured(address indexed fiAsset, uint256 amount);
 
     /// @notice Executes a transferFrom operation in the context of Stoa.
     ///
@@ -157,6 +176,42 @@ library LibToken {
         IFiToken(fiAsset).redeem(from, s.feeCollector, amount);
     }
 
+    /// @notice Updates the total supply of the fiAsset.
+    function _changeSupply(
+        address fiAsset,
+        uint256 amount,
+        uint256 yield
+    ) internal {
+        
+        IFiToken(fiAsset).changeSupply(amount);
+        emit TotalSupplyUpdated(fiAsset, amount, yield);
+    }
+
+    /// @notice Distributes rewards not tied to yield.
+    ///
+    /// @param  account The recipient.
+    /// @param  points  The amount of points distributed.
+    function _reward(
+        address account,
+        uint256 points
+    ) internal {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        s.XPC[account] += points;
+    }
+
+    /// @notice Reward distributed for each new sign-up.
+    /// @dev    Only apply for msg.sender.
+    function _initReward(
+    ) internal {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        if (s.initReward != 0 && s.initRewardClaimed[msg.sender] == 0) {
+            s.XPC[msg.sender] += s.initReward;
+            s.initRewardClaimed[msg.sender] == 1;
+        }
+    }
+
     /// @notice Returns the mint fee for a given fiAsset.
     ///
     /// @param  fiAsset The fiAsset to mint.
@@ -184,6 +239,8 @@ library LibToken {
     }
 
     /// @notice Opts contract into receiving rebases.
+    ///
+    /// @param  fiAsset The fiAsset to opt-in to rebases for.
     function _rebaseOptIn(
         address fiAsset
     ) internal {
@@ -192,6 +249,8 @@ library LibToken {
     }
 
     /// @notice Opts contract out of receiving rebases.
+    ///
+    /// @param  fiAsset The fiAsset to opt-out of rebases for.
     function _rebaseOptOut(
         address fiAsset
     ) internal {
@@ -199,16 +258,10 @@ library LibToken {
         IFiToken(fiAsset).rebaseOptOut();
     }
 
-    /// @notice Updates the total supply of the fiAsset.
-    function _changeSupply(
-        address fiAsset,
-        uint256 amount
-    ) internal {
-        
-        IFiToken(fiAsset).changeSupply(amount);
-    }
-
     /// @notice Retrieves yield earned of fiAsset for account.
+    ///
+    /// @param  account The account to enquire for.
+    /// @param  fiAsset The fiAsset to check account's yield for.
     function _getYieldEarned(
         address account,
         address fiAsset

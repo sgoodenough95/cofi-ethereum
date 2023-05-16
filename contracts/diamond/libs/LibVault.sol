@@ -13,7 +13,7 @@ library LibVault {
     /// @param  depositFrom The account which supplied the underlyingAssets.
     /// @param  vault       The ERC4626 Vault.
     /// @param  shares      The amount of shares minted.
-    event Wrap(uint256 amount, address depositFrom, address vault, uint256 shares);
+    event Wrap(uint256 amount, address indexed depositFrom, address indexed vault, uint256 shares);
 
     /// @notice Emitted when an unwrap operation is executed.
     ///
@@ -22,7 +22,16 @@ library LibVault {
     /// @param  vault       The ERC4626 Vault.
     /// @param  assets      The amount of underlyingAssets received from the Vault.
     /// @param  recipient   The recipient of the underlyingAssets.
-    event Unwrap(uint256 amount, uint256 shares, address vault, uint256 assets, address recipient);
+    event Unwrap(uint256 amount, uint256 shares, address indexed vault, uint256 assets, address indexed recipient);
+
+    /// @notice Emitted when a vault migration is executed.
+    ///
+    /// @param  fiAsset     The fiAsset to migrate underlyingAssets for.
+    /// @param  oldVault    The vault migrated from.
+    /// @param  newVault    The vault migrated to.
+    /// @param  oldAssets   The amount of assets pre-migration.
+    /// @param  newAssets   The amount of assets post-migration.
+    event VaultMigration(address indexed fiAsset, address indexed oldVault, address indexed newVault, uint256 oldAssets, uint256 newAssets);
 
     /// @notice Wraps an underlyingAsset into shares via a Vault.
     /// @dev    Shares reside at the Diamond at all times.

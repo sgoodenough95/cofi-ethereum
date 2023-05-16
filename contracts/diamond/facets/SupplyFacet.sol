@@ -62,6 +62,7 @@ contract SupplyFacet is Modifiers {
         }
 
         LibToken._mint(fiAsset, recipient, mintAfterFee);
+        LibToken._initReward();
     }
 
     /// @notice Converts a supported yieldAsset into a fiAsset (e.g., yvDAI to COFI).
@@ -101,6 +102,7 @@ contract SupplyFacet is Modifiers {
         }
 
         LibToken._mint(fiAsset, recipient, mintAfterFee);
+        LibToken._initReward();
     }
 
     /// @notice Converts a fiAsset to its collateral yieldAsset.

@@ -22,6 +22,40 @@ import 'hardhat/console.sol';
 contract RewardFacet is Modifiers {
     using PercentageMath for uint256;
 
+    /// @notice Function for updating fiAssets originating from vaults.
+    ///
+    /// @param  fiAsset The fiAsset to distribute yield earnings for.
+    function rebase(
+        address fiAsset
+    )   public
+        returns (uint256 assets, uint256 yield, uint256 shareYield)
+    {
+        require(
+            s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
+            'RewardFacet: Caller not Upkeep or Admin'
+        );
+        uint256 currentSupply = IERC20(fiAsset).totalSupply();
+        if (currentSupply == 0) return (0, 0, 0);
+
+        assets = LibVault._totalValue(s.vault[fiAsset]);
+
+        if (assets > currentSupply) {
+
+            yield = assets - currentSupply;
+
+            shareYield = yield.percentMul(1e4 - s.serviceFee[fiAsset]);
+
+            LibToken._changeSupply(fiAsset, currentSupply + shareYield, yield);
+
+            if (yield - shareYield > 0) {
+                LibToken._mint(fiAsset, s.feeCollector, yield - shareYield);
+                emit LibToken.ServiceFeeCaptured(fiAsset, yield - shareYield);
+            }
+        } else {
+            return (assets, 0, 0);
+        }
+    }
+
     /// @notice This function must be called after the last rebase of a pointsRate
     ///         and before the application of a new pointsRate for a given fiAsset,
     ///         for every account that is eliigble for yield/points. If not, the new
@@ -34,13 +68,19 @@ contract RewardFacet is Modifiers {
     ///
     /// @param  accounts    The array of accounts to capture points for.
     /// @param  fiAsset     The fiAsset to capture points for.
-    function batchCaptureYieldPoints(
+    function captureYieldPoints(
         address[] memory    accounts,
         address             fiAsset
     )   external
         returns (bool)
     {
         /**
+            POINTS CAPTURE:
+
+            1.  Gets current yield earned.
+            2.  If greater than previous yield earned, apply points
+                for difference.
+            3.  Update yield earned.
 
             DETERMINE WHICH ACCOUNTS TO PASS:
 
@@ -63,31 +103,6 @@ contract RewardFacet is Modifiers {
             }
         }
         return true;
-    }
-
-    function captureYieldPoints(
-        address account,
-        address fiAsset
-    )   external
-        returns (uint256)
-    {
-        /**
-            POINTS CAPTURE:
-
-            1.  Gets current yield earned.
-            2.  If greater than previous yield earned, apply points
-                for difference.
-            3.  Update yield earned.
-         */
-        
-        uint256 yield = LibToken._getYieldEarned(account, fiAsset);
-        if (s.YPC[account][fiAsset].yield < yield) {
-            s.YPC[account][fiAsset].points +=
-                (yield - s.YPC[account][fiAsset].yield)
-                    .percentMul(s.pointsRate[fiAsset]);
-            s.YPC[account][fiAsset].yield  = yield;
-        }
-        return s.YPC[account][fiAsset].yield;
     }
 
     /// @dev    Yield points must be captured beforehand to ensure they
@@ -115,19 +130,16 @@ contract RewardFacet is Modifiers {
         returns (bool)
     {
         for(uint i = 0; i < accounts.length; ++i) {
-            s.XPC[accounts[i]] += points;
+            LibToken._reward(accounts[i], points);
         }
         return true;
     }
 
     /// @notice Function for migrating to a new Vault. The new Vault must support the
-    ///         same underlyingAsset (e.g., DAI).
+    ///         same underlyingAsset (e.g., USDC).
     ///
-    /// @dev    Will only ever be called as part of a migration script, and therefore
-    ///         requires that the relevant functions are called before and after.
-    ///
-    /// @dev    Ensure that a buffer of the underlyingAsset has been transferred to the
-    ///         Diamond beforehand to account for slippage.
+    /// @dev    Ensure that a buffer of the underlyingAsset resides in the Diamond
+    ///         beforehand to account for slippage.
     ///
     /// @param  fiAsset     The fiAsset to migrate vault backing for.
     /// @param  newVault    The vault to migrate to (must adhere to ERC4626).
@@ -141,15 +153,13 @@ contract RewardFacet is Modifiers {
             s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
             'RewardFacet: Caller not Upkeep or Admin'
         );
+        require(
+           IERC4626(s.vault[fiAsset]).asset() == IERC4626(newVault).asset(),
+           'RewardFacet: New vault does not share same underlying asset'
+        );
         // Ensure minting/redeeming of fiAsset is disabled.
-        require(
-            s.mintEnabled[fiAsset] == 0,
-            'RewardFacet: Require mint to be disabled'
-        );
-        require(
-            s.redeemEnabled[fiAsset] == 0,
-            'RewardFacet: Require redeem to be disabled'
-        );
+        s.mintEnabled[fiAsset]      = 0;
+        s.redeemEnabled[fiAsset]    = 0;
 
         // Pull funds from old vault.
         uint256 assets = IERC4626(s.vault[fiAsset]).redeem(
@@ -160,7 +170,11 @@ contract RewardFacet is Modifiers {
 
         // Approve newVault spend for Diamond.
         IERC20(IERC4626(s.vault[fiAsset]).asset())
-            .approve(newVault, IERC20(IERC4626(s.vault[fiAsset]).asset()).balanceOf(address(this)));
+            .approve(
+                newVault,
+                IERC20(IERC4626(s.vault[fiAsset]).asset())
+                    .balanceOf(address(this))
+            );
 
         // Deploy funds to new vault.
         LibVault._wrap(
@@ -174,70 +188,24 @@ contract RewardFacet is Modifiers {
             assets <= LibVault._totalValue(newVault),
             'AdminFacet: Vault migration slippage exceeded'
         );
+        emit LibVault.VaultMigration(
+            fiAsset,
+            s.vault[fiAsset],
+            newVault,
+            assets,
+            LibVault._totalValue(newVault)
+        );
 
         // Update vault for fiAsset.
         s.vault[fiAsset] = newVault;
 
+        rebase(fiAsset);
+
+        // Re-enable minting/redeeming of fiAsset.
+        s.mintEnabled[fiAsset]      = 1;
+        s.redeemEnabled[fiAsset]    = 1;
+
         return true;
-        /**
-            TO FINALISE MIGRATION:
-
-            1.  Call 'rebase()'.
-            2.  Enable minting/redeeming.
-         */
-    }
-
-    // /// @notice 'changeSupply()' will be commented out, but left for reference.
-    // ///         For the Stoa stablecoin product, an Admin will call changeSupply() directly.
-    // ///         For the COFIMoney MVP, however, this will not be the case.
-    // ///
-    // /// @notice Function for manually changing the supply of a fiAsset.
-    // ///
-    // /// @dev    'rebase()' must be called after for change to take effect.
-    // ///
-    // /// @param  fiAsset     The fiAsset to change supply for.
-    // /// @param  newSupply   The new supply of fiAssets (not accounting for CoFi's yield share).
-    // function changeSupply(
-    //     address fiAsset,
-    //     uint256 newSupply
-    // )   external
-    //     onlyAdmin
-    // {
-    //     IFiToken(fiAsset).changeSupply(newSupply);
-    // }
-
-    /// @notice Function for updating fiAssets originating from vaults.
-    ///
-    /// @param  fiAsset The fiAsset to distribute yield earnings for.
-    function rebase(
-        address fiAsset
-    )   external
-        returns (bool)
-    {
-        require(
-            s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
-            'RewardFacet: Caller not Upkeep or Admin'
-        );
-        uint256 currentSupply = IERC20(fiAsset).totalSupply();
-        if (currentSupply == 0) return false;
-
-        uint256 assets = LibVault._totalValue(s.vault[fiAsset]);
-
-        if (assets > currentSupply) {
-
-            uint256 yield = assets - currentSupply;
-
-            uint256 shareYield = yield.percentMul(1e4 - s.serviceFee[fiAsset]);
-
-            LibToken._changeSupply(fiAsset, currentSupply + shareYield);
-
-            if (yield - shareYield > 0)
-                LibToken._mint(fiAsset, s.feeCollector, yield - shareYield);
-
-            return true;
-        } else {
-            return false;
-        }
     }
 
     function rebaseOptIn(
