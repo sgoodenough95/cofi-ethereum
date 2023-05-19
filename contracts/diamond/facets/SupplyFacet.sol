@@ -14,6 +14,7 @@ pragma solidity 0.8.19;
 
 import { Modifiers } from '../libs/LibAppStorage.sol';
 import { LibToken } from '../libs/LibToken.sol';
+import { LibReward } from '../libs/LibReward.sol';
 import { LibVault } from '../libs/LibVault.sol';
 import { IERC4626 } from '.././interfaces/IERC4626.sol';
 import 'hardhat/console.sol';
@@ -23,16 +24,18 @@ contract SupplyFacet is Modifiers {
     /// @notice Converts a supported underlyingAsset into a fiAsset (e.g., DAI to COFI).
     ///
     /// @param  amount          The amount of underlyingAssets to deposit.
+    /// @param  minAmountOut    The minimum amount of fiAssets received (before fees).
     /// @param  fiAsset         The fiAsset to mint.
     /// @param  depositFrom     The account to deposit underlyingAssets from.
     /// @param  recipient       The recipient of the fiAssets.
-    /// @param  minAmountOut    The minimum amount of fiAssets received (before fees).
+    /// @param  referral        The referral account (address(0) if none provided).
     function underlyingToFi(
         uint256 amount,
         uint256 minAmountOut, // E.g., 1,000 * 0.9975 = 997.50. Auto-set to 0.25%.
         address fiAsset,
         address depositFrom,
-        address recipient
+        address recipient,
+        address referral
     )
         external
         isWhitelisted
@@ -62,7 +65,8 @@ contract SupplyFacet is Modifiers {
         }
 
         LibToken._mint(fiAsset, recipient, mintAfterFee);
-        LibToken._initReward();
+        LibReward._initReward();
+        if (referral != address(0)) LibReward._referReward(referral);
     }
 
     /// @notice Converts a supported yieldAsset into a fiAsset (e.g., yvDAI to COFI).
@@ -72,12 +76,14 @@ contract SupplyFacet is Modifiers {
     /// @param  fiAsset         The fiAsset to mint.
     /// @param  depositFrom     The account to deposit yieldAssets from.
     /// @param  recipient       The recipient of the fiAssets.
+    /// @param  referral        The referral account (address(0) if none provided).
     function sharesToFi(
         uint256 amount,
         uint256 minAmountOut,
         address fiAsset,
         address depositFrom,
-        address recipient
+        address recipient,
+        address referral
     )
         external
         isWhitelisted
@@ -102,16 +108,17 @@ contract SupplyFacet is Modifiers {
         }
 
         LibToken._mint(fiAsset, recipient, mintAfterFee);
-        LibToken._initReward();
+        LibReward._initReward();
+        if (referral != address(0)) LibReward._referReward(referral);
     }
 
     /// @notice Converts a fiAsset to its collateral yieldAsset.
     ///
     /// @param  amount          The amount of fiAssets to redeem.
-    /// @param  depositFrom     The account to deposit fiAssets from.
-    /// @param  fiAsset         The fiAsset to redeem (e.g., COFI).
-    /// @param  recipient       The recipient of the yieldAssets.
     /// @param  minAmountOut    The minimum amount of yieldAssets received (after fees).
+    /// @param  fiAsset         The fiAsset to redeem (e.g., COFI).
+    /// @param  depositFrom     The account to deposit fiAssets from.
+    /// @param  recipient       The recipient of the yieldAssets.
     function fiToShares(
         uint256 amount,
         uint256 minAmountOut,
@@ -147,10 +154,10 @@ contract SupplyFacet is Modifiers {
     ///         E.g., send USDC from having COFI in your wallet.
     ///
     /// @param  amount          The amount of fiAssets to redeem.
-    /// @param  depositFrom     The account to deposit fiAssets from.
-    /// @param  fiAsset         The fiAsset to redeem (e.g., COFI).
-    /// @param  recipient       The recipient of the underlyingAssets.
     /// @param  minAmountOut    The minimum amount of underlyingAssets received (after fees).
+    /// @param  fiAsset         The fiAsset to redeem (e.g., COFI).
+    /// @param  depositFrom     The account to deposit fiAssets from.
+    /// @param  recipient       The recipient of the underlyingAssets.
     function fiToUnderlying(
         uint256 amount,
         uint256 minAmountOut,

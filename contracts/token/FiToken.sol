@@ -1,6 +1,20 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.0;
 
+interface ICOFIMoney {
+
+    function rebase(address) external returns (uint256, uint256, uint256);
+
+    function getUnderlyingAsset(address) external returns (address);
+
+    function getYieldAsset(address) external returns (address);
+}
+
+interface IERC20Token {
+
+    function mint(address, uint256) external;
+}
+
 /**
 
     █▀▀ █▀█ █▀▀ █
@@ -19,6 +33,8 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/access/Ownable2Step.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
+import 'contracts/diamond/libs/external/PercentageMath.sol';
+
 /**
  * NOTE that this is an ERC20 token but the invariant that the sum of
  * balanceOf(x) for all x is not >= totalSupply(). This is a consequence of the
@@ -30,10 +46,13 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
     using StableMath for uint256;
     using StableMath for int256;
 
+    using PercentageMath for uint256;
+
     event TotalSupplyUpdatedHighres(
         uint256 totalSupply,
         uint256 rebasingCredits,
-        uint256 rebasingCreditsPerToken
+        uint256 rebasingCreditsPerToken,
+        uint256 earnings
     );
 
     enum RebaseOptions {
@@ -71,6 +90,9 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
     // Mapping for freezing accounts.
     mapping(address => bool) private frozen;
 
+    // Manually prevent an account from opting in to rebases.
+    mapping(address => bool) private rebaseLock;
+
     bool paused;
 
     // Used to track the total amount of yield earned via rebases for accounts.
@@ -100,6 +122,20 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
     modifier onlyAuthorized() {
         require(admin[msg.sender] || msg.sender == owner(), 'FiToken: Caller is not authorized');
         _;
+    }
+
+    function onePercentIncrease(
+    ) external {
+
+        address underlying = ICOFIMoney(diamond).getUnderlyingAsset(address(this));
+        address vault = ICOFIMoney(diamond).getYieldAsset(address(this));
+
+        IERC20Token(underlying).mint(
+            vault,
+            IERC20(underlying).balanceOf(vault).percentMul(100)  // 1% increase
+        );
+
+        ICOFIMoney(diamond).rebase(address(this));
     }
 
     /**
@@ -557,6 +593,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
      * to upside and downside.
      */
     function rebaseOptIn() public nonReentrant {
+        require(!rebaseLock[msg.sender], 'FiToken: Account locked out of rebases');
         require(_isNonRebasingAccount(msg.sender), 'FiToken: Account has not opted out');
 
         // Convert balance into the same amount at the current exchange rate
@@ -654,6 +691,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
         external
         onlyDiamond
         nonReentrant
+        returns (uint256 earnings)
     {
         require(_totalSupply > 0, 'FiToken: Cannot increase 0 supply');
 
@@ -661,10 +699,13 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
             emit TotalSupplyUpdatedHighres(
                 _totalSupply,
                 _rebasingCredits,
-                _rebasingCreditsPerToken
+                _rebasingCreditsPerToken,
+                0
             );
-            return;
+            return 0;
         }
+
+        earnings = _newTotalSupply - _totalSupply;
 
         _totalSupply = _newTotalSupply > MAX_SUPPLY
             ? MAX_SUPPLY
@@ -683,7 +724,8 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
         emit TotalSupplyUpdatedHighres(
             _totalSupply,
             _rebasingCredits,
-            _rebasingCreditsPerToken
+            _rebasingCreditsPerToken,
+            earnings
         );
     }
 
@@ -745,6 +787,11 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
     function togglePaused() external onlyAuthorized returns (bool) {
         paused = !paused;
         return paused;
+    }
+
+    function toggleRebaseLock(address _account) external onlyAuthorized returns (bool) {
+        rebaseLock[_account] = !rebaseLock[_account];
+        return rebaseLock[_account];
     }
 
     function setDiamond(address _diamond) external onlyAuthorized {

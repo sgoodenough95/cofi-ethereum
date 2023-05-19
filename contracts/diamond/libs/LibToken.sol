@@ -46,7 +46,14 @@ library LibToken {
     ///
     /// @param  account The recipient of the points.
     /// @param  amount  The amount of points distributed.
-    event ExternalPointsDistributed(address indexed account, uint256 amount);
+    event RewardDistributed(address indexed account, uint256 amount);
+
+    /// @notice Emitted when a referral is executed.
+    ///
+    /// @param  referral    The account receiving the referral reward.
+    /// @param  account     The account using the referral.
+    /// @param  amount      The amount of points distributed to the referral account.
+    event Referral(address indexed referral, address indexed account, uint256 amount);
 
     /// @notice Emitted when a mint fee is captured.
     ///
@@ -185,31 +192,6 @@ library LibToken {
         
         IFiToken(fiAsset).changeSupply(amount);
         emit TotalSupplyUpdated(fiAsset, amount, yield);
-    }
-
-    /// @notice Distributes rewards not tied to yield.
-    ///
-    /// @param  account The recipient.
-    /// @param  points  The amount of points distributed.
-    function _reward(
-        address account,
-        uint256 points
-    ) internal {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        s.XPC[account] += points;
-    }
-
-    /// @notice Reward distributed for each new sign-up.
-    /// @dev    Only apply for msg.sender.
-    function _initReward(
-    ) internal {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        if (s.initReward != 0 && s.initRewardClaimed[msg.sender] == 0) {
-            s.XPC[msg.sender] += s.initReward;
-            s.initRewardClaimed[msg.sender] == 1;
-        }
     }
 
     /// @notice Returns the mint fee for a given fiAsset.

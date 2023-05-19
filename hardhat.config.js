@@ -5,7 +5,7 @@ require("@nomiclabs/hardhat-ethers");
 require("hardhat-diamond-abi");
 require('dotenv').config();
 
-const { API_KEY, PRIV_KEY, PRIV_KEY_1, PRIV_KEY_MM, PSCAN_KEY } = process.env;
+const { API_KEY, PRIV_KEY, PRIV_KEY_1, PRIV_KEY_MM, PSCAN_KEY, STOA_INFURA_API_KEY, STOA_PRIV_KEY, STOA_ARB_SCAN_API_KEY } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -31,11 +31,15 @@ module.exports = {
     goerli: {
       url: `https://goerli.infura.io/v3/${API_KEY}`,
       accounts: [`${PRIV_KEY_1}`]
+    },
+    arbGoerli: {
+      url: `https://goerli.infura.io/v3/${STOA_INFURA_API_KEY}`,
+      accounts: [`${STOA_PRIV_KEY}`]
     }
   },
   etherscan: {
     apiKey: {
-      polygonMumbai: 'NS6NWWVRV449MRM2GJ7GTNEGSAGMBWKMXG'
+      arbitrumGoerli: `${STOA_ARB_SCAN_API_KEY}`
     }
   }
 

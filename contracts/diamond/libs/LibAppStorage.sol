@@ -21,6 +21,12 @@ struct YieldPointsCapture {
     uint256 points;
 }
 
+struct RewardStatus {
+    uint8   initClaimed;
+    uint8   referClaimed;
+    uint8   referDisabled;
+}
+
 struct AppStorage {
 
     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
@@ -41,6 +47,9 @@ struct AppStorage {
     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
     mapping(address => uint256) pointsRate;
 
+    // E.g., COFI => 100 USDC. Buffer for migrations. Applies to underlyingAsset.
+    mapping(address => uint256) buffer;
+
     // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
     mapping(address => address) vault;
 
@@ -50,9 +59,13 @@ struct AppStorage {
     // E.g., COFI => 1.
     mapping(address => uint8)   redeemEnabled;
 
+    // Reward for first-time depositors. Setting to 0 deactivates it.
     uint256 initReward;
 
-    mapping(address => uint8)   initRewardClaimed;
+    // Reward for referrals. Setting to 0 deactivates it.
+    uint256 referReward;
+
+    mapping(address => RewardStatus) rewardStatus;
 
     // Yield points capture (determined via yield earnings from fiAsset).
     // E.g., 0x1234... => COFI => YieldPointsCapture.

@@ -12,7 +12,7 @@ interface IFiToken {
 
     function redeem(address from, address to, uint256 amount) external;
 
-    function changeSupply(uint newTotalSupply) external;
+    function changeSupply(uint newTotalSupply) external returns (uint256 earnings);
 
     function getYieldEarned(address account) external view returns (uint256);
 

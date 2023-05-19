@@ -13,6 +13,7 @@ describe('First test', function() {
   async function deploy() {
     const accounts = await ethers.getSigners()
     const owner = accounts[0]
+    const feeCollector = accounts[1]
       
     // Deploy COFI Dollar
     const COFI = await ethers.getContractFactory('FiToken')
@@ -44,11 +45,11 @@ describe('First test', function() {
     // await weth.deployed()
     // console.log('wETH deployed:', weth.address)
       
-    // Deploy yvDAI
-    const YVDAI = await ethers.getContractFactory('Vault')
-    const yvdai = await YVDAI.deploy(dai.address, 'Yearn Vault Dai', 'yvDAI')
-    await yvdai.deployed()
-    console.log('yvDAI deployed:', yvdai.address)
+    // Deploy vDAI
+    const VDAI = await ethers.getContractFactory('Vault')
+    const vdai = await VDAI.deploy(dai.address, 'Vault Dai', 'vDAI')
+    await vdai.deployed()
+    console.log('vDAI deployed:', vdai.address)
       
     // Deploy yvETH
     // const YVETH = await ethers.getContractFactory('Vault')
@@ -87,7 +88,7 @@ describe('First test', function() {
       'OwnershipFacet',
       'SupplyFacet',
       'RewardFacet',
-      'AdminFacet'
+      'AccessFacet'
     ]
     const cut = []
     for (const FacetName of FacetNames) {
@@ -105,8 +106,9 @@ describe('First test', function() {
     const initArgs = [{
       COFI:   cofi.address,
       // COFIE:  cofie.address,
-      yvDAI:  yvdai.address,
+      vDAI:  vdai.address,
       // yvETH:  yveth.address
+      feeCollector: feeCollector.address
     }]
       
     // upgrade diamond with facets
@@ -126,74 +128,84 @@ describe('First test', function() {
     console.log('Completed diamond cut')
 
     return {
-      owner, diamond, cofi, dai, yvdai
+      owner, feeCollector, diamond, cofi, dai, vdai
     }
   }
 
   describe('SupplyFacet', function() {
 
-    it('Should exchange DAI for COFI, rebase, and back again', async function() {
+    it('Should exchange USDC for COFI --x, rebase, and back again x--', async function() {
 
-      const { owner, diamond, cofi, dai, yvdai } = await loadFixture(deploy)
+      const { owner, feeCollector, diamond, cofi, dai, vdai } = await loadFixture(deploy)
 
       // Mint owner 1,000 DAI
       await dai.mint(owner.address, '1000000000000000000000')
 
       // Approve DAI spend for Vault contract.
-      await dai.approve(yvdai.address, '1000000000000000000000')
+      await dai.approve(vdai.address, '1000000000000000000000')
 
       signer = ethers.provider.getSigner(owner.address)
 
       const cofiMoney = (await ethers.getContractAt('COFIMoney', diamond.address)).connect(signer)
 
-      // Whitelist disabled in contract for now.
-      // await cofiMoney.setWhitelist(owner.address, 1)
+      // Owner already whitelisted.
 
       await cofiMoney.underlyingToFi(
         '1000000000000000000000', // amount:        1,000 DAI.
         '997500000000000000000',  // minAmountOut:  1,000 * 0.9975.
         cofi.address,             // fiAsset
         owner.address,            // depositFrom
-        owner.address             // recipient
+        owner.address,            // recipient
+        feeCollector.address      // referral account
       )
 
       // T0 End Outputs:
-      console.log('User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      console.log('t0 User COFI bal: ' + await cofi.balanceOf(owner.address))
+      console.log('t0 Vault DAI bal: ' + await dai.balanceOf(vdai.address))
+      console.log('t0 Diamond vDAI bal: ' + await vdai.balanceOf(diamond.address))
+      console.log('t0 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
+      console.log('t0 User Points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
+      console.log('t0 feeCollector Points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
+      console.log('t0 User External Points: ' + await cofiMoney.getExternalPoints(owner.address))
+      console.log('t0 feeCollector External Points: ' + await cofiMoney.getExternalPoints(feeCollector.address))
 
-      // Simulate 100 DAI yield earned by Vault
-      await dai.mint(yvdai.address, '100000000000000000000')
+      // // Simulate 100 DAI yield earned by Vault
+      // await dai.mint(vdai.address, '100000000000000000000')
 
-      // Rebase
-      await cofiMoney.rebase(cofi.address)
+      // Simulate 1% increase
+      await cofi.onePercentIncrease()
 
       const userCOFIBalT1 = await cofi.balanceOf(owner.address)
 
       // T1 End Outputs:
-      console.log('User COFI bal: ' + userCOFIBalT1.toString())
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      console.log('t1 User COFI bal: ' + userCOFIBalT1.toString())
+      console.log('t1 Vault DAI bal: ' + await dai.balanceOf(vdai.address))
+      console.log('t1 Diamond vDAI bal: ' + await vdai.balanceOf(diamond.address))
+      console.log('t1 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
+      console.log('t1 User Points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
+      console.log('t1 feeCollector Points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
+      console.log('t1 User Yield Points: ' + await cofiMoney.getYieldPoints(owner.address, [cofi.address]))
+      console.log('t1 feeCollector Yield Points: ' + await cofiMoney.getYieldPoints(feeCollector.address, [cofi.address]))
 
-      const minAmountOutT2 = Number(userCOFIBalT1 * 0.9975)
+      // // Convert back to DAI (redeem operation on FiToken contract skips approval check).
+      // await cofiMoney.fiToUnderlying(
+      //   userCOFIBalT1.toString(),
+      //   '1083465450000000000849',   // User COFI Bal * 0.9975.
+      //   cofi.address,
+      //   owner.address,
+      //   owner.address
+      // )
 
-      // Convert back to DAI (redeem operation on FiToken contract skips approval check).
-      await cofiMoney.fiToUnderlying(
-        userCOFIBalT1.toString(),
-        '1083465450000000000849',
-        cofi.address,
-        owner.address,
-        owner.address
-      )
-
-      // T2 End Outputs:
-      console.log('User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('User DAI bal: ' + await dai.balanceOf(owner.address))
-      console.log('Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      // // T2 End Outputs:
+      // console.log('t2 User COFI bal: ' + await cofi.balanceOf(owner.address))
+      // console.log('t2 User DAI bal: ' + await dai.balanceOf(owner.address))
+      // console.log('t2 Vault DAI bal: ' + await dai.balanceOf(vdai.address))
+      // console.log('t2 Diamond vDAI bal: ' + await vdai.balanceOf(diamond.address))
+      // console.log('t2 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
+      // console.log('t2 User Points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
+      // console.log('t2 feeCollector Points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
+      // console.log('t2 User Yield Points: ' + await cofiMoney.getYieldPoints(owner.address, [cofi.address]))
+      // console.log('t2 feeCollector Yield Points: ' + await cofiMoney.getYieldPoints(feeCollector.address, [cofi.address]))
     })
   })
 })

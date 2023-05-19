@@ -14,6 +14,7 @@ pragma solidity 0.8.19;
 import { Modifiers } from '../libs/LibAppStorage.sol';
 import { PercentageMath } from '../libs/external/PercentageMath.sol';
 import { LibToken } from '../libs/LibToken.sol';
+import { LibReward } from '../libs/LibReward.sol';
 import { LibVault } from '../libs/LibVault.sol';
 import { IERC4626 } from '../interfaces/IERC4626.sol';
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -36,6 +37,50 @@ contract RewardFacet is Modifiers {
         );
         uint256 currentSupply = IERC20(fiAsset).totalSupply();
         if (currentSupply == 0) return (0, 0, 0);
+
+        assets = LibVault._totalValue(s.vault[fiAsset]);
+
+        if (assets > currentSupply) {
+
+            yield = assets - currentSupply;
+
+            shareYield = yield.percentMul(1e4 - s.serviceFee[fiAsset]);
+
+            LibToken._changeSupply(fiAsset, currentSupply + shareYield, yield);
+
+            if (yield - shareYield > 0) {
+                LibToken._mint(fiAsset, s.feeCollector, yield - shareYield);
+                emit LibToken.ServiceFeeCaptured(fiAsset, yield - shareYield);
+            }
+        } else {
+            return (assets, 0, 0);
+        }
+    }
+
+    /// @notice Function for updating fiAssets originating from vaults.
+    ///
+    /// @param  fiAsset         The fiAsset to distribute yield earnings for.
+    /// @param  percentIncrease In basis points (e.g., 10 = 0.1%, 100 = 1%, etc.).
+    function rebaseSimulate(
+        address fiAsset,
+        uint256 percentIncrease
+    )   public
+        returns (uint256 assets, uint256 yield, uint256 shareYield)
+    {
+        require(
+            s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
+            'RewardFacet: Caller not Upkeep or Admin'
+        );
+        uint256 currentSupply = IERC20(fiAsset).totalSupply();
+        if (currentSupply == 0) return (0, 0, 0);
+
+        // Simulate percent increase
+        LibToken._mint(
+            IERC4626(s.vault[fiAsset]).asset(),
+            s.vault[fiAsset],
+            IERC20(IERC4626(s.vault[fiAsset]).asset()).balanceOf(s.vault[fiAsset])
+                .percentMul(percentIncrease)
+        );
 
         assets = LibVault._totalValue(s.vault[fiAsset]);
 
@@ -105,6 +150,62 @@ contract RewardFacet is Modifiers {
         return true;
     }
 
+    /// @notice Function for migrating to a new Vault. The new Vault must support the
+    ///         same underlyingAsset (e.g., USDC).
+    ///
+    /// @dev    Ensure that a buffer of the underlyingAsset resides in the Diamond
+    ///         beforehand to account for slippage.
+    ///
+    /// @param  fiAsset     The fiAsset to migrate vault backing for.
+    /// @param  newVault    The vault to migrate to (must adhere to ERC4626).
+    function migrateVault(
+        address fiAsset,
+        address newVault
+    )   external
+        returns (bool)
+    {
+        require(
+            s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
+            'RewardFacet: Caller not Upkeep or Admin'
+        );
+        // Pull funds from old vault.
+        uint256 assets = IERC4626(s.vault[fiAsset]).redeem(
+            IERC20(s.vault[fiAsset]).balanceOf(address(this)),
+            address(this),
+            address(this)
+        );
+
+        // Approve newVault spend for Diamond.
+        IERC20(IERC4626(s.vault[fiAsset]).asset())
+            .approve(newVault, assets + s.buffer[fiAsset]);
+
+        // Deploy funds to new vault.
+        LibVault._wrap(
+            assets + s.buffer[fiAsset],
+            newVault,
+            address(this)
+        );
+
+        require(
+            assets <= LibVault._totalValue(newVault),
+            'AdminFacet: Vault migration slippage exceeded'
+        );
+        emit LibVault.VaultMigration(
+            fiAsset,
+            s.vault[fiAsset],
+            newVault,
+            assets,
+            LibVault._totalValue(newVault)
+        );
+
+        // Update vault for fiAsset.
+        s.vault[fiAsset] = newVault;
+
+        rebase(fiAsset);
+
+        return true;
+    }
+
     /// @dev    Yield points must be captured beforehand to ensure they
     ///         have updated correctly prior to a pointsRate change.
     function setPointsRate(
@@ -130,82 +231,21 @@ contract RewardFacet is Modifiers {
         returns (bool)
     {
         for(uint i = 0; i < accounts.length; ++i) {
-            LibToken._reward(accounts[i], points);
+            LibReward._reward(accounts[i], points);
         }
         return true;
     }
 
-    /// @notice Function for migrating to a new Vault. The new Vault must support the
-    ///         same underlyingAsset (e.g., USDC).
-    ///
-    /// @dev    Ensure that a buffer of the underlyingAsset resides in the Diamond
-    ///         beforehand to account for slippage.
-    ///
-    /// @param  fiAsset     The fiAsset to migrate vault backing for.
-    /// @param  newVault    The vault to migrate to (must adhere to ERC4626).
-    function migrateVault(
-        address fiAsset,
-        address newVault
+    function toggleReferDisabled(
+        address account
     )   external
+        onlyAdmin
         returns (bool)
     {
-        require(
-            s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
-            'RewardFacet: Caller not Upkeep or Admin'
-        );
-        require(
-           IERC4626(s.vault[fiAsset]).asset() == IERC4626(newVault).asset(),
-           'RewardFacet: New vault does not share same underlying asset'
-        );
-        // Ensure minting/redeeming of fiAsset is disabled.
-        s.mintEnabled[fiAsset]      = 0;
-        s.redeemEnabled[fiAsset]    = 0;
-
-        // Pull funds from old vault.
-        uint256 assets = IERC4626(s.vault[fiAsset]).redeem(
-            IERC20(s.vault[fiAsset]).balanceOf(address(this)),
-            address(this),
-            address(this)
-        );
-
-        // Approve newVault spend for Diamond.
-        IERC20(IERC4626(s.vault[fiAsset]).asset())
-            .approve(
-                newVault,
-                IERC20(IERC4626(s.vault[fiAsset]).asset())
-                    .balanceOf(address(this))
-            );
-
-        // Deploy funds to new vault.
-        LibVault._wrap(
-            IERC20(IERC4626(s.vault[fiAsset]).asset())
-                .balanceOf(address(this)),
-            newVault,
-            address(this)
-        );
-
-        require(
-            assets <= LibVault._totalValue(newVault),
-            'AdminFacet: Vault migration slippage exceeded'
-        );
-        emit LibVault.VaultMigration(
-            fiAsset,
-            s.vault[fiAsset],
-            newVault,
-            assets,
-            LibVault._totalValue(newVault)
-        );
-
-        // Update vault for fiAsset.
-        s.vault[fiAsset] = newVault;
-
-        rebase(fiAsset);
-
-        // Re-enable minting/redeeming of fiAsset.
-        s.mintEnabled[fiAsset]      = 1;
-        s.redeemEnabled[fiAsset]    = 1;
-
-        return true;
+        s.rewardStatus[account].referDisabled == 0 ?
+            s.rewardStatus[account].referDisabled = 1 :
+            s.rewardStatus[account].referDisabled = 0;
+        return s.rewardStatus[account].referDisabled == 1 ? true : false;
     }
 
     function rebaseOptIn(
