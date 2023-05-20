@@ -33,7 +33,7 @@ module.exports = {
       accounts: [`${PRIV_KEY_1}`]
     },
     arbGoerli: {
-      url: `https://goerli.infura.io/v3/${STOA_INFURA_API_KEY}`,
+      url: `https://arbitrum-goerli.infura.io/v3/${STOA_INFURA_API_KEY}`,
       accounts: [`${STOA_PRIV_KEY}`]
     }
   },

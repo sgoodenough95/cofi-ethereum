@@ -193,8 +193,10 @@ contract SupplyFacet is Modifiers {
         uint256 amount
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.minDeposit[fiAsset] = amount;
+        return true;
     }
 
     /// @notice minWithdraw applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
@@ -203,8 +205,10 @@ contract SupplyFacet is Modifiers {
         uint256 amount
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.minWithdraw[fiAsset] = amount;
+        return true;
     }
 
     function setMintFee(
@@ -212,16 +216,20 @@ contract SupplyFacet is Modifiers {
         uint256 amount
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.mintFee[fiAsset] = amount;
+        return true;
     }
 
     function toggleMintEnabled(
         address fiAsset
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.mintEnabled[fiAsset] = s.mintEnabled[fiAsset] == 0 ? 1 : 0;
+        return s.mintEnabled[fiAsset] == 1 ? true : false;
     }
 
     function setRedeemFee(
@@ -229,16 +237,31 @@ contract SupplyFacet is Modifiers {
         uint256 amount
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.redeemFee[fiAsset] = amount;
+        return true;
     }
 
     function toggleRedeemEnabled(
         address fiAsset
     )   external
         onlyAdmin
+        returns (bool)
     {
         s.redeemEnabled[fiAsset] = s.redeemEnabled[fiAsset] == 0 ? 1 : 0;
+        return s.redeemEnabled[fiAsset] == 1 ? true : false;
+    }
+
+    function setServiceFee(
+        address fiAsset,
+        uint256 amount
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.serviceFee[fiAsset] = amount;
+        return true;
     }
 
     function getMinDeposit(
@@ -293,6 +316,15 @@ contract SupplyFacet is Modifiers {
         returns (bool)
     {
         return s.redeemEnabled[fiAsset] == 1 ? true : false;
+    }
+
+    function getServiceFee(
+        address fiAsset
+    )   external
+        view
+        returns (uint256)
+    {
+        return s.serviceFee[fiAsset];
     }
 
     /// @notice Returns the underlyingAsset (variable) for a given fiAsset.

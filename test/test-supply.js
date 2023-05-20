@@ -187,25 +187,25 @@ describe('First test', function() {
       console.log('t1 User Yield Points: ' + await cofiMoney.getYieldPoints(owner.address, [cofi.address]))
       console.log('t1 feeCollector Yield Points: ' + await cofiMoney.getYieldPoints(feeCollector.address, [cofi.address]))
 
-      // // Convert back to DAI (redeem operation on FiToken contract skips approval check).
-      // await cofiMoney.fiToUnderlying(
-      //   userCOFIBalT1.toString(),
-      //   '1083465450000000000849',   // User COFI Bal * 0.9975.
-      //   cofi.address,
-      //   owner.address,
-      //   owner.address
-      // )
+      // Convert back to DAI (redeem operation on FiToken contract skips approval check).
+      await cofiMoney.fiToUnderlying(
+        userCOFIBalT1.toString(),
+        '1083465450000000000849',   // User COFI Bal * 0.9975.
+        cofi.address,
+        owner.address,
+        owner.address
+      )
 
-      // // T2 End Outputs:
-      // console.log('t2 User COFI bal: ' + await cofi.balanceOf(owner.address))
-      // console.log('t2 User DAI bal: ' + await dai.balanceOf(owner.address))
-      // console.log('t2 Vault DAI bal: ' + await dai.balanceOf(vdai.address))
-      // console.log('t2 Diamond vDAI bal: ' + await vdai.balanceOf(diamond.address))
-      // console.log('t2 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
-      // console.log('t2 User Points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
-      // console.log('t2 feeCollector Points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
-      // console.log('t2 User Yield Points: ' + await cofiMoney.getYieldPoints(owner.address, [cofi.address]))
-      // console.log('t2 feeCollector Yield Points: ' + await cofiMoney.getYieldPoints(feeCollector.address, [cofi.address]))
+      // T2 End Outputs:
+      console.log('t2 User COFI bal: ' + await cofi.balanceOf(owner.address))
+      console.log('t2 User DAI bal: ' + await dai.balanceOf(owner.address))
+      console.log('t2 Vault DAI bal: ' + await dai.balanceOf(vdai.address))
+      console.log('t2 Diamond vDAI bal: ' + await vdai.balanceOf(diamond.address))
+      console.log('t2 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
+      console.log('t2 User Points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
+      console.log('t2 feeCollector Points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
+      console.log('t2 User Yield Points: ' + await cofiMoney.getYieldPoints(owner.address, [cofi.address]))
+      console.log('t2 feeCollector Yield Points: ' + await cofiMoney.getYieldPoints(feeCollector.address, [cofi.address]))
     })
   })
 })

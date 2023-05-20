@@ -3,9 +3,9 @@
 
 const { getSelectors, FacetCutAction } = require('./libraries/diamond.js')
 
-async function deployDiamond() {
+async function deploy() {
   const accounts = await ethers.getSigners()
-  const contractOwner = accounts[0]
+  const owner = accounts[0]
 
   // First deploy tokens
   // Deploy COFI Dollar
@@ -15,46 +15,61 @@ async function deployDiamond() {
   console.log('COFI Dollar deployed:', cofi.address)
 
   // Deploy COFI Ethereum
-  // const COFIE = await ethers.getContractFactory('FiToken')
-  // const cofie = await COFIE.deploy('COFI Ethreum', 'COFIE')
-  // await cofie.deployed()
-  // console.log('COFIE Ethereum deployed:', cofie.address)
+  const ETHFI = await ethers.getContractFactory('FiToken')
+  const ethfi = await ETHFI.deploy('COFI Ethreum', 'ETHFI')
+  await ethfi.deployed()
+  console.log('COFI Ethereum deployed:', ethfi.address)
 
-  // Deploy DAI
-  const DAI = await ethers.getContractFactory('ERC20Token')
-  const dai = await DAI.deploy('Dai', 'DAI')
-  await dai.deployed()
-  console.log('Dai deployed:', dai.address)
-
-  // Mint owner 1,000,000 DAI.
-  await dai.mint(contractOwner.address, '1000000000000000000000000')
+  // Deploy COFI Bitcoin
+  const BTCFI = await ethers.getContractFactory('FiToken')
+  const btcfi = await BTCFI.deploy('COFI Bitcoin', 'BTCFI')
+  await btcfi.deployed()
+  console.log('COFI Bitcoin deployed:', btcfi.address)
 
   // Deploy USDC
-  // const USDC = await ethers.getContractFactory('CreditToken')
-  // const usdc = await USDC.deploy('USD Coin', 'USDC')
-  // await usdc.deployed()
-  // console.log('USDC deployed:', usdc.address)
+  const USDC = await ethers.getContractFactory('ERC20Token')
+  const usdc = await USDC.deploy('Test USDC', 'USDC')
+  await usdc.deployed()
+  console.log('USDC deployed:', usdc.address)
 
-  // Deploy WETH
-  // const WETH = await ethers.getContractFactory('CreditToken')
-  // const weth = await WETH.deploy('Wrapped Ethereum', 'WETH')
-  // await weth.deployed()
-  // console.log('wETH deployed:', weth.address)
+  // Mint owner 1,000,000 USDC.
+  await usdc.mint(owner.address, '1000000000000000000000000')
 
-  // Mint owner 1,000,000 WETH.
-  // await weth.mint(contractOwner.address, '1000000000000000000000000')
+  // Deploy wETH
+  const WETH = await ethers.getContractFactory('ERC20Token')
+  const weth = await WETH.deploy('Test Wrapped Ethereum', 'wETH')
+  await weth.deployed()
+  console.log('wETH deployed:', weth.address)
 
-  // Deploy yvDAI
-  const YVDAI = await ethers.getContractFactory('Vault')
-  const yvdai = await YVDAI.deploy(dai.address, 'Yearn Vault Dai', 'yvDAI')
-  await yvdai.deployed()
-  console.log('yvDAI deployed:', yvdai.address)
+  // Mint owner 1,000 WETH.
+  await weth.mint(owner.address, '1000000000000000000000')
 
-  // Deploy yvETH
-  // const YVETH = await ethers.getContractFactory('Vault')
-  // const yveth = await YVETH.deploy(weth.address, 'Yearn Vault Ethereum', 'yvETH')
-  // await yveth.deployed()
-  // console.log('yvETH deployed:', yveth.address)
+  // Deploy wBTC
+  const WBTC = await ethers.getContractFactory('ERC20Token')
+  const wbtc = await WBTC.deploy('Test Wrapped Bitcoin', 'wBTC')
+  await wbtc.deployed()
+  console.log('wBTC deployed:', wbtc.address)
+
+  // Mint owner 100 wBTC.
+  await wbtc.mint(owner.address, '100000000000000000000')
+
+  // Deploy vUSDC
+  const VUSDC = await ethers.getContractFactory('Vault')
+  const vusdc = await VUSDC.deploy(usdc.address, 'Vault USDC', 'vUSDC')
+  await vusdc.deployed()
+  console.log('vUSDC deployed:', vusdc.address)
+
+  // Deploy vETH
+  const VETH = await ethers.getContractFactory('Vault')
+  const veth = await VETH.deploy(weth.address, 'Vault Ethereum', 'vETH')
+  await veth.deployed()
+  console.log('vETH deployed:', veth.address)
+
+  // Deploy vBTC
+  const VBTC = await ethers.getContractFactory('Vault')
+  const vbtc = await VBTC.deploy(wbtc.address, 'Vault Bitcoin', 'vBTC')
+  await vbtc.deployed()
+  console.log('vBTC deployed:', vbtc.address)
 
   // deploy DiamondCutFacet
   const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
@@ -64,12 +79,14 @@ async function deployDiamond() {
 
   // deploy Diamond
   const Diamond = await ethers.getContractFactory('Diamond')
-  const diamond = await Diamond.deploy(contractOwner.address, diamondCutFacet.address)
+  const diamond = await Diamond.deploy(owner.address, diamondCutFacet.address)
   await diamond.deployed()
   console.log('Diamond deployed:', diamond.address)
 
   // Set Diamond address in FiToken contract(s).
   await cofi.setDiamond(diamond.address)
+  await ethfi.setDiamond(diamond.address)
+  await btcfi.setDiamond(diamond.address)
 
   // deploy DiamondInit
   // DiamondInit provides a function that is called when the diamond is upgraded to initialize state variables
@@ -87,8 +104,7 @@ async function deployDiamond() {
     'OwnershipFacet',
     'SupplyFacet',
     'RewardFacet',
-    'LoupeFacet',
-    'AdminFacet'
+    'AccessFacet'
   ]
   const cut = []
   for (const FacetName of FacetNames) {
@@ -104,12 +120,17 @@ async function deployDiamond() {
   }
 
   const initArgs = [{
-    COFI:   cofi.address,
-    // COFIE:  cofie.address,
-    DAI:    dai.address,
-    // WETH:   weth.address,
-    yvDAI:  yvdai.address,
-    // yvETH:  yveth.address
+    COFI:         cofi.address,
+    ETHFI:        ethfi.address,
+    BTCFI:        btcfi.address,
+    vUSDC:        vusdc.address,
+    vETH:         veth.address,
+    vBTC:         vbtc.address,
+    admins:       [
+      '0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3',
+      '0x79b68a8C62AA0FEdA39d08E4c6755928aFF576C5'
+    ],
+    feeCollector: owner.address
   }]
 
   // upgrade diamond with facets
@@ -133,7 +154,7 @@ async function deployDiamond() {
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 if (require.main === module) {
-  deployDiamond()
+  deploy()
     .then(() => process.exit(0))
     .catch(error => {
       console.error(error)
@@ -141,4 +162,4 @@ if (require.main === module) {
     })
 }
 
-exports.deployDiamond = deployDiamond
+exports.deploy = deploy

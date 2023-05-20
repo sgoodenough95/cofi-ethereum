@@ -57,50 +57,6 @@ contract RewardFacet is Modifiers {
         }
     }
 
-    /// @notice Function for updating fiAssets originating from vaults.
-    ///
-    /// @param  fiAsset         The fiAsset to distribute yield earnings for.
-    /// @param  percentIncrease In basis points (e.g., 10 = 0.1%, 100 = 1%, etc.).
-    function rebaseSimulate(
-        address fiAsset,
-        uint256 percentIncrease
-    )   public
-        returns (uint256 assets, uint256 yield, uint256 shareYield)
-    {
-        require(
-            s.isUpkeep[msg.sender] == 1 || s.isAdmin[msg.sender] == 1,
-            'RewardFacet: Caller not Upkeep or Admin'
-        );
-        uint256 currentSupply = IERC20(fiAsset).totalSupply();
-        if (currentSupply == 0) return (0, 0, 0);
-
-        // Simulate percent increase
-        LibToken._mint(
-            IERC4626(s.vault[fiAsset]).asset(),
-            s.vault[fiAsset],
-            IERC20(IERC4626(s.vault[fiAsset]).asset()).balanceOf(s.vault[fiAsset])
-                .percentMul(percentIncrease)
-        );
-
-        assets = LibVault._totalValue(s.vault[fiAsset]);
-
-        if (assets > currentSupply) {
-
-            yield = assets - currentSupply;
-
-            shareYield = yield.percentMul(1e4 - s.serviceFee[fiAsset]);
-
-            LibToken._changeSupply(fiAsset, currentSupply + shareYield, yield);
-
-            if (yield - shareYield > 0) {
-                LibToken._mint(fiAsset, s.feeCollector, yield - shareYield);
-                emit LibToken.ServiceFeeCaptured(fiAsset, yield - shareYield);
-            }
-        } else {
-            return (assets, 0, 0);
-        }
-    }
-
     /// @notice This function must be called after the last rebase of a pointsRate
     ///         and before the application of a new pointsRate for a given fiAsset,
     ///         for every account that is eliigble for yield/points. If not, the new
@@ -206,6 +162,33 @@ contract RewardFacet is Modifiers {
         return true;
     }
 
+    function setBuffer(
+        address fiAsset,
+        uint256 buffer
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.buffer[fiAsset] = buffer;
+        return true;
+    }
+
+    /// @dev Only for setting up a new fiAsset. 'migrateVault()' must be used otherwise.
+    function setVault(
+        address fiAsset,
+        address vault
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        require(
+            s.vault[fiAsset] == address(0),
+            'RewardFacet: fiAsset must not already link with a Vault'
+        );
+        s.vault[fiAsset] = vault;
+        return true;
+    }
+
     /// @dev    Yield points must be captured beforehand to ensure they
     ///         have updated correctly prior to a pointsRate change.
     function setPointsRate(
@@ -236,16 +219,41 @@ contract RewardFacet is Modifiers {
         return true;
     }
 
-    function toggleReferDisabled(
-        address account
+    /// @dev Setting to 0 deactivates.
+    function setInitReward(
+        uint256 amount
     )   external
         onlyAdmin
         returns (bool)
     {
-        s.rewardStatus[account].referDisabled == 0 ?
-            s.rewardStatus[account].referDisabled = 1 :
-            s.rewardStatus[account].referDisabled = 0;
-        return s.rewardStatus[account].referDisabled == 1 ? true : false;
+        s.initReward = amount;
+        return true;
+    }
+
+    /// @dev Setting to 0 deactivates.
+    function setReferReward(
+        uint256 amount
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.referReward = amount;
+        return true;
+    }
+
+    function setRewardStatus(
+        address account,
+        uint8   initClaimed,
+        uint8   referClaimed,
+        uint8   referDisabled
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.rewardStatus[account].initClaimed     = initClaimed;
+        s.rewardStatus[account].referClaimed    = referClaimed;
+        s.rewardStatus[account].referDisabled   = referDisabled;
+        return true;
     }
 
     function rebaseOptIn(
@@ -325,5 +333,34 @@ contract RewardFacet is Modifiers {
         returns (uint256)
     {
         return s.pointsRate[fiAsset];
+    }
+
+    function getInitReward(
+    )   external
+        view
+        returns (uint256)
+    {
+        return s.initReward;
+    }
+
+    function getReferReward(
+    )   external
+        view
+        returns (uint256)
+    {
+        return s.referReward;
+    }
+
+    function getRewardStatus(
+        address account
+    )   external
+        view
+        returns (uint8, uint8, uint8)
+    {
+        return (
+            s.rewardStatus[account].initClaimed,
+            s.rewardStatus[account].referClaimed,
+            s.rewardStatus[account].referDisabled
+        );
     }
 }
