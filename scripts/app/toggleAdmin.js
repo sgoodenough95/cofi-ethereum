@@ -7,10 +7,10 @@ async function toggleAdmin() {
 
     const diamond = await ethers.getContractAt(
         'COFIMoney',
-        '0xEBdBbbeA597Ac421E9f0836d06f7AF0eF96e842d'    // Diamond address
+        '0x5769dc91fE18165C98607Ed341275fe39cBefBC7'    // Diamond address
     )
 
-    console.log(await diamond.toggleAdmin('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'))
+    console.log(await diamond.toggleWhitelist('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'))
 }
 
 // We recommend this pattern to be able to use async/await everywhere

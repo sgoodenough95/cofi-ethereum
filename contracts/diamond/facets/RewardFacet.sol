@@ -36,7 +36,10 @@ contract RewardFacet is Modifiers {
             'RewardFacet: Caller not Upkeep or Admin'
         );
         uint256 currentSupply = IERC20(fiAsset).totalSupply();
-        if (currentSupply == 0) return (0, 0, 0);
+        if (currentSupply == 0) {
+            emit LibToken.TotalSupplyUpdated(fiAsset, 0, 0);
+            return (0, 0, 0); 
+        }
 
         assets = LibVault._totalValue(s.vault[fiAsset]);
 
@@ -53,6 +56,7 @@ contract RewardFacet is Modifiers {
                 emit LibToken.ServiceFeeCaptured(fiAsset, yield - shareYield);
             }
         } else {
+            emit LibToken.TotalSupplyUpdated(fiAsset, assets, 0);
             return (assets, 0, 0);
         }
     }

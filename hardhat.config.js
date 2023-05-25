@@ -24,6 +24,10 @@ module.exports = {
     include: ["Facet"],
   },
   networks: {
+    arbitrum: {
+      url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`,
+      accounts: [`${STOA_PRIV_KEY}`]
+    },
     mumbai: {
       url: `https://polygon-mumbai.infura.io/v3/${API_KEY}`,
       accounts: [`${PRIV_KEY_MM}`]
@@ -35,6 +39,11 @@ module.exports = {
     arbGoerli: {
       url: `https://arbitrum-goerli.infura.io/v3/${STOA_INFURA_API_KEY}`,
       accounts: [`${STOA_PRIV_KEY}`]
+    },
+    hardhat: {
+      forking: {
+        url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`
+      }
     }
   },
   etherscan: {

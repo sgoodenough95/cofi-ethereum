@@ -13,6 +13,7 @@ struct FiAssetParams {
     uint256 serviceFee;     // E.g., COFI => 1,000bps (=10%). Applies to fiAsset only.
     uint256 pointsRate;     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
     address vault;          // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
+    address underlying;     // E.g., COFI => USDC. Not always vault.asset() (if using underlyingPrime).
     uint8   mintEnabled;    // E.g., COFI => 1.
     uint8   redeemEnabled;  // E.g., COFI => 1.
 }
@@ -28,25 +29,38 @@ struct RewardStatus {
     uint8   referDisabled;
 }
 
+struct UnderlyingAssetParams {
+    uint8   decimals;
+}
+
+struct UnderlyingPrimeParams {
+    address primeAsset;             // E.g., USDC-LP.
+    bytes4  toPrimeOp;              // Function signature of converting from underlying to prime op.
+    bytes4  toUnderlyingOp;         // Function signature of converting from prime to underlyig op.
+    bytes4  convertToUnderlyingOp;  // Function signature of determining equiv. number of underlying.
+    bytes4  convertToPrimeOp;       // Function signature of determining equiv. number of prime.
+    uint8   enabled;
+}
+
 struct AppStorage {
 
     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
-    mapping(address => uint256) minDeposit;//
+    mapping(address => uint256) minDeposit;
 
     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
-    mapping(address => uint256) minWithdraw;//
+    mapping(address => uint256) minWithdraw;
 
     // E.g., COFI => 10bps. Applies to fiAsset only.
-    mapping(address => uint256) mintFee;//
+    mapping(address => uint256) mintFee;
 
     // E.g., COFI => 10bps. Applies to fiAsset only.
-    mapping(address => uint256) redeemFee;//
+    mapping(address => uint256) redeemFee;
 
     // E.g., COFI => 1,000bps. Applies to fiAsset only.
-    mapping(address => uint256) serviceFee; //
+    mapping(address => uint256) serviceFee;
 
     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
-    mapping(address => uint256) pointsRate;//
+    mapping(address => uint256) pointsRate;
 
     // E.g., COFI => 100 USDC. Buffer for migrations. Applies to underlyingAsset.
     mapping(address => uint256) buffer;
@@ -54,11 +68,19 @@ struct AppStorage {
     // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
     mapping(address => address) vault;
 
-    // E.g., COFI => 1.
-    mapping(address => uint8)   mintEnabled;//
+    // E.g., COFI => USDC; ETHFI => wETH; BTCFI => wBTC.
+    // Need to specify as vault may use different underlying (e.g., USDC-LP).
+    mapping(address => address) underlying;
+
+    mapping(address => uint256) decimals;
 
     // E.g., COFI => 1.
-    mapping(address => uint8)   redeemEnabled;//
+    mapping(address => uint8)   mintEnabled;
+
+    // E.g., COFI => 1.
+    mapping(address => uint8)   redeemEnabled;
+
+    mapping(address => UnderlyingPrimeParams) primeParams;
 
     // Reward for first-time depositors. Setting to 0 deactivates it.
     uint256 initReward;
@@ -83,6 +105,10 @@ struct AppStorage {
 
     // Gnosis Safe contract.
     address feeCollector;
+
+    uint8 EXT_GUARD;
+
+    uint256 RETURN_ASSETS;
 }
 
 library LibAppStorage {
@@ -129,5 +155,12 @@ contract Modifiers {
     modifier onlyAdmin() {
         require(s.isAdmin[msg.sender] == 1, 'Caller not Admin');
         _;
+    }
+
+    /// @dev Low-level call operation available only for public/external functions.
+    modifier EXTGuard() {
+        require(s.EXT_GUARD == 1, 'Not accessible to external accounts');
+        _;
+        s.EXT_GUARD = 0;
     }
 }

@@ -6,10 +6,12 @@ import { PercentageMath } from "./external/PercentageMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // import { IPermit2 } from "./../interfaces/IPermit2.sol";
 import { IFiToken } from ".././interfaces/IFiToken.sol";
+import 'contracts/token/utils/StableMath.sol';
 import 'hardhat/console.sol';
 
 library LibToken {
     using PercentageMath for uint256;
+    using StableMath for uint256;
 
     // IPermit2 constant PERMIT2 = IPermit2(0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B);
 
@@ -250,5 +252,23 @@ library LibToken {
     ) internal view returns (uint256) {
         
         return IFiToken(fiAsset).getYieldEarned(account);
+    }
+
+    function _toFiDecimals(
+        address fiAsset,
+        uint256 amount
+    ) internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        return amount.scaleBy(18, s.decimals[s.underlying[fiAsset]]);
+    }
+
+    function _toUnderlyingDecimals(
+        address fiAsset,
+        uint256 amount
+    ) internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        return amount.scaleBy(s.decimals[s.underlying[fiAsset]], 18);
     }
 }
