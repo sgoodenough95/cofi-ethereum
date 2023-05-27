@@ -37,11 +37,10 @@ contract InitDiamond {
 
         s.underlying[_args.COFI] = _args.USDC;
 
-        s.primeParams[_args.vUSDC].toPrimeOp = bytes4(keccak256("toPrime_HOPUSDCLP(address,uint256)"));
-        s.primeParams[_args.vUSDC].toUnderlyingOp = bytes4(keccak256("toUnderlying_HOPUSDCLP(address,uint256)"));
-        s.primeParams[_args.vUSDC].convertToUnderlyingOp = bytes4(keccak256("convertToUnderlying_HOPUSDCLP(uint256)"));
-        s.primeParams[_args.vUSDC].convertToPrimeOp = bytes4(keccak256("convertToPrime_HOPUSDCLP(uint256)"));
-        s.primeParams[_args.vUSDC].enabled = 1;
+        s.derivParams[_args.vUSDC].toDeriv = bytes4(keccak256("toDeriv_HOPUSDCLP(uint256)"));
+        s.derivParams[_args.vUSDC].toUnderlying = bytes4(keccak256("toUnderlying_HOPUSDCLP(uint256)"));
+        s.derivParams[_args.vUSDC].convertToUnderlying = bytes4(keccak256("convertToUnderlying_HOPUSDCLP(uint256)"));
+        s.derivParams[_args.vUSDC].convertToDeriv = bytes4(keccak256("convertToDeriv_HOPUSDCLP(uint256)"));
 
         // Rebase opt-in.
         LibToken._rebaseOptIn(_args.COFI);

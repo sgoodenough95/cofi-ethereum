@@ -37,7 +37,7 @@ contract RewardFacet is Modifiers {
         );
         uint256 currentSupply = IERC20(fiAsset).totalSupply();
         if (currentSupply == 0) {
-            emit LibToken.TotalSupplyUpdated(fiAsset, 0, 0);
+            emit LibToken.TotalSupplyUpdated(fiAsset, 0, 0, 1e18);
             return (0, 0, 0); 
         }
 
@@ -56,10 +56,17 @@ contract RewardFacet is Modifiers {
                 emit LibToken.ServiceFeeCaptured(fiAsset, yield - shareYield);
             }
         } else {
-            emit LibToken.TotalSupplyUpdated(fiAsset, assets, 0);
+            emit LibToken.TotalSupplyUpdated(
+                fiAsset,
+                assets,
+                0,
+                LibToken._getRebasingCreditsPerToken(fiAsset)
+            );
             return (assets, 0, 0);
         }
     }
+
+    // add deriv rebase
 
     /// @notice This function must be called after the last rebase of a pointsRate
     ///         and before the application of a new pointsRate for a given fiAsset,

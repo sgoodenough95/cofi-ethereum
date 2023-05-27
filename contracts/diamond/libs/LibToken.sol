@@ -42,20 +42,24 @@ library LibToken {
     /// @param  fiAsset The fiAsset with updated supply.
     /// @param  assets  The new total supply.
     /// @param  yield   The amount of yield added.
-    event TotalSupplyUpdated(address indexed fiAsset, uint256 assets, uint256 yield);
+    /// @param  rCPT    Rebasing credits per token of fiAsset contract (used to calc interest rate).
+    event TotalSupplyUpdated(address indexed fiAsset, uint256 assets, uint256 yield, uint256 rCPT);
 
-    /// @notice Emitted when external points are distributed (not tied to yield).
+    /// @notice Emitted when a deposit action is executed.
     ///
-    /// @param  account The recipient of the points.
-    /// @param  amount  The amount of points distributed.
-    event RewardDistributed(address indexed account, uint256 amount);
+    /// @param  asset       The asset deposited (e.g., USDC).
+    /// @param  amount      The amount deposited.
+    /// @param  depositFrom The account assets were transferred from.
+    /// @param  fee         The mint fee captured.
+    event Deposit(address indexed asset, uint256 amount, address indexed depositFrom, uint256 fee);
 
-    /// @notice Emitted when a referral is executed.
+    /// @notice Emitted when a withdrawal action is executed.
     ///
-    /// @param  referral    The account receiving the referral reward.
-    /// @param  account     The account using the referral.
-    /// @param  amount      The amount of points distributed to the referral account.
-    event Referral(address indexed referral, address indexed account, uint256 amount);
+    /// @param  asset       The asset being withdrawn (e.g., USDC).
+    /// @param  amount      The amount withdrawn.
+    /// @param  depositFrom The account fiAssets were transferred from.
+    /// @param  fee         The redeem fee captured.
+    event Withdraw(address indexed asset, uint256 amount, address indexed depositFrom, uint256 fee);
 
     /// @notice Emitted when a mint fee is captured.
     ///
@@ -193,7 +197,19 @@ library LibToken {
     ) internal {
         
         IFiToken(fiAsset).changeSupply(amount);
-        emit TotalSupplyUpdated(fiAsset, amount, yield);
+        emit TotalSupplyUpdated(
+            fiAsset,
+            amount,
+            yield,
+            IFiToken(fiAsset).rebasingCreditsPerTokenHighres()
+        );
+    }
+
+    function _getRebasingCreditsPerToken(
+        address fiAsset
+    ) internal view returns (uint256) {
+
+        return IFiToken(fiAsset).rebasingCreditsPerTokenHighres();
     }
 
     /// @notice Returns the mint fee for a given fiAsset.

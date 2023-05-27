@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from ".././interfaces/IERC4626.sol";
 
 /*//////////////////////////////////////////////////////////////
@@ -74,29 +73,31 @@ library LibVault {
     /// @notice Gets total value of Diamond's holding of shares from the relevant Vault.
     function _totalValue(
         address vault
-    ) internal view returns (uint256 assets) {
+    ) internal returns (uint256 assets) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
 
-        assets = IERC4626(vault).maxWithdraw(address(this));
+        if (s.derivParams[vault].toUnderlying != 0) {
+            (bool success, ) = address(this).call(abi.encodeWithSelector(
+                s.derivParams[vault].convertToUnderlying,
+                IERC4626(vault).maxWithdraw(address(this))
+            ));
+            require(success, 'LibVault: Convert to underlying operation failed');
+            assets = s.RETURN_ASSETS;
+            s.RETURN_ASSETS = 0;
+        }
+        else assets = IERC4626(vault).maxWithdraw(address(this));
     }
 
     /*//////////////////////////////////////////////////////////////
                             STATE CHANGE
     //////////////////////////////////////////////////////////////*/
 
-    function _approve(
-        address vault,
-        uint256 assets
-    ) internal {
-
-        SafeERC20.safeApprove(IERC20(IERC4626(vault).asset()), vault, assets);
-    }
-
     /// @notice Wraps an underlyingAsset into shares via a Vault.
     /// @dev    Shares reside at the Diamond at all times.
     ///
     /// @param  amount      The amount of underlyingAssets to wrap.
     /// @param  vault       The ERC4626 Vault.
-    /// @param  depositFrom The account to wrap underlyingAssets from.
+    /// @param  depositFrom The account supplying underlyingAssets from.
     function _wrap(
         uint256 amount,
         address vault,
@@ -123,55 +124,5 @@ library LibVault {
 
         assets = IERC4626(vault).redeem(shares, recipient, address(this));
         emit Unwrap(amount, shares, vault, assets, recipient);
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                        PARTNER INTEGRATION
-    //////////////////////////////////////////////////////////////*/
-
-    function _toPrime_HOPUSDCLP(
-        address fiAsset,
-        uint256 amount
-    ) internal returns (uint256 assets) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = amount;
-        SafeERC20.safeApprove(IERC20(s.underlying[fiAsset]), address(HOPUSDCLP), amount);
-        assets = HOPUSDCLP.addLiquidity(amounts, 0, block.timestamp + 30 seconds);
-    }
-
-    function _toUnderlying_HOPUSDCLP(
-        address fiAsset,
-        uint256 amount
-    ) internal returns (uint256 assets) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-
-        address _asset = IERC4626(s.vault[fiAsset]).asset();
-        console.log(_asset);
-
-        SafeERC20.safeApprove(IERC20(IERC4626(s.vault[fiAsset]).asset()), address(HOPUSDCLP), amount);
-        assets = HOPUSDCLP.removeLiquidityOneToken(
-            amount,
-            0,
-            0,
-            block.timestamp + 30 seconds
-        );
-    }
-
-    function _convertToUnderlying_HOPUSDCLP(
-        uint256 amount
-    ) internal view returns (uint256 assets) {
-
-        assets = HOPUSDCLP.calculateRemoveLiquidityOneToken(address(this), amount, 0);
-    }
-
-    function _convertToPrime_HOPUSDCLP(
-        uint256 amount
-    ) internal view returns (uint256 assets) {
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = amount;
-        assets = HOPUSDCLP.calculateTokenAmount(address(this), amounts, false);
     }
 }

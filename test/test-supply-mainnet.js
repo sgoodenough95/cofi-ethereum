@@ -15,6 +15,7 @@ const HOP_USDC_LP_ABI = [{"anonymous":false,"inputs":[{"indexed":true,"internalT
 const HOP_USDC_LP_ERC20_ABI = [{"inputs":[{"internalType":"string","name":"name_","type":"string"},{"internalType":"string","name":"symbol_","type":"string"},{"internalType":"uint8","name":"decimals_","type":"uint8"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"burn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"burnFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"swap","outputs":[{"internalType":"contract ISwap","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}]
 const MOO_HOP_USDC_LP_ERC20_ABI = [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"version","type":"uint8"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"implementation","type":"address"}],"name":"NewStratCandidate","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"implementation","type":"address"}],"name":"UpgradeStrat","type":"event"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"approvalDelay","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"available","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"balance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"deposit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"depositAll","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"earn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getPricePerFullShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_token","type":"address"}],"name":"inCaseTokensGetStuck","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"contract IStrategyV7","name":"_strategy","type":"address"},{"internalType":"string","name":"_name","type":"string"},{"internalType":"string","name":"_symbol","type":"string"},{"internalType":"uint256","name":"_approvalDelay","type":"uint256"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_implementation","type":"address"}],"name":"proposeStrat","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"stratCandidate","outputs":[{"internalType":"address","name":"implementation","type":"address"},{"internalType":"uint256","name":"proposedTime","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"strategy","outputs":[{"internalType":"contract IStrategyV7","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"upgradeStrat","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"want","outputs":[{"internalType":"contract IERC20Upgradeable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_shares","type":"uint256"}],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"withdrawAll","outputs":[],"stateMutability":"nonpayable","type":"function"}]
 const WMOO_HOP_USDC_LP_ERC20_ABI = [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"caller","type":"address"},{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"assets","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"shares","type":"uint256"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"version","type":"uint8"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"caller","type":"address"},{"indexed":true,"internalType":"address","name":"receiver","type":"address"},{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"assets","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"shares","type":"uint256"}],"name":"Withdraw","type":"event"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"asset","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"shares","type":"uint256"}],"name":"convertToAssets","outputs":[{"internalType":"uint256","name":"assets","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"assets","type":"uint256"}],"name":"convertToShares","outputs":[{"internalType":"uint256","name":"shares","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"assets","type":"uint256"},{"internalType":"address","name":"receiver","type":"address"}],"name":"deposit","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_vault","type":"address"},{"internalType":"string","name":"_name","type":"string"},{"internalType":"string","name":"_symbol","type":"string"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"maxDeposit","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"maxMint","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"maxRedeem","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"maxWithdraw","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"shares","type":"uint256"},{"internalType":"address","name":"receiver","type":"address"}],"name":"mint","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"assets","type":"uint256"}],"name":"previewDeposit","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"shares","type":"uint256"}],"name":"previewMint","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"shares","type":"uint256"}],"name":"previewRedeem","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"assets","type":"uint256"}],"name":"previewWithdraw","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"shares","type":"uint256"},{"internalType":"address","name":"receiver","type":"address"},{"internalType":"address","name":"owner","type":"address"}],"name":"redeem","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalAssets","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"unwrap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unwrapAll","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"vault","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"assets","type":"uint256"},{"internalType":"address","name":"receiver","type":"address"},{"internalType":"address","name":"owner","type":"address"}],"name":"withdraw","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"wrap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"wrapAll","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+const BEEFY_WRAPPER_FACTORY_ABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"proxy","type":"address"}],"name":"ProxyCreated","type":"event"},{"inputs":[{"internalType":"address","name":"_vault","type":"address"}],"name":"clone","outputs":[{"internalType":"address","name":"proxy","type":"address"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"implementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}]
 
 describe('First test', function() {
 
@@ -23,11 +24,19 @@ describe('First test', function() {
     const owner = accounts[0]
     const feeCollector = accounts[1]
 
+    signer = ethers.provider.getSigner(owner.address)
+
     const whale = "0x63643d4dd9adbe65ace96811a9ec1945cfb0f2c4"
-    const wMooHopUSDC = "0xcA5b76A9139F902CAc90dff97F1629318788b5E7"
+    const wmooHopUSDCLP = "0xcA5b76A9139F902CAc90dff97F1629318788b5E7" // [CLONED]. Deposit => mooHopUSDCLP.
+    const hopUSDCLPRewards = "0xb0CabFE930642AD3E7DECdc741884d8C3F7EbC70" // Deposit => hopUSDCLP.
     const USDC = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
-    const hopUSDCLP = "0x10541b07d8ad2647dc6cd67abd4c03575dade261"
-    const hopUSDCLPERC20 = "0xB67c014FA700E69681a673876eb8BAFAA36BFf71"
+    const hopUSDCLP = "0x10541b07d8ad2647dc6cd67abd4c03575dade261" // addLiquidity => USDC.
+
+    console.log(await helpers.time.latestBlock())
+
+    const wrapperFactory = (await ethers.getContractAt(BEEFY_WRAPPER_FACTORY_ABI, "0x48bF3a071098a09C7D00379b4DBC69Ab6Da83a36")).connect(signer)
+    await wrapperFactory.clone("0xA98070C4a600678a93cEaF4bF629eE255F46f64F")
+    const _wmooHopUSDCLP = "0xcA5b76A9139F902CAc90dff97F1629318788b5E7"
 
     // Deploy COFI Dollar
     const COFI = await ethers.getContractFactory('FiToken')
@@ -83,7 +92,7 @@ describe('First test', function() {
       
     const initArgs = [{
       COFI:   cofi.address,
-      vUSDC:  wMooHopUSDC,
+      vUSDC:  _wmooHopUSDCLP,
       USDC:   USDC,
       feeCollector: feeCollector.address
     }]
@@ -105,130 +114,103 @@ describe('First test', function() {
     console.log('Completed diamond cut')
 
     return {
-      whale, owner, diamond, USDC, wMooHopUSDC, hopUSDCLP, hopUSDCLPERC20, cofi, feeCollector
+      whale, owner, signer, diamond, USDC, hopUSDCLP, hopUSDCLPRewards, cofi, feeCollector, wmooHopUSDCLP, _wmooHopUSDCLP
     }
   }
 
   describe('SupplyFacet', function() {
 
-    // it('Should impersonate and transfer', async function() {
-
-    //   const { whale, owner } = await loadFixture(deploy)
-
-    //   const impersonatedSigner = await ethers.getImpersonatedSigner(
-    //     whale
-    //   );
-
-    //   const usdc = (await ethers.getContractAt(USDC_ABI, "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8")).connect(impersonatedSigner)
-
-    //   await usdc.transfer(owner.address, "50000000")
-
-    //   console.log(await usdc.balanceOf(owner.address))
-    // })
-
     it('Should exchange USDC for COFI --x, rebase, and back again x--', async function() {
 
-      const { whale, owner, feeCollector, diamond, cofi, USDC, wMooHopUSDC, hopUSDCLP } = await loadFixture(deploy)
+      const { whale, owner, signer, feeCollector, diamond, cofi, hopUSDCLP, hopUSDCLPRewards, wmooHopUSDCLP, _wmooHopUSDCLP } = await loadFixture(deploy)
 
-      signer = ethers.provider.getSigner(owner.address)
+      const _impersonatedSigner = await ethers.getImpersonatedSigner(whale);
 
-      const _cofiMoney = (await ethers.getContractAt('COFIMoney', diamond.address)).connect(signer)
+      const _usdc = (await ethers.getContractAt(USDC_ABI, "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8")).connect(_impersonatedSigner)
 
-      await _cofiMoney.toggleWhitelist(whale)
+      // Transfer owner 10,000 USDC
+      await _usdc.transfer(owner.address, '10000000000')
 
-      const impersonatedSigner = await ethers.getImpersonatedSigner(whale);
+      const usdc = (await ethers.getContractAt(USDC_ABI, "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8")).connect(signer)
+      const hopUSDCLPERC20 = (await ethers.getContractAt(HOP_USDC_LP_ERC20_ABI, "0xB67c014FA700E69681a673876eb8BAFAA36BFf71")).connect(signer)
+      const mooHopUSDCLPERC20 = (await ethers.getContractAt(MOO_HOP_USDC_LP_ERC20_ABI, "0xA98070C4a600678a93cEaF4bF629eE255F46f64F")).connect(signer)
 
-      const usdc = (await ethers.getContractAt(USDC_ABI, "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8")).connect(impersonatedSigner)
+      const _wmooHopUSDCLPERC20 = (await ethers.getContractAt(WMOO_HOP_USDC_LP_ERC20_ABI, _wmooHopUSDCLP)).connect(signer)
 
-      const usdcLP = (await ethers.getContractAt(HOP_USDC_LP_ERC20_ABI, "0xB67c014FA700E69681a673876eb8BAFAA36BFf71")).connect(impersonatedSigner)
+      // Approve 10,000 USDC spend
+      await usdc.approve(diamond.address, '10000000000') // USDC has 6 digits
 
-      const vusdcLP = (await ethers.getContractAt(MOO_HOP_USDC_LP_ERC20_ABI, "0xA98070C4a600678a93cEaF4bF629eE255F46f64F")).connect(impersonatedSigner)
+      const cofiMoney = (await ethers.getContractAt('COFIMoney', diamond.address)).connect(signer)
 
-      const wvusdcLP = (await ethers.getContractAt(WMOO_HOP_USDC_LP_ERC20_ABI, "0xcA5b76A9139F902CAc90dff97F1629318788b5E7")).connect(impersonatedSigner)
+      console.log(await helpers.time.latestBlock())
 
-      // Approve 1,000 USDC spend
-      await usdc.approve(diamond.address, '1000000000') // USDC has 6 digits
-
-      const cofiMoney = (await ethers.getContractAt('COFIMoney', diamond.address)).connect(impersonatedSigner)
-
-      // USDC-LP tokens minted to RC
-      console.log('t-1 Rewards Contract USDC-LP bal: ' + await usdcLP.balanceOf("0xB67c014FA700E69681a673876eb8BAFAA36BFf71"))
+      // Owner USDC bal
+      console.log('t0 Owner USDC bal: ' + await usdc.balanceOf(owner.address))
+      // Owner COFI bal
+      console.log('t0 Owner COFI bal: ' + await cofi.balanceOf(owner.address))
+      // USDC tokens held in Hop LP
+      console.log('t0 Hop Liquidity Pool USDC bal: ' + await usdc.balanceOf(hopUSDCLP))
+      // USDC-LP tokens held in Rewards Contract
+      console.log('t0 Hop Rewards Contract USDC-LP bal: ' + await hopUSDCLPERC20.balanceOf(hopUSDCLPRewards))
+      // USDC tokens held in Rewards Contract
+      console.log('t0 Hop Rewards Contract USDC bal: ' + await usdc.balanceOf(hopUSDCLPRewards))
+      // mooHopUSDCLP tokens held in wmooHopUSDCLP vault
+      console.log('t0 wmooHopUSDCLP Vault mooHopUSDCLP bal: ' + await mooHopUSDCLPERC20.balanceOf(_wmooHopUSDCLP))
 
       await cofiMoney.underlyingViaPrimeToFi(
-        '1000000000',
-        '997500000',
+        '10000000000',
+        '9975000000',
         cofi.address,
-        whale,
-        whale,
-        owner.address
+        owner.address,
+        owner.address,
+        '0x0000000000000000000000000000000000000000'
       )
 
-      const whaleCOFIBal = await cofi.balanceOf(whale)
+      // Simulate yield (on mainnet?)
 
-      // T0 End Outputs:
-      // COFI minted to Whale upon successful deposit
-      console.log('t0 User COFI bal: ' + whaleCOFIBal)
-      // USDC-LP tokens minted to RC
-      console.log('t0 Rewards Contract USDC-LP bal: ' + await usdcLP.balanceOf("0xB67c014FA700E69681a673876eb8BAFAA36BFf71"))
-      // USDC residing in LP
-      console.log('t0 LP USDC bal: ' + await usdc.balanceOf(hopUSDCLP))
-      // vUSDC-LP tokens in Vault clone
-      console.log('t0 Vault clone vUSDC-LP bal: ' + await vusdcLP.balanceOf("0xcA5b76A9139F902CAc90dff97F1629318788b5E7"))
-      // wvUSDC-LP tokens in Diamond
-      console.log('t0 Diamond vUSDC-LP bal: ' + await wvusdcLP.balanceOf(diamond.address))
+      const t1UserCOFIBal = await cofi.balanceOf(owner.address)
+      // Owner USDC bal
+      console.log('t1 Owner USDC bal: ' + await usdc.balanceOf(owner.address))
+      // Owner COFI bal
+      console.log('t1 Owner COFI bal: ' + await cofi.balanceOf(owner.address))
+      // USDC tokens held in Hop LP
+      console.log('t1 Hop Liquidity Pool USDC bal: ' + await usdc.balanceOf(hopUSDCLP))
+      // USDC-LP tokens held in Rewards Contract
+      console.log('t1 Hop Rewards Contract USDC-LP bal: ' + await hopUSDCLPERC20.balanceOf(hopUSDCLPRewards))
+      // USDC tokens held in Rewards Contract
+      console.log('t1 Hop Rewards Contract USDC bal: ' + await usdc.balanceOf(hopUSDCLPRewards))
+      // mooHopUSDCLP tokens held in wmooHopUSDCLP vault
+      console.log('t1 wmooHopUSDCLP Vault mooHopUSDCLP bal: ' + await mooHopUSDCLPERC20.balanceOf(_wmooHopUSDCLP))
+      // wmooHopUSDCLP tokens held in Diamond
+      console.log('t1 wmooHopUSDCLP Diamond bal: ' + await _wmooHopUSDCLPERC20.balanceOf(diamond.address))
       // COFI fee minted to fee collector
-      console.log('t0 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
-      // Points earned by Whale
-      console.log('t0 User Points: ' + await cofiMoney.getPoints(whale, [cofi.address]))
-      // Referrer points
-      console.log('t0 referrer Points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
-      // External points of Whale
-      console.log('t0 User External Points: ' + await cofiMoney.getExternalPoints(whale))
-      // Referrer external points
-      console.log('t0 referrer External Points: ' + await cofiMoney.getExternalPoints(feeCollector.address))
-
-      // // T1 End Outputs:
-      // console.log('t1 User COFI bal: ' + userCOFIBalT1.toString())
-      // console.log('t1 Vault DAI bal: ' + await dai.balanceOf(vdai.address))
-      // console.log('t1 Diamond vDAI bal: ' + await vdai.balanceOf(diamond.address))
-      // console.log('t1 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
-      // console.log('t1 User Points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
-      // console.log('t1 feeCollector Points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
-      // console.log('t1 User Yield Points: ' + await cofiMoney.getYieldPoints(owner.address, [cofi.address]))
-      // console.log('t1 feeCollector Yield Points: ' + await cofiMoney.getYieldPoints(feeCollector.address, [cofi.address]))
+      console.log('t1 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
 
       // Convert back to USDC (redeem operation on FiToken contract skips approval check).
       await cofiMoney.fiToUnderlyingViaPrime(
-        whaleCOFIBal.toString(),
+        t1UserCOFIBal.toString(),
         '995000000',   // Test slippage
         cofi.address,
-        whale,
-        whale
+        owner.address,
+        owner.address
       )
 
-      console.log('Back to underlying results:')
-
-      // T0 End Outputs:
-      // COFI minted to Whale upon successful deposit
-      console.log('t0 User COFI bal: ' + await cofi.balanceOf(whale))
-      // USDC-LP tokens minted to RC
-      console.log('t0 Rewards Contract USDC-LP bal: ' + await usdcLP.balanceOf("0xB67c014FA700E69681a673876eb8BAFAA36BFf71"))
-      // USDC residing in LP
-      console.log('t0 LP USDC bal: ' + await usdc.balanceOf(hopUSDCLP))
-      // vUSDC-LP tokens in Vault clone
-      console.log('t0 Vault clone vUSDC-LP bal: ' + await vusdcLP.balanceOf("0xcA5b76A9139F902CAc90dff97F1629318788b5E7"))
-      // wvUSDC-LP tokens in Diamond
-      console.log('t0 Diamond vUSDC-LP bal: ' + await wvusdcLP.balanceOf(diamond.address))
+      // Owner USDC bal
+      console.log('t2 Owner USDC bal: ' + await usdc.balanceOf(owner.address))
+      // Owner COFI bal
+      console.log('t2 Owner COFI bal: ' + await cofi.balanceOf(owner.address))
+      // USDC tokens held in Hop LP
+      console.log('t2 Hop Liquidity Pool USDC bal: ' + await usdc.balanceOf(hopUSDCLP))
+      // USDC-LP tokens held in Rewards Contract
+      console.log('t2 Hop Rewards Contract USDC-LP bal: ' + await hopUSDCLPERC20.balanceOf(hopUSDCLPRewards))
+      // USDC tokens held in Rewards Contract
+      console.log('t2 Hop Rewards Contract USDC bal: ' + await usdc.balanceOf(hopUSDCLPRewards))
+      // mooHopUSDCLP tokens held in wmooHopUSDCLP vault
+      console.log('t2 wmooHopUSDCLP Vault mooHopUSDCLP bal: ' + await mooHopUSDCLPERC20.balanceOf(_wmooHopUSDCLP))
+      // wmooHopUSDCLP tokens held in Diamond
+      console.log('t2 wmooHopUSDCLP Diamond bal: ' + await _wmooHopUSDCLPERC20.balanceOf(diamond.address))
       // COFI fee minted to fee collector
-      console.log('t0 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
-      // Points earned by Whale
-      console.log('t0 User Points: ' + await cofiMoney.getPoints(whale, [cofi.address]))
-      // Referrer points
-      console.log('t0 referrer Points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
-      // External points of Whale
-      console.log('t0 User External Points: ' + await cofiMoney.getExternalPoints(whale))
-      // Referrer external points
-      console.log('t0 referrer External Points: ' + await cofiMoney.getExternalPoints(feeCollector.address))
+      console.log('t2 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
     })
   })
 })

@@ -51,8 +51,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
     event TotalSupplyUpdatedHighres(
         uint256 totalSupply,
         uint256 rebasingCredits,
-        uint256 rebasingCreditsPerToken,
-        uint256 earnings
+        uint256 rebasingCreditsPerToken
     );
 
     enum RebaseOptions {
@@ -691,7 +690,6 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
         external
         onlyDiamond
         nonReentrant
-        returns (uint256 earnings)
     {
         require(_totalSupply > 0, 'FiToken: Cannot increase 0 supply');
 
@@ -699,13 +697,9 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
             emit TotalSupplyUpdatedHighres(
                 _totalSupply,
                 _rebasingCredits,
-                _rebasingCreditsPerToken,
-                0
+                _rebasingCreditsPerToken
             );
-            return 0;
         }
-
-        earnings = _newTotalSupply - _totalSupply;
 
         _totalSupply = _newTotalSupply > MAX_SUPPLY
             ? MAX_SUPPLY
@@ -724,8 +718,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
         emit TotalSupplyUpdatedHighres(
             _totalSupply,
             _rebasingCredits,
-            _rebasingCreditsPerToken,
-            earnings
+            _rebasingCreditsPerToken
         );
     }
 

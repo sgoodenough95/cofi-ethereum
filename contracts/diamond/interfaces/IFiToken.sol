@@ -16,6 +16,8 @@ interface IFiToken {
 
     function getYieldEarned(address account) external view returns (uint256);
 
+    function rebasingCreditsPerTokenHighres() external view returns (uint256);
+
     function creditsToBal(uint256 amount) external view returns (uint256);
 
     function rebaseOptIn() external;

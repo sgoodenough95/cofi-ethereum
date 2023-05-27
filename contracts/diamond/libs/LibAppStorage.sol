@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
+import ".././interfaces/beefy/ISwap.sol";
 // import { ICoFi } from "./../interfaces/ICoFi.sol";
 
 // Struct used for onboarding purposes.
@@ -33,16 +34,19 @@ struct UnderlyingAssetParams {
     uint8   decimals;
 }
 
-struct UnderlyingPrimeParams {
-    address primeAsset;             // E.g., USDC-LP.
-    bytes4  toPrimeOp;              // Function signature of converting from underlying to prime op.
-    bytes4  toUnderlyingOp;         // Function signature of converting from prime to underlyig op.
-    bytes4  convertToUnderlyingOp;  // Function signature of determining equiv. number of underlying.
-    bytes4  convertToPrimeOp;       // Function signature of determining equiv. number of prime.
-    uint8   enabled;
+struct DerivParams {
+    bytes4  toDeriv;                // Method for winding to the derivative asset.
+    bytes4  toUnderlying;           // Method for unwinding to the underlying asset.
+    bytes4  convertToDeriv;         // Method for retrieving the equiv. number of derivative.
+    bytes4  convertToUnderlying;    // Method for retrieving the equiv. number of underlying.
 }
 
 struct AppStorage {
+
+    // Storing directly for internal purposes.
+    address COFI;
+    address BTCFI;
+    address ETHFI;
 
     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
     mapping(address => uint256) minDeposit;
@@ -80,7 +84,8 @@ struct AppStorage {
     // E.g., COFI => 1.
     mapping(address => uint8)   redeemEnabled;
 
-    mapping(address => UnderlyingPrimeParams) primeParams;
+    // E.g., wmooHopUSDC => DerivParams.
+    mapping(address => DerivParams) derivParams;
 
     // Reward for first-time depositors. Setting to 0 deactivates it.
     uint256 initReward;
@@ -109,6 +114,12 @@ struct AppStorage {
     uint8 EXT_GUARD;
 
     uint256 RETURN_ASSETS;
+
+    /*//////////////////////////////////////////////////////////////
+                            PARTNER ADDRESSES
+    //////////////////////////////////////////////////////////////*/
+
+    // ISwap constant HOPUSDCLP = ISwap(0x10541b07d8Ad2647Dc6cD67abd4c03575dade261);
 }
 
 library LibAppStorage {
