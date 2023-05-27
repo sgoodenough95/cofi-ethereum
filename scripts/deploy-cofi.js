@@ -14,13 +14,13 @@ async function deploy() {
   await cofi.deployed()
   console.log('COFI Dollar deployed:', cofi.address)
 
-  // Deploy COFI Ethereum
+  // // Deploy COFI Ethereum
   const ETHFI = await ethers.getContractFactory('FiToken')
   const ethfi = await ETHFI.deploy('COFI Ethreum', 'ETHFI')
   await ethfi.deployed()
   console.log('COFI Ethereum deployed:', ethfi.address)
 
-  // Deploy COFI Bitcoin
+  // // Deploy COFI Bitcoin
   const BTCFI = await ethers.getContractFactory('FiToken')
   const btcfi = await BTCFI.deploy('COFI Bitcoin', 'BTCFI')
   await btcfi.deployed()
@@ -28,30 +28,33 @@ async function deploy() {
 
   // Deploy USDC
   const USDC = await ethers.getContractFactory('ERC20Token')
-  const usdc = await USDC.deploy('Test USDC', 'USDC')
+  const usdc = await USDC.deploy('Test USDC', 'USDC', 6)
   await usdc.deployed()
   console.log('USDC deployed:', usdc.address)
 
   // Mint owner 1,000,000 USDC.
-  await usdc.mint(owner.address, '1000000000000000000000000')
+  await usdc.mint(owner.address, '1000000000000')
+  await usdc.mint('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3', '1000000000000')
 
   // Deploy wETH
   const WETH = await ethers.getContractFactory('ERC20Token')
-  const weth = await WETH.deploy('Test Wrapped Ethereum', 'wETH')
+  const weth = await WETH.deploy('Test Wrapped Ethereum', 'wETH', 18)
   await weth.deployed()
   console.log('wETH deployed:', weth.address)
 
   // Mint owner 1,000 WETH.
   await weth.mint(owner.address, '1000000000000000000000')
+  await weth.mint('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3', '1000000000000000000000')
 
   // Deploy wBTC
   const WBTC = await ethers.getContractFactory('ERC20Token')
-  const wbtc = await WBTC.deploy('Test Wrapped Bitcoin', 'wBTC')
+  const wbtc = await WBTC.deploy('Test Wrapped Bitcoin', 'wBTC', 8)
   await wbtc.deployed()
   console.log('wBTC deployed:', wbtc.address)
 
   // Mint owner 100 wBTC.
-  await wbtc.mint(owner.address, '100000000000000000000')
+  await wbtc.mint(owner.address, '10000000000')
+  await wbtc.mint('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3', '10000000000')
 
   // Deploy vUSDC
   const VUSDC = await ethers.getContractFactory('Vault')
@@ -126,6 +129,9 @@ async function deploy() {
     vUSDC:        vusdc.address,
     vETH:         veth.address,
     vBTC:         vbtc.address,
+    USDC:         usdc.address,
+    wETH:         weth.address,
+    wBTC:         wbtc.address,
     admins:       [
       '0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3',
       '0x79b68a8C62AA0FEdA39d08E4c6755928aFF576C5'

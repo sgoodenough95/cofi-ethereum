@@ -40,11 +40,11 @@ module.exports = {
       url: `https://arbitrum-goerli.infura.io/v3/${STOA_INFURA_API_KEY}`,
       accounts: [`${STOA_PRIV_KEY}`]
     },
-    hardhat: {
-      forking: {
-        url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`
-      }
-    }
+    // hardhat: {
+    //   forking: {
+    //     url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`
+    //   }
+    // }
   },
   etherscan: {
     apiKey: {

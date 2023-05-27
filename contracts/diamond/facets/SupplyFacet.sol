@@ -90,13 +90,16 @@ contract SupplyFacet is Modifiers {
             amount
         );
 
-        uint256 assets = LibVault._getAssets(
-            LibVault._wrap(
-                amount,
-                s.vault[fiAsset],
-                depositFrom // Purely for Event emission. Wraps from Diamond.
-            ),
-            s.vault[fiAsset]
+        uint256 assets = LibToken._toFiDecimals(
+            fiAsset,
+            LibVault._getAssets(
+                LibVault._wrap(
+                    amount,
+                    s.vault[fiAsset],
+                    depositFrom // Purely for Event emission. Wraps from Diamond.
+                ),
+                s.vault[fiAsset]
+            )
         );
 
         require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
@@ -145,7 +148,7 @@ contract SupplyFacet is Modifiers {
             address(this)
         );
 
-        // Transform from underlying to underlyingPrime hook.
+        // Wind from underlying to derivative hook.
         s.EXT_GUARD = 1;
         (bool success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].toDeriv,
@@ -215,7 +218,10 @@ contract SupplyFacet is Modifiers {
         // Backing yieldAssets are held in the diamond contract.
         LibToken._transferFrom(s.vault[fiAsset], amount, depositFrom, address(this));
 
-        uint256 assets = LibVault._getAssets(amount, s.vault[fiAsset]);
+        uint256 assets = LibToken._toFiDecimals(
+            fiAsset,
+            LibVault._getAssets(amount, s.vault[fiAsset])
+        );
 
         require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
 
@@ -327,7 +333,11 @@ contract SupplyFacet is Modifiers {
 
         require(
             // Redeems assets directly to recipient (does not traverse through Diamond).
-            LibVault._unwrap(burnAfterFee, s.vault[fiAsset], recipient) >= minAmountOut,
+            LibVault._unwrap(
+                LibToken._toUnderlyingDecimals(fiAsset, burnAfterFee),
+                s.vault[fiAsset],
+                recipient
+            ) >= minAmountOut,
             'SupplyFacet: Slippage exceeded'
         );
         emit LibToken.Withdraw(s.underlying[fiAsset], amount, depositFrom, fee);
@@ -363,21 +373,21 @@ contract SupplyFacet is Modifiers {
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
 
-        // Determine equivalent number of underlyingPrime tokens to redeem.
+        // Determine equivalent number of derivative assets to redeem.
         (bool success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].convertToDeriv,
             burnAfterFee
         )); 
-        require(success, 'SupplyFacet: Convert to prime operation failed');
+        require(success, 'SupplyFacet: Convert to derivative operation failed');
 
-        // Transform from underlyingPrime to underlying hook.
+        // Unwind from derivative asset to underlying hook.
         s.EXT_GUARD = 1;
         (success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].toUnderlying,
             fiAsset,
             LibVault._unwrap(s.RETURN_ASSETS, s.vault[fiAsset], address(this))
         ));
-        require(success, 'SupplyFacet: Prime to underlying operation failed');
+        require(success, 'SupplyFacet: Derivative to underlying operation failed');
         require(s.RETURN_ASSETS > minAmountOut, 'SupplyFacet: Slippage exceeded');
 
         LibToken._transfer(s.underlying[fiAsset], s.RETURN_ASSETS, recipient);

@@ -41,7 +41,7 @@ contract RewardFacet is Modifiers {
             return (0, 0, 0); 
         }
 
-        assets = LibVault._totalValue(s.vault[fiAsset]);
+        assets = LibToken._toFiDecimals(fiAsset, LibVault._totalValue(s.vault[fiAsset]));
 
         if (assets > currentSupply) {
 

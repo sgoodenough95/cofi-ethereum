@@ -123,18 +123,22 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
         _;
     }
 
-    function onePercentIncrease(
-    ) external {
+    /// @param percent  Basis points increase (e.g., 100 = 1%, 1500 = 15%, etc.)
+    function percentIncrease(
+        uint256 percent
+    ) external returns (uint256) {
 
         address underlying = ICOFIMoney(diamond).getUnderlyingAsset(address(this));
         address vault = ICOFIMoney(diamond).getYieldAsset(address(this));
 
         IERC20Token(underlying).mint(
             vault,
-            IERC20(underlying).balanceOf(vault).percentMul(100)  // 1% increase
+            IERC20(underlying).balanceOf(vault).percentMul(percent)
         );
 
         ICOFIMoney(diamond).rebase(address(this));
+
+        return _rebasingCreditsPerToken;
     }
 
     /**
