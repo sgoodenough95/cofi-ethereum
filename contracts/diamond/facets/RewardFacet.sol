@@ -37,7 +37,7 @@ contract RewardFacet is Modifiers {
         );
         uint256 currentSupply = IERC20(fiAsset).totalSupply();
         if (currentSupply == 0) {
-            emit LibToken.TotalSupplyUpdated(fiAsset, 0, 0, 1e18);
+            emit LibToken.TotalSupplyUpdated(fiAsset, 0, 0, 1e18, 0);
             return (0, 0, 0); 
         }
 
@@ -49,18 +49,22 @@ contract RewardFacet is Modifiers {
 
             shareYield = yield.percentMul(1e4 - s.serviceFee[fiAsset]);
 
-            LibToken._changeSupply(fiAsset, currentSupply + shareYield, yield);
+            LibToken._changeSupply(
+                fiAsset,
+                currentSupply + shareYield,
+                yield,
+                yield - shareYield
+            );
 
-            if (yield - shareYield > 0) {
+            if (yield - shareYield > 0)
                 LibToken._mint(fiAsset, s.feeCollector, yield - shareYield);
-                emit LibToken.ServiceFeeCaptured(fiAsset, yield - shareYield);
-            }
         } else {
             emit LibToken.TotalSupplyUpdated(
                 fiAsset,
                 assets,
                 0,
-                LibToken._getRebasingCreditsPerToken(fiAsset)
+                LibToken._getRebasingCreditsPerToken(fiAsset),
+                0
             );
             return (assets, 0, 0);
         }

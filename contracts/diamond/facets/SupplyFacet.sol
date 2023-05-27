@@ -105,10 +105,7 @@ contract SupplyFacet is Modifiers {
         mintAfterFee = assets - fee;
 
         // Capture mint fee in fiAssets.
-        if (fee > 0) {
-            LibToken._mint(fiAsset, s.feeCollector, fee);
-            emit LibToken.MintFeeCaptured(fiAsset, fee);
-        }
+        if (fee > 0) LibToken._mint(fiAsset, s.feeCollector, fee);
 
         LibToken._mint(fiAsset, recipient, mintAfterFee);
         LibReward._initReward();
@@ -185,10 +182,7 @@ contract SupplyFacet is Modifiers {
         mintAfterFee = assets - fee;
 
         // Capture mint fee in fiAssets.
-        if (fee > 0) {
-            LibToken._mint(fiAsset, s.feeCollector, fee);
-            emit LibToken.MintFeeCaptured(fiAsset, fee);
-        }
+        if (fee > 0) LibToken._mint(fiAsset, s.feeCollector, fee);
 
         LibToken._mint(fiAsset, recipient, mintAfterFee);
         LibReward._initReward();
@@ -229,10 +223,7 @@ contract SupplyFacet is Modifiers {
         mintAfterFee = assets - fee;
 
         // Capture mint fee in fiAssets.
-        if (fee > 0) {
-            LibToken._mint(fiAsset, s.feeCollector, fee);
-            emit LibToken.MintFeeCaptured(fiAsset, fee);
-        }
+        if (fee > 0) LibToken._mint(fiAsset, s.feeCollector, fee);
 
         LibToken._mint(fiAsset, recipient, mintAfterFee);
         LibReward._initReward();
@@ -268,7 +259,6 @@ contract SupplyFacet is Modifiers {
 
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
-        if (fee > 0) emit LibToken.RedeemFeeCaptured(fiAsset, fee);
 
         uint256 shares = LibVault._getShares(burnAfterFee, s.vault[fiAsset]);
         require(shares >= minAmountOut, 'SupplyFacet: Slippage exceeded');
@@ -334,7 +324,6 @@ contract SupplyFacet is Modifiers {
 
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
-        if (fee > 0) emit LibToken.RedeemFeeCaptured(fiAsset, fee);
 
         require(
             // Redeems assets directly to recipient (does not traverse through Diamond).
@@ -373,7 +362,6 @@ contract SupplyFacet is Modifiers {
 
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
-        if (fee > 0) emit LibToken.RedeemFeeCaptured(fiAsset, fee);
 
         // Determine equivalent number of underlyingPrime tokens to redeem.
         (bool success, ) = address(this).call(abi.encodeWithSelector(

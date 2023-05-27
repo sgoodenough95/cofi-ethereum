@@ -43,7 +43,8 @@ library LibToken {
     /// @param  assets  The new total supply.
     /// @param  yield   The amount of yield added.
     /// @param  rCPT    Rebasing credits per token of fiAsset contract (used to calc interest rate).
-    event TotalSupplyUpdated(address indexed fiAsset, uint256 assets, uint256 yield, uint256 rCPT);
+    /// @param  fee     The service fee captured, which is a share of the yield generated.
+    event TotalSupplyUpdated(address indexed fiAsset, uint256 assets, uint256 yield, uint256 rCPT, uint256 fee);
 
     /// @notice Emitted when a deposit action is executed.
     ///
@@ -60,24 +61,6 @@ library LibToken {
     /// @param  depositFrom The account fiAssets were transferred from.
     /// @param  fee         The redeem fee captured.
     event Withdraw(address indexed asset, uint256 amount, address indexed depositFrom, uint256 fee);
-
-    /// @notice Emitted when a mint fee is captured.
-    ///
-    /// @param  fiAsset The minted fiAsset.
-    /// @param  amount  The mint fee amount captured in fiAssets.
-    event MintFeeCaptured(address indexed fiAsset, uint256 amount);
-
-    /// @notice Emitted when a redemption fee is captured.
-    ///
-    /// @param  fiAsset The redeemed fiAsset.
-    /// @param  amount  The redeem fee amount captured in fiAssets.
-    event RedeemFeeCaptured(address indexed fiAsset, uint256 amount);
-
-    /// @notice Emitted when a service fee is captured from a yield distribution.
-    ///
-    /// @param  fiAsset The fiAsset to capture yield from.
-    /// @param  amount  The service fee amount captured in fiAssets.
-    event ServiceFeeCaptured(address indexed fiAsset, uint256 amount);
 
     /// @notice Executes a transferFrom operation in the context of Stoa.
     ///
@@ -193,7 +176,8 @@ library LibToken {
     function _changeSupply(
         address fiAsset,
         uint256 amount,
-        uint256 yield
+        uint256 yield,
+        uint256 fee
     ) internal {
         
         IFiToken(fiAsset).changeSupply(amount);
@@ -201,7 +185,8 @@ library LibToken {
             fiAsset,
             amount,
             yield,
-            IFiToken(fiAsset).rebasingCreditsPerTokenHighres()
+            IFiToken(fiAsset).rebasingCreditsPerTokenHighres(),
+            fee
         );
     }
 
