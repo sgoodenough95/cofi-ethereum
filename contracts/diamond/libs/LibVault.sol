@@ -3,19 +3,13 @@ pragma solidity 0.8.19;
 
 import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { IERC4626 } from ".././interfaces/IERC4626.sol";
-
-/*//////////////////////////////////////////////////////////////
-                    PARTNER INTERFACES
-//////////////////////////////////////////////////////////////*/
-
 import ".././interfaces/beefy/ISwap.sol";
-
 import 'hardhat/console.sol';
 
 library LibVault {
 
     /*//////////////////////////////////////////////////////////////
-                            PARTNER ADDRESSES
+                            PARTNER INTERFACES
     //////////////////////////////////////////////////////////////*/
 
     ISwap internal constant HOPUSDCLP = ISwap(0x10541b07d8Ad2647Dc6cD67abd4c03575dade261);
@@ -76,7 +70,9 @@ library LibVault {
     ) internal returns (uint256 assets) {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
+        // I.e., if vault is using a derivative.
         if (s.derivParams[vault].toUnderlying != 0) {
+            // Sets RETURN_ASSETS to equivalent number of underlying.
             (bool success, ) = address(this).call(abi.encodeWithSelector(
                 s.derivParams[vault].convertToUnderlying,
                 IERC4626(vault).maxWithdraw(address(this))

@@ -147,7 +147,6 @@ contract SupplyFacet is Modifiers {
         // Wind from underlying to derivative hook.
         (bool success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].toDeriv,
-            fiAsset,
             amount
         )); // Will fail here if set vault is not using a derivative.
         require(success, 'SupplyFacet: Underlying to derivative operation failed');
@@ -371,7 +370,6 @@ contract SupplyFacet is Modifiers {
         // Unwind from derivative asset to underlying hook.
         (success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].toUnderlying,
-            fiAsset,
             LibVault._unwrap(s.RETURN_ASSETS, s.vault[fiAsset], address(this))
         ));
         require(success, 'SupplyFacet: Derivative to underlying operation failed');

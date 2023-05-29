@@ -13,36 +13,30 @@ describe('First test', function() {
   async function deploy() {
     const accounts = await ethers.getSigners()
     const owner = accounts[0]
+    const feeCollector = accounts[1]
       
     // Deploy COFI Dollar
     const COFI = await ethers.getContractFactory('FiToken')
     const cofi = await COFI.deploy('COFI Dollar', 'COFI')
     await cofi.deployed()
     console.log('COFI Dollar deployed:', cofi.address)
-      
-    // Deploy DAI
-    const DAI = await ethers.getContractFactory('ERC20Token')
-    const dai = await DAI.deploy('Dai', 'DAI')
-    await dai.deployed()
-    console.log('Dai deployed:', dai.address)
-      
+ 
     // Deploy USDC
-    // const USDC = await ethers.getContractFactory('CreditToken')
-    // const usdc = await USDC.deploy('USD Coin', 'USDC')
-    // await usdc.deployed()
-    // console.log('USDC deployed:', usdc.address)
+    const USDC = await ethers.getContractFactory('ERC20Token')
+    const usdc = await USDC.deploy('USD Coin', 'USDC', 6)
+    await usdc.deployed()
+    console.log('USDC deployed:', usdc.address)
       
-    // Deploy yvDAI
-    const YVDAI = await ethers.getContractFactory('Vault')
-    const yvdai = await YVDAI.deploy(dai.address, 'Yearn Vault Dai', 'yvDAI')
-    await yvdai.deployed()
-    console.log('yvDAI deployed:', yvdai.address)
+    // Deploy aUSDC
+    const VUSDC = await ethers.getContractFactory('Vault')
+    const ausdc = await VUSDC.deploy(usdc.address, 'A-Vault USDC', 'aUSDC')
+    await ausdc.deployed()
+    console.log('aUSDC deployed:', ausdc.address)
 
-    // Deploy aDAI
-    const ADAI = await ethers.getContractFactory('Vault')
-    const adai = await ADAI.deploy(dai.address, 'Aave Dai', 'aDAI')
-    await adai.deployed()
-    console.log('aDAI deployed:', adai.address)
+    // Deploy bUSDC
+    const busdc = await VUSDC.deploy(usdc.address, 'B-Vault USDC', 'bUSDC')
+    await busdc.deployed()
+    console.log('bUSDC deployed:', busdc.address)
       
     // deploy DiamondCutFacet
     const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
@@ -74,9 +68,9 @@ describe('First test', function() {
       'DiamondLoupeFacet',
       'OwnershipFacet',
       'SupplyFacet',
-      'RewardFacet',
-      'LoupeFacet',
-      'AdminFacet'
+      'PointFacet',
+      'AccessFacet',
+      'YieldFacet'
     ]
     const cut = []
     for (const FacetName of FacetNames) {
@@ -93,7 +87,9 @@ describe('First test', function() {
       
     const initArgs = [{
       COFI:   cofi.address,
-      yvDAI:  yvdai.address
+      vUSDC:  ausdc.address,
+      USDC:   usdc.address,
+      feeCollector: feeCollector.address
     }]
       
     // upgrade diamond with facets
@@ -113,77 +109,66 @@ describe('First test', function() {
     console.log('Completed diamond cut')
 
     return {
-      owner, diamond, cofi, dai, yvdai, adai
+      owner, feeCollector, diamond, cofi, usdc, ausdc, busdc
     }
   }
 
   describe('RewardFacet', function() {
 
-    it('Should migrate from yvDAI to aDAI', async function() {
+    it('Should migrate from aUSDC to bUSDC', async function() {
 
-      const { owner, diamond, cofi, dai, yvdai, adai } = await loadFixture(deploy)
+      const { owner, feeCollector, diamond, cofi, usdc, ausdc, busdc } = await loadFixture(deploy)
 
-      // Mint owner 1,000 DAI
-      await dai.mint(owner.address, '1000000000000000000000')
+      // Mint owner 1,000 USDC
+      await usdc.mint(owner.address, '1000000000')
 
-      // Approve DAI spend for Vault contract.
-      await dai.approve(yvdai.address, '1000000000000000000000')
+      // Mint 100 USDC buffer to Diamond
+      await usdc.mint(diamond.address, '100000000')
+
+      // Approve USDC spend for Diamond.
+      await usdc.approve(diamond.address, '1000000000')
 
       signer = ethers.provider.getSigner(owner.address)
 
       const cofiMoney = (await ethers.getContractAt('COFIMoney', diamond.address)).connect(signer)
 
       await cofiMoney.underlyingToFi(
-        '1000000000000000000000', // amount:        1,000 DAI.
-        '997500000000000000000',  // minAmountOut:  1,000 * 0.9975 (0.25% slippage).
-        cofi.address,             // fiAsset
-        owner.address,            // depositFrom
-        owner.address             // recipient
+        '1000000000',
+        '997500000',
+        cofi.address,
+        owner.address,
+        owner.address,
+        '0x0000000000000000000000000000000000000000'
       )
 
       // T0 End Outputs:
       console.log('t0 User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('t0 Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('t0 Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('t0 Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      console.log('t0 aUSDC USDC bal: ' + await usdc.balanceOf(ausdc.address))
+      console.log('t0 Diamond aUSDC bal: ' + await ausdc.balanceOf(diamond.address))
+      console.log('t0 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
 
-      // Simulate 100 DAI yield earned by Vault
-      await dai.mint(yvdai.address, '100000000000000000000')
+      // Simulate 100 USDC yield earned by aUSDC vault.
+      await usdc.mint(ausdc.address, '100000000')
 
       // Rebase
       await cofiMoney.rebase(cofi.address)
 
       // T1 End Outputs:
       console.log('t1 User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('t1 Vault DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('t1 Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('t1 Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      console.log('t1 aUSDC USDC bal: ' + await usdc.balanceOf(ausdc.address))
+      console.log('t1 Diamond aUSDC bal: ' + await ausdc.balanceOf(diamond.address))
+      console.log('t1 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
 
       // Do migration procedure (T2):
-      // Add 1 DAI buffer to Diamond
-      await dai.mint(cofiMoney.address, '1000000000000000000')
-
-      // Pause minting/redeeming of COFI
-      await cofiMoney.toggleMintEnabled(cofi.address)
-      await cofiMoney.toggleRedeemEnabled(cofi.address)
-
-      // Migrate DAI to new Vault
-      await cofiMoney.migrateVault(cofi.address, adai.address)
-
-      // Rebase to sync to new Vault
-      await cofiMoney.rebase(cofi.address)
-
-      // Resume minting/redeeming of COFI
-      await cofiMoney.toggleMintEnabled(cofi.address)
-      await cofiMoney.toggleRedeemEnabled(cofi.address)
+      await cofiMoney.migrateVault(cofi.address, busdc.address)
 
       // T2 End Outputs:
       console.log('t2 User COFI bal: ' + await cofi.balanceOf(owner.address))
-      console.log('t2 Old Vault (yvDAI) DAI bal: ' + await dai.balanceOf(yvdai.address))
-      console.log('t2 New Vault (aDAI) DAI bal: ' + await dai.balanceOf(adai.address))
-      console.log('t2 Diamond yvDAI bal: ' + await yvdai.balanceOf(diamond.address))
-      console.log('t2 Diamond aDAI bal: ' + await adai.balanceOf(diamond.address))
-      console.log('t2 Diamond (feeCollector) COFI bal: ' + await cofi.balanceOf(diamond.address))
+      console.log('t2 aUSDC USDC bal: ' + await usdc.balanceOf(ausdc.address))
+      console.log('t2 bUSDC USDC bal: ' + await usdc.balanceOf(busdc.address))
+      console.log('t2 Diamond aUSDC bal: ' + await ausdc.balanceOf(diamond.address))
+      console.log('t2 Diamond bUSDC bal: ' + await busdc.balanceOf(diamond.address))
+      console.log('t2 feeCollector COFI bal: ' + await cofi.balanceOf(feeCollector.address))
     })
   })
 })

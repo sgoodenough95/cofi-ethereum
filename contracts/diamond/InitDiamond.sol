@@ -15,15 +15,15 @@ contract InitDiamond {
 
     struct Args {
         address     COFI;   // fiAsset [USD]
-        address     ETHFI;  // fiAsset [ETH]
-        address     BTCFI;  // fiAsset [BTC]
+        // address     ETHFI;  // fiAsset [ETH]
+        // address     BTCFI;  // fiAsset [BTC]
         address     vUSDC;  // yieldAsset [USD]
-        address     vETH;   // yieldAsset [ETH]
-        address     vBTC;   // yieldAsset [BTC]
+        // address     vETH;   // yieldAsset [ETH]
+        // address     vBTC;   // yieldAsset [BTC]
         address     USDC;   // underlyingAsset [USD]
-        address     wETH;   // underlyingAsset [ETH]
-        address     wBTC;   // underlyingAsset [BTC]
-        address[]   admins;
+        // address     wETH;   // underlyingAsset [ETH]
+        // address     wBTC;   // underlyingAsset [BTC]
+        // address[]   admins;
         address feeCollector;
     }
     
@@ -38,8 +38,10 @@ contract InitDiamond {
         ds.supportedInterfaces[type(IERC173).interfaceId]       = true;
 
         s.underlying[_args.COFI] = _args.USDC;
-        s.underlying[_args.ETHFI] = _args.wETH;
-        s.underlying[_args.BTCFI] = _args.wBTC;
+        // s.underlying[_args.ETHFI] = _args.wETH;
+        // s.underlying[_args.BTCFI] = _args.wBTC;
+
+        s.COFI = _args.COFI;
 
         // s.derivParams[_args.vUSDC].toDeriv = bytes4(keccak256("toDeriv_HOPUSDCLP(uint256)"));
         // s.derivParams[_args.vUSDC].toUnderlying = bytes4(keccak256("toUnderlying_HOPUSDCLP(uint256)"));
@@ -48,71 +50,71 @@ contract InitDiamond {
 
         // Rebase opt-in.
         LibToken._rebaseOptIn(_args.COFI);
-        LibToken._rebaseOptIn(_args.ETHFI);
-        LibToken._rebaseOptIn(_args.BTCFI);
+        // LibToken._rebaseOptIn(_args.ETHFI);
+        // LibToken._rebaseOptIn(_args.BTCFI);
 
         // Set min deposit/withdraw values.
         s.minDeposit[_args.COFI]     = 20e6;    // 20 USDC [6 digits].
-        s.minDeposit[_args.ETHFI]    = 1e16;     // 0.01 ETH [18 digits].
-        s.minDeposit[_args.BTCFI]    = 1e5;     // 0.001 BTC [8 digits].
+        // s.minDeposit[_args.ETHFI]    = 1e16;     // 0.01 ETH [18 digits].
+        // s.minDeposit[_args.BTCFI]    = 1e5;     // 0.001 BTC [8 digits].
         s.minWithdraw[_args.COFI]    = 20e6;    // 20 USDC.
-        s.minWithdraw[_args.ETHFI]   = 1e16;     // 0.01 ETH.
-        s.minWithdraw[_args.BTCFI]   = 1e5;     // 0.001 BTC.
+        // s.minWithdraw[_args.ETHFI]   = 1e16;     // 0.01 ETH.
+        // s.minWithdraw[_args.BTCFI]   = 1e5;     // 0.001 BTC.
 
         s.vault[_args.COFI]     = _args.vUSDC;
-        s.vault[_args.ETHFI]    = _args.vETH;
-        s.vault[_args.BTCFI]    = _args.vBTC;
+        // s.vault[_args.ETHFI]    = _args.vETH;
+        // s.vault[_args.BTCFI]    = _args.vBTC;
 
         // Set mint enabled.
         s.mintEnabled[_args.COFI]   = 1;
-        s.mintEnabled[_args.ETHFI]  = 1;
-        s.mintEnabled[_args.BTCFI]  = 1;
+        // s.mintEnabled[_args.ETHFI]  = 1;
+        // s.mintEnabled[_args.BTCFI]  = 1;
 
         // Set mint fee.
         s.mintFee[_args.COFI]   = 10;
-        s.mintFee[_args.ETHFI]  = 10;
-        s.mintFee[_args.BTCFI]  = 10;
+        // s.mintFee[_args.ETHFI]  = 10;
+        // s.mintFee[_args.BTCFI]  = 10;
 
         // Set redeem enabled.
         s.redeemEnabled[_args.COFI]     = 1;
-        s.redeemEnabled[_args.ETHFI]    = 1;
-        s.redeemEnabled[_args.BTCFI]    = 1;
+        // s.redeemEnabled[_args.ETHFI]    = 1;
+        // s.redeemEnabled[_args.BTCFI]    = 1;
 
         // Set redeem fee.
         s.redeemFee[_args.COFI]     = 10;
-        s.redeemFee[_args.ETHFI]    = 10;
-        s.redeemFee[_args.BTCFI]    = 10;
+        // s.redeemFee[_args.ETHFI]    = 10;
+        // s.redeemFee[_args.BTCFI]    = 10;
 
         // Set service fee.
         s.serviceFee[_args.COFI]    = 1e3;
-        s.serviceFee[_args.ETHFI]   = 1e3;
-        s.serviceFee[_args.BTCFI]   = 1e3;
+        // s.serviceFee[_args.ETHFI]   = 1e3;
+        // s.serviceFee[_args.BTCFI]   = 1e3;
 
         // Set points rate.
         s.pointsRate[_args.COFI]    = 1e6;  // 100 points/1.0 COFI earned.
-        s.pointsRate[_args.ETHFI]   = 1e9;  // 100 points/0.001 ETHFI earned.
-        s.pointsRate[_args.BTCFI]   = 1e10; // 100 points/0.0001 BTCFI earned.
+        // s.pointsRate[_args.ETHFI]   = 1e9;  // 100 points/0.001 ETHFI earned.
+        // s.pointsRate[_args.BTCFI]   = 1e10; // 100 points/0.0001 BTCFI earned.
 
         // Set feeCollector.
         s.feeCollector = _args.feeCollector;
 
         s.isAdmin[msg.sender] = 1;
         s.isAdmin[_args.COFI] = 1;
-        s.isAdmin[_args.ETHFI] = 1;
-        s.isAdmin[_args.BTCFI] = 1;
+        // s.isAdmin[_args.ETHFI] = 1;
+        // s.isAdmin[_args.BTCFI] = 1;
         s.isWhitelisted[msg.sender] = 1;
         s.isWhitelisted[_args.feeCollector] = 1;
 
         s.initReward = 100*10**18;  // 100 Points for initial deposit.
         s.referReward = 10*10**18;  // 10 Points each for each referral.
 
-        // s.buffer[_args.COFI]    = 100*10**18;   // 100 USDC buffer for migrations.
+        s.decimals[_args.USDC] = 6;
+        // s.decimals[_args.wETH] = 18;
+        // s.decimals[_args.wBTC] = 8;
+
+        s.buffer[_args.COFI]    = 100*10**s.decimals[_args.USDC];   // 100 USDC buffer for migrations.
         // s.buffer[_args.ETHFI]   = 1*10**17;     // 0.1 wETH buffer for migrations.
         // s.buffer[_args.BTCFI]   = 1*10**16;     // 0.01 wBTC buffer for migrations.
-
-        s.decimals[_args.USDC] = 6;
-        s.decimals[_args.wETH] = 18;
-        s.decimals[_args.wBTC] = 8;
 
         // Set admins.
         // for(uint i = 1; i < _args.admins.length; ++i) {

@@ -101,8 +101,10 @@ describe('First test', function() {
       'DiamondLoupeFacet',
       'OwnershipFacet',
       'SupplyFacet',
-      'RewardFacet',
-      'AccessFacet'
+      'PointFacet',
+      'AccessFacet',
+      'PartnerFacet',
+      'YieldFacet'
     ]
     const cut = []
     for (const FacetName of FacetNames) {

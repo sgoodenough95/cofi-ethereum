@@ -34,6 +34,7 @@ struct UnderlyingAssetParams {
     uint8   decimals;
 }
 
+/// @dev    'spender' address must be provided in LibVault.
 struct DerivParams {
     bytes4  toDeriv;                // Method for winding to the derivative asset.
     bytes4  toUnderlying;           // Method for unwinding to the underlying asset.
@@ -172,11 +173,11 @@ contract Modifiers {
     modifier EXTGuard() {
         require(s.EXT_GUARD == 1, 'Not accessible to external accounts');
         _;
-        s.EXT_GUARD = 0;
     }
 
     modifier EXTGuardOn() {
         s.EXT_GUARD = 1;
         _;
+        s.EXT_GUARD = 0;
     }
 }

@@ -10,6 +10,8 @@ pragma solidity 0.8.19;
     @title  Supply Facet
     @notice Custom functions to enable integration wit certain vaults.
     @dev    Functions are organised as (k, v) mappings, where the vault is the key.
+            Motivation in doing so is to avoid a look-up implementation and trigger
+            the function directly.
             One caveat of calling via the low-level 'call()' operation, passing
             the bytes4 function selector, is that functions must be accessible
             externally. Therefore, to prevent external calls, a modifier 
@@ -25,17 +27,18 @@ import 'hardhat/console.sol';
 
 contract PartnerFacet is Modifiers {
 
+    /// @dev    Nomenclature: "method"_"derivative asset symbol (with special chars redacted)"
     function toDeriv_HOPUSDCLP(
         uint256 amount
     ) public EXTGuard {
 
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = amount;
         SafeERC20.safeApprove(
-            IERC20(s.underlying[s.COFI]),
+            IERC20(s.underlying[s.COFI]),   // Approve USDC spend.
             address(LibVault.HOPUSDCLP),
             amount
         );
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = amount;
         s.RETURN_ASSETS = LibVault.HOPUSDCLP.addLiquidity(
             amounts,
             0,
@@ -48,7 +51,7 @@ contract PartnerFacet is Modifiers {
     ) public EXTGuard {
 
         SafeERC20.safeApprove(
-            IERC20(IERC4626(s.vault[s.COFI]).asset()),
+            IERC20(IERC4626(s.vault[s.COFI]).asset()),  // Approve HOP-USDC-LP spend.
             address(LibVault.HOPUSDCLP),
             amount
         );
