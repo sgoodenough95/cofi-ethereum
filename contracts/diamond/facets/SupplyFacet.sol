@@ -70,9 +70,7 @@ contract SupplyFacet is Modifiers {
         address referral
     )
         public
-        isWhitelisted
-        mintEnabled(fiAsset)
-        minDeposit(amount, fiAsset)
+        isWhitelisted mintEnabled(fiAsset) minDeposit(amount, fiAsset)
         returns (uint256 mintAfterFee)
     {
         // Transfer underlying to this contract first to prevent user having to 
@@ -134,9 +132,7 @@ contract SupplyFacet is Modifiers {
         address referral
     )
         public
-        isWhitelisted
-        mintEnabled(fiAsset)
-        minDeposit(amount, fiAsset)
+        isWhitelisted mintEnabled(fiAsset) minDeposit(amount, fiAsset) EXTGuardOn
         returns (uint256 mintAfterFee)
     {
         // Transfer underlying to this contract first to prevent user having to 
@@ -149,7 +145,6 @@ contract SupplyFacet is Modifiers {
         );
 
         // Wind from underlying to derivative hook.
-        s.EXT_GUARD = 1;
         (bool success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].toDeriv,
             fiAsset,
@@ -210,8 +205,7 @@ contract SupplyFacet is Modifiers {
         address referral
     )
         external
-        isWhitelisted
-        mintEnabled(fiAsset)
+        isWhitelisted mintEnabled(fiAsset)
         minDeposit(LibVault._getAssets(amount, s.vault[fiAsset]), fiAsset)
         returns (uint256 mintAfterFee)
     {
@@ -251,9 +245,7 @@ contract SupplyFacet is Modifiers {
         address depositFrom,
         address recipient
     )   external
-        isWhitelisted
-        redeemEnabled(fiAsset)
-        minWithdraw(amount, fiAsset)
+        isWhitelisted redeemEnabled(fiAsset) minWithdraw(amount, fiAsset)
         returns (uint256 burnAfterFee)
     {
         depositFrom == msg.sender ?
@@ -316,9 +308,7 @@ contract SupplyFacet is Modifiers {
         address depositFrom,
         address recipient
     )   public
-        isWhitelisted
-        redeemEnabled(fiAsset)
-        minWithdraw(amount, fiAsset)
+        isWhitelisted redeemEnabled(fiAsset) minWithdraw(amount, fiAsset)
         returns (uint256 burnAfterFee)
     {
         depositFrom == msg.sender ?
@@ -358,9 +348,7 @@ contract SupplyFacet is Modifiers {
         address depositFrom,
         address recipient
     )   public
-        isWhitelisted
-        redeemEnabled(fiAsset)
-        minWithdraw(amount, fiAsset)
+        isWhitelisted redeemEnabled(fiAsset) minWithdraw(amount, fiAsset) EXTGuardOn
         returns (uint256 burnAfterFee)
     {
         depositFrom == msg.sender ?
@@ -381,7 +369,6 @@ contract SupplyFacet is Modifiers {
         require(success, 'SupplyFacet: Convert to derivative operation failed');
 
         // Unwind from derivative asset to underlying hook.
-        s.EXT_GUARD = 1;
         (success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].toUnderlying,
             fiAsset,
@@ -398,65 +385,6 @@ contract SupplyFacet is Modifiers {
     /*//////////////////////////////////////////////////////////////
                         PARTNER INTEGRATION
     //////////////////////////////////////////////////////////////*/
-
-    function toDeriv_HOPUSDCLP(
-        uint256 amount
-    ) public EXTGuard {
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = amount;
-        SafeERC20.safeApprove(
-            IERC20(s.underlying[s.COFI]),
-            address(LibVault.HOPUSDCLP),
-            amount
-        );
-        s.RETURN_ASSETS = LibVault.HOPUSDCLP.addLiquidity(
-            amounts,
-            0,
-            block.timestamp + 2 seconds
-        );
-    }
-
-    function toUnderlying_HOPUSDCLP(
-        uint256 amount
-    ) public EXTGuard {
-
-        SafeERC20.safeApprove(
-            IERC20(IERC4626(s.vault[s.COFI]).asset()),
-            address(LibVault.HOPUSDCLP),
-            amount
-        );
-        s.RETURN_ASSETS = LibVault.HOPUSDCLP.removeLiquidityOneToken(
-            amount,
-            0,
-            0,
-            block.timestamp + 2 seconds
-        );
-    }
-
-    function convertToUnderlying_HOPUSDCLP(
-        uint256 amount
-    ) public {
-
-        s.RETURN_ASSETS = LibVault.HOPUSDCLP.calculateRemoveLiquidityOneToken(
-            address(this),
-            amount,
-            0
-        );
-    }
-
-    function convertToDeriv_HOPUSDCLP(
-        uint256 amount
-    ) public {
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = LibToken._toUnderlyingDecimals(s.COFI, amount);
-        s.RETURN_ASSETS = LibVault.HOPUSDCLP.calculateTokenAmount(
-            address(this),
-            amounts,
-            false
-        );
-    }
 
     /// @notice minDeposit applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
     function setMinDeposit(

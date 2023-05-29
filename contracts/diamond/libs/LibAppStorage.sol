@@ -174,4 +174,9 @@ contract Modifiers {
         _;
         s.EXT_GUARD = 0;
     }
+
+    modifier EXTGuardOn() {
+        s.EXT_GUARD = 1;
+        _;
+    }
 }
