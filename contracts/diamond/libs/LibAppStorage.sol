@@ -6,18 +6,18 @@ import ".././interfaces/beefy/ISwap.sol";
 // import { ICoFi } from "./../interfaces/ICoFi.sol";
 
 // Struct used for onboarding purposes.
-struct FiAssetParams {
-    uint256 minDeposit;     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
-    uint256 minWithdraw;    // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
-    uint256 mintFee;        // E.g., COFI => 10bps (=0.1%). Applies to fiAsset only.
-    uint256 redeemFee;      // E.g., COFI => 10bps (=0.1%). Applies to fiAsset only.
-    uint256 serviceFee;     // E.g., COFI => 1,000bps (=10%). Applies to fiAsset only.
-    uint256 pointsRate;     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
-    address vault;          // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
-    address underlying;     // E.g., COFI => USDC. Not always vault.asset() (if using underlyingPrime).
-    uint8   mintEnabled;    // E.g., COFI => 1.
-    uint8   redeemEnabled;  // E.g., COFI => 1.
-}
+// struct FiAssetParams {
+//     uint256 minDeposit;     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
+//     uint256 minWithdraw;    // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
+//     uint256 mintFee;        // E.g., COFI => 10bps (=0.1%). Applies to fiAsset only.
+//     uint256 redeemFee;      // E.g., COFI => 10bps (=0.1%). Applies to fiAsset only.
+//     uint256 serviceFee;     // E.g., COFI => 1,000bps (=10%). Applies to fiAsset only.
+//     uint256 pointsRate;     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
+//     address vault;          // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
+//     address underlying;     // E.g., COFI => USDC. Not always vault.asset() (if using underlyingPrime).
+//     uint8   mintEnabled;    // E.g., COFI => 1.
+//     uint8   redeemEnabled;  // E.g., COFI => 1.
+// }
 
 struct YieldPointsCapture {
     uint256 yield;
@@ -30,24 +30,22 @@ struct RewardStatus {
     uint8   referDisabled;
 }
 
-struct UnderlyingAssetParams {
-    uint8   decimals;
-}
-
 /// @dev    'spender' address must be provided in LibVault.
 struct DerivParams {
+    address spender;                // Spender for the 'toDeriv()' method.
     bytes4  toDeriv;                // Method for winding to the derivative asset.
     bytes4  toUnderlying;           // Method for unwinding to the underlying asset.
     bytes4  convertToDeriv;         // Method for retrieving the equiv. number of derivative.
     bytes4  convertToUnderlying;    // Method for retrieving the equiv. number of underlying.
+    address[] add;                  // Additional addresses that may be required.
+    uint256[] num;                  // Additional integers that may be required.
 }
 
 struct AppStorage {
 
-    // Storing directly for internal purposes.
-    address COFI;
-    address BTCFI;
-    address ETHFI;
+    /*//////////////////////////////////////////////////////////////
+                        COFI STABLECOIN PARAMS
+    //////////////////////////////////////////////////////////////*/
 
     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
     mapping(address => uint256) minDeposit;
@@ -77,13 +75,18 @@ struct AppStorage {
     // Need to specify as vault may use different underlying (e.g., USDC-LP).
     mapping(address => address) underlying;
 
-    mapping(address => uint256) decimals;
-
     // E.g., COFI => 1.
     mapping(address => uint8)   mintEnabled;
 
     // E.g., COFI => 1.
     mapping(address => uint8)   redeemEnabled;
+
+    // Decimals of the underlying asset (e.g., USDC => 6).
+    mapping(address => uint256) decimals;
+
+    /*//////////////////////////////////////////////////////////////
+                            OTHER STORAGE
+    //////////////////////////////////////////////////////////////*/
 
     // E.g., wmooHopUSDC => DerivParams.
     mapping(address => DerivParams) derivParams;
@@ -115,12 +118,6 @@ struct AppStorage {
     uint8 EXT_GUARD;
 
     uint256 RETURN_ASSETS;
-
-    /*//////////////////////////////////////////////////////////////
-                            PARTNER ADDRESSES
-    //////////////////////////////////////////////////////////////*/
-
-    // ISwap constant HOPUSDCLP = ISwap(0x10541b07d8Ad2647Dc6cD67abd4c03575dade261);
 }
 
 library LibAppStorage {
@@ -138,6 +135,10 @@ library LibAppStorage {
 
 contract Modifiers {
     AppStorage internal s;
+
+    /*//////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
 
     modifier isWhitelisted() {
         require(s.isWhitelisted[msg.sender] == 1, 'Caller not whitelisted');

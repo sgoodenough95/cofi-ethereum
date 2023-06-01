@@ -3,16 +3,9 @@ pragma solidity 0.8.19;
 
 import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { IERC4626 } from ".././interfaces/IERC4626.sol";
-import ".././interfaces/beefy/ISwap.sol";
 import 'hardhat/console.sol';
 
 library LibVault {
-
-    /*//////////////////////////////////////////////////////////////
-                            PARTNER INTERFACES
-    //////////////////////////////////////////////////////////////*/
-
-    ISwap internal constant HOPUSDCLP = ISwap(0x10541b07d8Ad2647Dc6cD67abd4c03575dade261);
 
     /*//////////////////////////////////////////////////////////////
                                 EVENTS

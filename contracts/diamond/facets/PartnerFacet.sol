@@ -18,72 +18,229 @@ pragma solidity 0.8.19;
             "EXTGuard" has been implemented.
  */
 
-import { Modifiers } from '../libs/LibAppStorage.sol';
+import { Modifiers, DerivParams } from '../libs/LibAppStorage.sol';
 import { LibToken } from '../libs/LibToken.sol';
 import { LibVault } from '../libs/LibVault.sol';
 import { IERC4626 } from '.././interfaces/IERC4626.sol';
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import ".././interfaces/beefy/ISwap.sol";
+import ".././interfaces/beefy/IStargateRouter.sol";
 import 'hardhat/console.sol';
 
 contract PartnerFacet is Modifiers {
 
-    /// @dev    Nomenclature: "method"_"derivative asset symbol (with special chars redacted)"
-    function toDeriv_HOPUSDCLP(
+    function harvest(
+        address fiAsset
+    ) public {
+
+        // claim
+
+        // redeem
+
+        // swap
+
+        // deposit
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            BEEFY HOP VAULT
+    //////////////////////////////////////////////////////////////*/
+
+    function toDeriv_BeefyHop(
+        address fiAsset,
         uint256 amount
     ) public EXTGuard {
-
+        console.log('test');
         SafeERC20.safeApprove(
-            IERC20(s.underlying[s.COFI]),   // Approve USDC spend.
-            address(LibVault.HOPUSDCLP),
+            IERC20(s.underlying[fiAsset]),   // Approve USDC spend.
+            s.derivParams[s.vault[fiAsset]].spender,
             amount
         );
+        console.log('test');
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = amount;
-        s.RETURN_ASSETS = LibVault.HOPUSDCLP.addLiquidity(
+        s.RETURN_ASSETS = ISwap(s.derivParams[s.vault[fiAsset]].spender).addLiquidity(
             amounts,
             0,
-            block.timestamp + 2 seconds
+            block.timestamp + 7 days
         );
     }
 
-    function toUnderlying_HOPUSDCLP(
+    function toUnderlying_BeefyHop(
+        address fiAsset,
         uint256 amount
     ) public EXTGuard {
 
         SafeERC20.safeApprove(
-            IERC20(IERC4626(s.vault[s.COFI]).asset()),  // Approve HOP-USDC-LP spend.
-            address(LibVault.HOPUSDCLP),
+            IERC20(IERC4626(s.vault[fiAsset]).asset()),  // Approve HOP-USDC-LP spend.
+            s.derivParams[s.vault[fiAsset]].spender,
             amount
         );
-        s.RETURN_ASSETS = LibVault.HOPUSDCLP.removeLiquidityOneToken(
+        s.RETURN_ASSETS = ISwap(s.derivParams[s.vault[fiAsset]].spender).removeLiquidityOneToken(
             amount,
             0,
             0,
-            block.timestamp + 2 seconds
+            block.timestamp + 7 days
         );
     }
 
-    function convertToUnderlying_HOPUSDCLP(
+    function convertToUnderlying_BeefyHop(
+        address fiAsset,
         uint256 amount
     ) public {
 
-        s.RETURN_ASSETS = LibVault.HOPUSDCLP.calculateRemoveLiquidityOneToken(
+        s.RETURN_ASSETS = ISwap(s.derivParams[s.vault[fiAsset]].spender).calculateRemoveLiquidityOneToken(
             address(this),
             amount,
             0
         );
     }
 
-    function convertToDeriv_HOPUSDCLP(
+    function convertToDeriv_BeefyHop(
+        address fiAsset,
         uint256 amount
     ) public {
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = LibToken._toUnderlyingDecimals(s.COFI, amount);
-        s.RETURN_ASSETS = LibVault.HOPUSDCLP.calculateTokenAmount(
+        amounts[0] = LibToken._toUnderlyingDecimals(fiAsset, amount);
+        s.RETURN_ASSETS = ISwap(s.derivParams[s.vault[fiAsset]].spender).calculateTokenAmount(
             address(this),
             amounts,
             false
         );
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        BEEFY STARGATE VAULT
+    //////////////////////////////////////////////////////////////*/
+
+    // function toDeriv_BeefyStargate(
+    //     address fiAsset,
+    //     uint256 amount
+    // ) public {
+
+    //     uint256 x = IERC20(s.derivParams[s.vault[fiAsset]].add[0]).balanceOf(address(this));
+    //     SafeERC20.safeApprove(
+    //         IERC20(s.underlying[fiAsset]),   // Approve USDC spend.
+    //         s.derivParams[s.vault[fiAsset]].spender,
+    //         amount
+    //     );
+    //     IStargateRouter(s.derivParams[s.vault[fiAsset]].spender).addLiquidity(
+    //         1,
+    //         amount,
+    //         address(this)
+    //     );
+    //     s.RETURN_ASSETS = x - IERC20(s.derivParams[s.vault[fiAsset]].add[0]).balanceOf(address(this));
+    // }
+
+    // function toUnderlying_BeefyStargate(
+    //     address fiAsset,
+    //     uint256 amount
+    // ) public {
+
+    //     s.RETURN_ASSETS = IStargateRouter(s.derivParams[s.vault[fiAsset]].spender).instantRedeemLocal(
+    //         1,
+    //         amount,
+    //         address(this)
+    //     );
+    // }
+
+    // function convertToUnderlying_BeefyStargate(
+    //     address fiAsset,
+    //     uint256 amount
+    // ) public {
+
+
+    // }
+
+    // function convertToDeriv_BeefyStargate(
+    //     address fiAsset,
+    //     uint256 amount
+    // ) public {
+
+
+    // }
+
+    /*//////////////////////////////////////////////////////////////
+                            ADMIN - SETTERS
+    //////////////////////////////////////////////////////////////*/
+
+    function setToDeriv(
+        address vault,
+        string memory _toDeriv
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.derivParams[vault].toDeriv = bytes4(keccak256(bytes(_toDeriv)));
+        return true;
+    }
+
+    function setToUnderlying(
+        address vault,
+        string memory _toUnderlying
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.derivParams[vault].toDeriv = bytes4(keccak256(bytes(_toUnderlying)));
+        return true;
+    }
+
+    function setConvertToDeriv(
+        address vault,
+        string memory _convertToDeriv
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.derivParams[vault].toDeriv = bytes4(keccak256(bytes(_convertToDeriv)));
+        return true;
+    }
+
+    function setConvertToUnderlying(
+        address vault,
+        string memory _convertToUnderlying
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.derivParams[vault].toDeriv = bytes4(keccak256(bytes(_convertToUnderlying)));
+        return true;
+    }
+
+    function setAdd(
+        address vault,
+        address[] memory _add
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.derivParams[vault].add = _add;
+        return true;
+    }
+
+    function setNum(
+        address vault,
+        uint256[] memory _num
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.derivParams[vault].num = _num;
+        return true;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                VIEWS
+    //////////////////////////////////////////////////////////////*/
+
+    function getDerivParams(
+        address vault
+    )   external
+        view
+        returns (DerivParams memory)
+    {
+        return s.derivParams[vault];
     }
 }

@@ -1,20 +1,6 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.0;
 
-interface ICOFIMoney {
-
-    function rebase(address) external returns (uint256, uint256, uint256);
-
-    function getUnderlyingAsset(address) external returns (address);
-
-    function getYieldAsset(address) external returns (address);
-}
-
-interface IERC20Token {
-
-    function mint(address, uint256) external;
-}
-
 /**
 
     █▀▀ █▀█ █▀▀ █
@@ -104,7 +90,7 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
         string memory _symbol
     ) ERC20(_name, _symbol) ERC20Permit(_name) {
         admin[msg.sender] = true;
-        _rebasingCreditsPerToken = 1e18;
+        _rebasingCreditsPerToken = 982240116801301400;
     }
 
     /**
@@ -121,24 +107,6 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
     modifier onlyAuthorized() {
         require(admin[msg.sender] || msg.sender == owner(), 'FiToken: Caller is not authorized');
         _;
-    }
-
-    /// @param percent  Basis points increase (e.g., 100 = 1%, 1500 = 15%, etc.)
-    function percentIncrease(
-        uint256 percent
-    ) external returns (uint256) {
-
-        address underlying = ICOFIMoney(diamond).getUnderlyingAsset(address(this));
-        address vault = ICOFIMoney(diamond).getYieldAsset(address(this));
-
-        IERC20Token(underlying).mint(
-            vault,
-            IERC20(underlying).balanceOf(vault).percentMul(percent)
-        );
-
-        ICOFIMoney(diamond).rebase(address(this));
-
-        return _rebasingCreditsPerToken;
     }
 
     /**
@@ -438,6 +406,19 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
         // Ignore 'paused' check, as this is covered by 'mintEnabled' in Diamond.
         require(frozen[_account] != true, 'FiToken: Recipient account is frozen');
         _mint(_account, _amount);
+    }
+
+    /**
+     * @dev Additional function for opting the account in after minting.
+     */
+    function mintOptIn(address _account, uint256 _amount) external onlyDiamond {
+        // Ignore 'paused' check, as this is covered by 'mintEnabled' in Diamond.
+        require(frozen[_account] != true, 'FiToken: Recipient account is frozen');
+        _mint(_account, _amount);
+
+        if (_isNonRebasingAccount(_account)) {
+            rebaseOptInExternal(_account);
+        }
     }
 
     /**

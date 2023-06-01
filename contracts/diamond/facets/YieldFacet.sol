@@ -42,7 +42,6 @@ contract YieldFacet is Modifiers {
         }
 
         assets = LibToken._toFiDecimals(fiAsset, LibVault._totalValue(s.vault[fiAsset]));
-        console.log("Assets: %s Current supply: %s", assets, currentSupply);
 
         if (assets > currentSupply) {
 

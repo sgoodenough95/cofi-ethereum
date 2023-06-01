@@ -16,7 +16,7 @@ module.exports = {
         enabled: true,
         runs: 1000,
       },
-      viaIR: false,
+      viaIR: true,
     },
   },
   diamondAbi: {
@@ -24,7 +24,11 @@ module.exports = {
     include: ["Facet"],
   },
   networks: {
-    arbitrum: {
+    optimism: {
+      url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`,
+      accounts: [`${STOA_PRIV_KEY}`]
+    },
+    arbitrumOne: {
       url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`,
       accounts: [`${STOA_PRIV_KEY}`]
     },
@@ -42,21 +46,15 @@ module.exports = {
     },
     hardhat: {
       forking: {
-        url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`
+        // url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`
+        url: `https://optimism-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`
       }
     }
   },
   etherscan: {
     apiKey: {
-      arbitrumGoerli: `${STOA_ARB_SCAN_API_KEY}`
+      arbitrumOne: `${STOA_ARB_SCAN_API_KEY}`,
+      // arbitrumGoerli: `${STOA_ARB_SCAN_API_KEY}`
     }
   }
-
-  // settings: {
-  //   optimizer: {
-  //     enabled: true,
-  //     runs: 1000,
-  //   },
-  //   viaIR: true,
-  // }
 };

@@ -22,6 +22,10 @@ import 'hardhat/console.sol';
 
 contract SupplyFacet is Modifiers {
 
+    /*//////////////////////////////////////////////////////////////
+                        DEPOSIT FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Entry point that routes to a function accoriding to if a derivative asset
     ///         e.g., USDC-LP needs to be acquired for the vault.
     function underlyingToFi(
@@ -147,6 +151,7 @@ contract SupplyFacet is Modifiers {
         // Wind from underlying to derivative hook.
         (bool success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].toDeriv,
+            fiAsset,
             amount
         )); // Will fail here if set vault is not using a derivative.
         require(success, 'SupplyFacet: Underlying to derivative operation failed');
@@ -160,6 +165,7 @@ contract SupplyFacet is Modifiers {
 
         (success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].convertToUnderlying,
+            fiAsset,
             LibVault._getAssets(
                 LibVault._wrap(
                     s.RETURN_ASSETS,
@@ -264,6 +270,10 @@ contract SupplyFacet is Modifiers {
         emit LibToken.Withdraw(s.underlying[fiAsset], amount, depositFrom, fee);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                        WITHDRAW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     function fiToUnderlying(
         uint256 amount,
         uint256 minAmountOut,
@@ -363,6 +373,7 @@ contract SupplyFacet is Modifiers {
         // Determine equivalent number of derivative assets to redeem.
         (bool success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].convertToDeriv,
+            fiAsset,
             burnAfterFee
         )); 
         require(success, 'SupplyFacet: Convert to derivative operation failed');
@@ -370,6 +381,7 @@ contract SupplyFacet is Modifiers {
         // Unwind from derivative asset to underlying hook.
         (success, ) = address(this).call(abi.encodeWithSelector(
             s.derivParams[s.vault[fiAsset]].toUnderlying,
+            fiAsset,
             LibVault._unwrap(s.RETURN_ASSETS, s.vault[fiAsset], address(this))
         ));
         require(success, 'SupplyFacet: Derivative to underlying operation failed');
@@ -381,7 +393,7 @@ contract SupplyFacet is Modifiers {
     }
 
     /*//////////////////////////////////////////////////////////////
-                        PARTNER INTEGRATION
+                        ADMIN - SETTERS
     //////////////////////////////////////////////////////////////*/
 
     /// @notice minDeposit applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
