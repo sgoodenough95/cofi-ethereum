@@ -18,7 +18,6 @@ import { LibReward } from '../libs/LibReward.sol';
 import { LibVault } from '../libs/LibVault.sol';
 import { IERC4626 } from '.././interfaces/IERC4626.sol';
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import 'hardhat/console.sol';
 
 contract SupplyFacet is Modifiers {
 
@@ -92,27 +91,17 @@ contract SupplyFacet is Modifiers {
             amount
         );
 
-        uint256 shares = LibVault._wrap(
-            amount,
-            s.vault[fiAsset],
-            depositFrom // Purely for Event emission. Wraps from Diamond.
-        );
-
-        console.log("Shares: %s", shares);
-
-        uint256 assets = LibVault._getAssets(
-            shares,
-            s.vault[fiAsset]
-        );
-
-        console.log("Assets: %s", assets);
-
-        assets = LibToken._toFiDecimals(
+        uint256 assets = LibToken._toFiDecimals(
             fiAsset,
-            assets
+            LibVault._getAssets(
+                LibVault._wrap(
+                    amount,
+                    s.vault[fiAsset],
+                    depositFrom // Purely for Event emission. Wraps from Diamond.
+                ),
+                s.vault[fiAsset]
+            )
         );
-
-        console.log("Assets: %s", assets);
 
         require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
 
@@ -122,7 +111,7 @@ contract SupplyFacet is Modifiers {
         // Capture mint fee in fiAssets.
         if (fee > 0) LibToken._mint(fiAsset, s.feeCollector, fee);
 
-        LibToken._mint(fiAsset, recipient, mintAfterFee);
+        LibToken._mintOptIn(fiAsset, recipient, mintAfterFee);
         LibReward._initReward();
         if (referral != address(0)) LibReward._referReward(referral);
         emit LibToken.Deposit(s.underlying[fiAsset], amount, depositFrom, fee);
@@ -197,7 +186,7 @@ contract SupplyFacet is Modifiers {
         // Capture mint fee in fiAssets.
         if (fee > 0) LibToken._mint(fiAsset, s.feeCollector, fee);
 
-        LibToken._mint(fiAsset, recipient, mintAfterFee);
+        LibToken._mintOptIn(fiAsset, recipient, mintAfterFee);
         LibReward._initReward();
         if (referral != address(0)) LibReward._referReward(referral);
         emit LibToken.Deposit(s.underlying[fiAsset], amount, depositFrom, fee);
@@ -340,15 +329,13 @@ contract SupplyFacet is Modifiers {
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
 
-        console.log("Beginning unwrap");
-
         // Redeems assets directly to recipient (does not traverse through Diamond).
         uint256 assets = LibVault._unwrap(
             LibToken._toUnderlyingDecimals(fiAsset, burnAfterFee),
             s.vault[fiAsset],
             recipient
         );
-        console.log("Assets: %s", assets);
+
         require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
         emit LibToken.Withdraw(s.underlying[fiAsset], amount, depositFrom, fee);
     }
@@ -401,173 +388,5 @@ contract SupplyFacet is Modifiers {
         LibToken._transfer(s.underlying[fiAsset], s.RETURN_ASSETS, recipient);
         s.RETURN_ASSETS = 0;
         emit LibToken.Withdraw(s.underlying[fiAsset], amount, depositFrom, fee);
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                        ADMIN - SETTERS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice minDeposit applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
-    function setMinDeposit(
-        address fiAsset,
-        uint256 amount
-    )   external
-        onlyAdmin
-        returns (bool)
-    {
-        s.minDeposit[fiAsset] = amount;
-        return true;
-    }
-
-    /// @notice minWithdraw applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
-    function setMinWithdraw(
-        address fiAsset,
-        uint256 amount
-    )   external
-        onlyAdmin
-        returns (bool)
-    {
-        s.minWithdraw[fiAsset] = amount;
-        return true;
-    }
-
-    function setMintFee(
-        address fiAsset,
-        uint256 amount
-    )   external
-        onlyAdmin
-        returns (bool)
-    {
-        s.mintFee[fiAsset] = amount;
-        return true;
-    }
-
-    function toggleMintEnabled(
-        address fiAsset
-    )   external
-        onlyAdmin
-        returns (bool)
-    {
-        s.mintEnabled[fiAsset] = s.mintEnabled[fiAsset] == 0 ? 1 : 0;
-        return s.mintEnabled[fiAsset] == 1 ? true : false;
-    }
-
-    function setRedeemFee(
-        address fiAsset,
-        uint256 amount
-    )   external
-        onlyAdmin
-        returns (bool)
-    {
-        s.redeemFee[fiAsset] = amount;
-        return true;
-    }
-
-    function toggleRedeemEnabled(
-        address fiAsset
-    )   external
-        onlyAdmin
-        returns (bool)
-    {
-        s.redeemEnabled[fiAsset] = s.redeemEnabled[fiAsset] == 0 ? 1 : 0;
-        return s.redeemEnabled[fiAsset] == 1 ? true : false;
-    }
-
-    function setServiceFee(
-        address fiAsset,
-        uint256 amount
-    )   external
-        onlyAdmin
-        returns (bool)
-    {
-        s.serviceFee[fiAsset] = amount;
-        return true;
-    }
-
-    function getMinDeposit(
-        address fiAsset
-    )   external
-        view
-        returns (uint256)
-    {
-        return s.minDeposit[fiAsset];
-    }
-
-    function getMinWithdraw(
-        address fiAsset
-    )   external
-        view
-        returns (uint256)
-    {
-        return s.minWithdraw[fiAsset];
-    }
-
-    function getMintFee(
-        address fiAsset
-    )   external
-        view
-        returns (uint256)
-    {
-        return s.mintFee[fiAsset];
-    }
-
-    function getMintEnabled(
-        address fiAsset
-    )   external
-        view
-        returns (bool)
-    {
-        return s.mintEnabled[fiAsset] == 1 ? true : false;
-    }
-
-    function getRedeemFee(
-        address fiAsset
-    )   external
-        view
-        returns (uint256)
-    {
-        return s.redeemFee[fiAsset];
-    }
-
-    function getRedeemEnabled(
-        address fiAsset
-    )   external
-        view
-        returns (bool)
-    {
-        return s.redeemEnabled[fiAsset] == 1 ? true : false;
-    }
-
-    function getServiceFee(
-        address fiAsset
-    )   external
-        view
-        returns (uint256)
-    {
-        return s.serviceFee[fiAsset];
-    }
-
-    /// @notice Returns the underlyingAsset (variable) for a given fiAsset.
-    ///
-    /// @param  fiAsset The fiAsset to query for.
-    function getUnderlyingAsset(
-        address fiAsset
-    )   external
-        view
-        returns (address)
-    {
-        return IERC4626(s.vault[fiAsset]).asset();
-    }
-
-    /// @notice Returns the yieldAsset (variable) for a given fiAsset.
-    ///
-    /// @param  fiAsset The fiAsset to query for. 
-    function getYieldAsset(
-        address fiAsset
-    )   external
-        view
-        returns (address)
-    {
-        return s.vault[fiAsset];
     }
 }

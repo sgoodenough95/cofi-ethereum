@@ -3,22 +3,6 @@ pragma solidity 0.8.19;
 
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 import ".././interfaces/beefy/ISwap.sol";
-import "hardhat/console.sol";
-// import { ICoFi } from "./../interfaces/ICoFi.sol";
-
-// Struct used for onboarding purposes.
-// struct FiAssetParams {
-//     uint256 minDeposit;     // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
-//     uint256 minWithdraw;    // E.g., COFI => 20*10**18. Applies to underlyingAsset (e.g., DAI).
-//     uint256 mintFee;        // E.g., COFI => 10bps (=0.1%). Applies to fiAsset only.
-//     uint256 redeemFee;      // E.g., COFI => 10bps (=0.1%). Applies to fiAsset only.
-//     uint256 serviceFee;     // E.g., COFI => 1,000bps (=10%). Applies to fiAsset only.
-//     uint256 pointsRate;     // E.g., COFI => 1,000,000bps (100x / 1*10**18 yield earned).
-//     address vault;          // E.g., COFI => yvDAI; fiETH => maETH; fiBTC => maBTC.
-//     address underlying;     // E.g., COFI => USDC. Not always vault.asset() (if using underlyingPrime).
-//     uint8   mintEnabled;    // E.g., COFI => 1.
-//     uint8   redeemEnabled;  // E.g., COFI => 1.
-// }
 
 struct YieldPointsCapture {
     uint256 yield;
@@ -152,7 +136,6 @@ contract Modifiers {
     }
 
     modifier minWithdraw(uint256 amount, address fiAsset) {
-        console.log(amount); console.log(s.minWithdraw[fiAsset]);
         require(amount >= s.minWithdraw[fiAsset], 'Insufficient withdraw amount');
         _;
     }

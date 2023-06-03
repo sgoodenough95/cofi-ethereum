@@ -24,23 +24,8 @@ import { LibVault } from '../libs/LibVault.sol';
 import { IERC4626 } from '.././interfaces/IERC4626.sol';
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import ".././interfaces/beefy/ISwap.sol";
-import ".././interfaces/beefy/IStargateRouter.sol";
-import 'hardhat/console.sol';
 
 contract PartnerFacet is Modifiers {
-
-    function harvest(
-        address fiAsset
-    ) public {
-
-        // claim
-
-        // redeem
-
-        // swap
-
-        // deposit
-    }
 
     /*//////////////////////////////////////////////////////////////
                             BEEFY HOP VAULT
@@ -50,13 +35,13 @@ contract PartnerFacet is Modifiers {
         address fiAsset,
         uint256 amount
     ) public EXTGuard {
-        console.log('test');
+
         SafeERC20.safeApprove(
             IERC20(s.underlying[fiAsset]),   // Approve USDC spend.
             s.derivParams[s.vault[fiAsset]].spender,
             amount
         );
-        console.log('test');
+
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = amount;
         s.RETURN_ASSETS = ISwap(s.derivParams[s.vault[fiAsset]].spender).addLiquidity(
@@ -109,57 +94,6 @@ contract PartnerFacet is Modifiers {
             false
         );
     }
-
-    /*//////////////////////////////////////////////////////////////
-                        BEEFY STARGATE VAULT
-    //////////////////////////////////////////////////////////////*/
-
-    // function toDeriv_BeefyStargate(
-    //     address fiAsset,
-    //     uint256 amount
-    // ) public {
-
-    //     uint256 x = IERC20(s.derivParams[s.vault[fiAsset]].add[0]).balanceOf(address(this));
-    //     SafeERC20.safeApprove(
-    //         IERC20(s.underlying[fiAsset]),   // Approve USDC spend.
-    //         s.derivParams[s.vault[fiAsset]].spender,
-    //         amount
-    //     );
-    //     IStargateRouter(s.derivParams[s.vault[fiAsset]].spender).addLiquidity(
-    //         1,
-    //         amount,
-    //         address(this)
-    //     );
-    //     s.RETURN_ASSETS = x - IERC20(s.derivParams[s.vault[fiAsset]].add[0]).balanceOf(address(this));
-    // }
-
-    // function toUnderlying_BeefyStargate(
-    //     address fiAsset,
-    //     uint256 amount
-    // ) public {
-
-    //     s.RETURN_ASSETS = IStargateRouter(s.derivParams[s.vault[fiAsset]].spender).instantRedeemLocal(
-    //         1,
-    //         amount,
-    //         address(this)
-    //     );
-    // }
-
-    // function convertToUnderlying_BeefyStargate(
-    //     address fiAsset,
-    //     uint256 amount
-    // ) public {
-
-
-    // }
-
-    // function convertToDeriv_BeefyStargate(
-    //     address fiAsset,
-    //     uint256 amount
-    // ) public {
-
-
-    // }
 
     /*//////////////////////////////////////////////////////////////
                             ADMIN - SETTERS

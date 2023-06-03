@@ -4,16 +4,12 @@ pragma solidity 0.8.19;
 import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
 import { PercentageMath } from "./external/PercentageMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-// import { IPermit2 } from "./../interfaces/IPermit2.sol";
 import { IFiToken } from ".././interfaces/IFiToken.sol";
 import 'contracts/token/utils/StableMath.sol';
-import 'hardhat/console.sol';
 
 library LibToken {
     using PercentageMath for uint256;
     using StableMath for uint256;
-
-    // IPermit2 constant PERMIT2 = IPermit2(0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B);
 
     /// @notice Emitted when a transfer is executed.
     ///
@@ -84,33 +80,6 @@ library LibToken {
         emit Transfer(asset, amount, transferFrom, recipient);
     }
 
-    // function _permitTransferFrom(
-    //     uint256 amount,
-    //     IPermit2.PermitTransferFrom calldata permit,
-    //     address transferFrom,
-    //     address recipient
-    // ) internal {
-
-    //     PERMIT2.permitTransferFrom(
-    //         permit,
-    //         IPermit2.SignatureTransferDetails({
-    //             to: recipient,
-    //             requestedAmount: amount
-    //         }),
-    //         transferFrom,
-    //         abi.encode(
-    //             keccak256(
-    //                 "_permitTransferFrom(uint256 amount,struct IPermit2.PermitTransferFrom permit,address transferFrom,address recipient)"
-    //             ),
-    //             amount,
-    //             permit,
-    //             transferFrom,
-    //             recipient
-    //         )
-    //     );
-    //     emit Transfer(address(permit.permitted.token), amount, transferFrom, recipient);
-    // }
-
     /// @notice Executes a transfer operation in the context of Stoa.
     ///
     /// @param  asset       The asset to transfer.
@@ -130,7 +99,7 @@ library LibToken {
         emit Transfer(asset, amount, address(this), recipient);
     }
 
-    /// @notice Executes a mint operation in the context of CoFi.
+    /// @notice Executes a mint operation in the context of COFI.
     ///
     /// @param  fiAsset The fiAsset to mint.
     /// @param  to      The account to mint to.
@@ -145,7 +114,23 @@ library LibToken {
         emit Mint(fiAsset, amount, to);
     }
 
-    /// @notice Executes a burn operation in the context of CoFi.
+
+    /// @notice Opts in recipient being minted to.
+    ///
+    /// @param  fiAsset The fiAsset to mint.
+    /// @param  to      The account to mint to.
+    /// @param  amount  The amount of fiAssets to mint.
+    function _mintOptIn(
+        address fiAsset,
+        address to,
+        uint256 amount
+    ) internal {
+
+        IFiToken(fiAsset).mintOptIn(to, amount);
+        emit Mint(fiAsset, amount, to);
+    }
+
+    /// @notice Executes a burn operation in the context of COFI.
     ///
     /// @param  fiAsset The fiAsset to burn.
     /// @param  from    The account to burn from.
