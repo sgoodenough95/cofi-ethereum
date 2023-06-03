@@ -41,17 +41,17 @@ contract InitDiamond {
         s.underlying[_args.ETHFI] = _args.wETH;
         s.underlying[_args.BTCFI] = _args.wBTC;
 
-        s.derivParams[_args.vUSDC].spender = 0x10541b07d8Ad2647Dc6cD67abd4c03575dade261; // Hop USDC LP
-        s.derivParams[_args.vUSDC].toDeriv = bytes4(keccak256("toDeriv_BeefyHop(address,uint256)"));
-        s.derivParams[_args.vUSDC].toUnderlying = bytes4(keccak256("toUnderlying_BeefyHop(address,uint256)"));
-        s.derivParams[_args.vUSDC].convertToUnderlying = bytes4(keccak256("convertToUnderlying_BeefyHop(address,uint256)"));
-        s.derivParams[_args.vUSDC].convertToDeriv = bytes4(keccak256("convertToDeriv_BeefyHop(address,uint256)"));
+        // s.derivParams[_args.vUSDC].spender = 0x10541b07d8Ad2647Dc6cD67abd4c03575dade261; // Hop USDC LP
+        // s.derivParams[_args.vUSDC].toDeriv = bytes4(keccak256("toDeriv_BeefyHop(address,uint256)"));
+        // s.derivParams[_args.vUSDC].toUnderlying = bytes4(keccak256("toUnderlying_BeefyHop(address,uint256)"));
+        // s.derivParams[_args.vUSDC].convertToUnderlying = bytes4(keccak256("convertToUnderlying_BeefyHop(address,uint256)"));
+        // s.derivParams[_args.vUSDC].convertToDeriv = bytes4(keccak256("convertToDeriv_BeefyHop(address,uint256)"));
 
-        s.derivParams[_args.vETH].spender = 0x652d27c0F72771Ce5C76fd400edD61B406Ac6D97; // Hop ETH LP
-        s.derivParams[_args.vETH].toDeriv = bytes4(keccak256("toDeriv_BeefyHop(address,uint256)"));
-        s.derivParams[_args.vETH].toUnderlying = bytes4(keccak256("toUnderlying_BeefyHop(address,uint256)"));
-        s.derivParams[_args.vETH].convertToUnderlying = bytes4(keccak256("convertToUnderlying_BeefyHop(address,uint256)"));
-        s.derivParams[_args.vETH].convertToDeriv = bytes4(keccak256("convertToDeriv_BeefyHop(address,uint256)"));
+        // s.derivParams[_args.vETH].spender = 0x652d27c0F72771Ce5C76fd400edD61B406Ac6D97; // Hop ETH LP
+        // s.derivParams[_args.vETH].toDeriv = bytes4(keccak256("toDeriv_BeefyHop(address,uint256)"));
+        // s.derivParams[_args.vETH].toUnderlying = bytes4(keccak256("toUnderlying_BeefyHop(address,uint256)"));
+        // s.derivParams[_args.vETH].convertToUnderlying = bytes4(keccak256("convertToUnderlying_BeefyHop(address,uint256)"));
+        // s.derivParams[_args.vETH].convertToDeriv = bytes4(keccak256("convertToDeriv_BeefyHop(address,uint256)"));
 
         // Rebase opt-in.
         LibToken._rebaseOptIn(_args.COFI);

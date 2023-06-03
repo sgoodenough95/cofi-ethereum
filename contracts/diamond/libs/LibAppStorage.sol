@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 import ".././interfaces/beefy/ISwap.sol";
+import "hardhat/console.sol";
 // import { ICoFi } from "./../interfaces/ICoFi.sol";
 
 // Struct used for onboarding purposes.
@@ -151,6 +152,7 @@ contract Modifiers {
     }
 
     modifier minWithdraw(uint256 amount, address fiAsset) {
+        console.log(amount); console.log(s.minWithdraw[fiAsset]);
         require(amount >= s.minWithdraw[fiAsset], 'Insufficient withdraw amount');
         _;
     }

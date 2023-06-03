@@ -108,6 +108,8 @@ library LibVault {
         address recipient
     ) internal returns (uint256 assets) {
 
+        console.log("AMOUNT: %s", amount);
+
         // Retrieve the corresponding number of shares for the amount of fiAssets provided.
         uint256 shares = IERC4626(vault).previewDeposit(amount);    // Need to convert from USDC to USDC-LP
 

@@ -92,17 +92,27 @@ contract SupplyFacet is Modifiers {
             amount
         );
 
-        uint256 assets = LibToken._toFiDecimals(
-            fiAsset,
-            LibVault._getAssets(
-                LibVault._wrap(
-                    amount,
-                    s.vault[fiAsset],
-                    depositFrom // Purely for Event emission. Wraps from Diamond.
-                ),
-                s.vault[fiAsset]
-            )
+        uint256 shares = LibVault._wrap(
+            amount,
+            s.vault[fiAsset],
+            depositFrom // Purely for Event emission. Wraps from Diamond.
         );
+
+        console.log("Shares: %s", shares);
+
+        uint256 assets = LibVault._getAssets(
+            shares,
+            s.vault[fiAsset]
+        );
+
+        console.log("Assets: %s", assets);
+
+        assets = LibToken._toFiDecimals(
+            fiAsset,
+            assets
+        );
+
+        console.log("Assets: %s", assets);
 
         require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
 
@@ -330,15 +340,16 @@ contract SupplyFacet is Modifiers {
         // Redemption fee is captured by retaining 'fee' amount.
         LibToken._burn(fiAsset, s.feeCollector, burnAfterFee);
 
-        require(
-            // Redeems assets directly to recipient (does not traverse through Diamond).
-            LibVault._unwrap(
-                LibToken._toUnderlyingDecimals(fiAsset, burnAfterFee),
-                s.vault[fiAsset],
-                recipient
-            ) >= minAmountOut,
-            'SupplyFacet: Slippage exceeded'
+        console.log("Beginning unwrap");
+
+        // Redeems assets directly to recipient (does not traverse through Diamond).
+        uint256 assets = LibVault._unwrap(
+            LibToken._toUnderlyingDecimals(fiAsset, burnAfterFee),
+            s.vault[fiAsset],
+            recipient
         );
+        console.log("Assets: %s", assets);
+        require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
         emit LibToken.Withdraw(s.underlying[fiAsset], amount, depositFrom, fee);
     }
 
