@@ -6,7 +6,7 @@ pragma solidity 0.8.19;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    @author cofi.money
+    @author The Stoa Corporation Ltd.
     @title  Access Facet
     @notice Admin functions for managing account roles.
  */
@@ -31,6 +31,11 @@ contract AccessFacet is Modifiers {
         onlyAdmin
         returns (bool)
     {
+        require(
+            account != s.owner || account != s.backupOwner,
+            'SupplyAdminFacet: Owners must retain admin status'
+        );
+
         s.isAdmin[account] = s.isAdmin[account] == 0 ? 1 : 0;
         return s.isAdmin[account] == 1 ? true : false;
     }
@@ -67,7 +72,6 @@ contract AccessFacet is Modifiers {
     function getAdminStatus(
         address account
     )   external
-        onlyAdmin
         view
         returns (bool)
     {
@@ -77,7 +81,6 @@ contract AccessFacet is Modifiers {
     function getUpkeepStatus(
         address account
     )   external
-        onlyAdmin
         view
         returns (bool)
     {

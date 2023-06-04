@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+/// @author The Stoa Corporation Ltd.
 /// @title  Fi Token Interface
-/// @author cofi.money
 /// @notice Interface for executing functions on Fi tokens.
 interface IFiToken {
 

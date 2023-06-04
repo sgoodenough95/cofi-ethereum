@@ -13,7 +13,7 @@ interface ICOFIMoney {
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    @author cofi.money
+    @author The Stoa Corporation Ltd.
     @title  Point Token Facet
     @notice Merely provides ERC20 representation and therefore ensures Points are viewable in browser wallet.
             Transfer methods are effectively renounced.

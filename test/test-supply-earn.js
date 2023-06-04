@@ -152,6 +152,7 @@ describe('First test', function() {
       'DiamondLoupeFacet',
       'OwnershipFacet',
       'SupplyFacet',
+      'SupplyAdminFacet',
       'PointFacet',
       'AccessFacet',
       'YieldFacet',
@@ -181,7 +182,9 @@ describe('First test', function() {
       wETH:   wETH,
       wBTC:   wBTC,
       admins: [
-        feeCollector.address
+        owner.address, // owner
+        owner.address, // backupOwner
+        feeCollector.address // feeCollector
       ],
       feeCollector: feeCollector.address
     }]
@@ -209,7 +212,7 @@ describe('First test', function() {
 
   describe('SupplyFacet', function() {
 
-    it('Should exchange USDC for COFI --x, rebase, and back again x--', async function() {
+    it('Should exchange underlying for fiAsset, rebase, and back again', async function() {
 
       const { owner, signer, diamond, feeCollector, cofi, wyvUSDC, ethfi, wyvETH, btcfi, waBTC } = await loadFixture(deploy)
 
@@ -223,23 +226,23 @@ describe('First test', function() {
       const _weth = (await ethers.getContractAt(WETH_ABI, wETH)).connect(impersonatedSigner)
       const _wbtc = (await ethers.getContractAt(WBTC_ABI, wBTC)).connect(__impersonatedSigner)
 
-      // Transfer owner 10,000 USDC
-      await _usdc.transfer(owner.address, '100000000000')
+      // Transfer owner 1,000 USDC
+      await _usdc.transfer(owner.address, '1000000000')
 
-      // Transfer owner 1 wETH
-      await _weth.transfer(owner.address, '1000000000000000000')
+      // Transfer owner 0.5 wETH
+      await _weth.transfer(owner.address, '500000000000000000')
 
-      // Transfer owner 0.1 wBTC
-      await _wbtc.transfer(owner.address, '10000000')
+      // Transfer owner 0.04 wBTC
+      await _wbtc.transfer(owner.address, '4000000')
 
       const usdc = (await ethers.getContractAt(USDC_ABI, USDC)).connect(signer)
       const weth = (await ethers.getContractAt(WETH_ABI, wETH)).connect(signer)
       const wbtc = (await ethers.getContractAt(WBTC_ABI, wBTC)).connect(signer)
 
       // Approve 10,000 USDC spend
-      await usdc.approve(diamond.address, '100000000000') // USDC has 6 digits
-      await weth.approve(diamond.address, '1000000000000000000')
-      await wbtc.approve(diamond.address, '10000000')
+      await usdc.approve(diamond.address, '1000000000') // USDC has 6 digits
+      await weth.approve(diamond.address, '500000000000000000')
+      await wbtc.approve(diamond.address, '4000000')
 
       const cofiMoney = (await ethers.getContractAt('COFIMoney', diamond.address)).connect(signer)
 
@@ -259,32 +262,32 @@ describe('First test', function() {
       console.log('t0 Owner BTCFI bal: ' + await btcfi.balanceOf(owner.address))
 
       await cofiMoney.underlyingToFi(
-        '100000000000',
-        '99750000000000000000000',
+        '1000000000',
+        '997500000000000000000',  // minOut in COFI decimals [18]
         cofi.address,
         owner.address,
         owner.address,
-        '0x0000000000000000000000000000000000000000'
+        feeCollector.address  // Referrer
       )
       console.log("USDC deposited")
 
       await cofiMoney.underlyingToFi(
-        '1000000000000000000',
-        '997500000000000000',
+        '500000000000000000',
+        '498750000000000000',
         ethfi.address,
         owner.address,
         owner.address,
-        '0x0000000000000000000000000000000000000000'
+        feeCollector.address
       )
       console.log("wETH deposited")
 
       await cofiMoney.underlyingToFi(
-        '10000000',
-        '99750000000000000',
+        '4000000',
+        '39900000000000000',
         btcfi.address,
         owner.address,
         owner.address,
-        '0x0000000000000000000000000000000000000000'
+        feeCollector.address
       )
       console.log("wBTC deposited")
 
@@ -323,28 +326,32 @@ describe('First test', function() {
       // ETHFI fee minted to fee collector
       console.log('t1 feeCollector BTCFI bal: ' + await btcfi.balanceOf(feeCollector.address))
 
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [ethfi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [btcfi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [cofi.address, ethfi.address, btcfi.address]))
+
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [ethfi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [btcfi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address, ethfi.address, btcfi.address]))
+
       const impersonatedSigner_ = await ethers.getImpersonatedSigner(opAccount);
 
       const op = (await ethers.getContractAt(OP_ABI, OP)).connect(impersonatedSigner_)
       const _abtc = (await ethers.getContractAt(ABTC_ABI, aOptWBTC)).connect(___impersonatedSigner)
 
-      // Transfer 200 OP to wrapper to simulate reward harvesting
-      await op.transfer(wyvUSDC.address, '200000000000000000000')
+      // Transfer 1.1 OP to wrapper to simulate reward harvesting
+      await op.transfer(wyvUSDC.address, '1100000000000000000')
       console.log('OP transferred to wyvUSDC')
 
-      // Transfer 200 OP to wrapper to simulate reward harvesting
-      await op.transfer(wyvETH.address, '200000000000000000000')
+      // Transfer 1.1 OP to wrapper to simulate reward harvesting
+      await op.transfer(wyvETH.address, '1100000000000000000')
       console.log('OP transferred to wyvETH')
 
-      // Transfer 0.01 aBTC to waBTC
-      await _abtc.transfer(waBTC.address, '1000000')
+      // Transfer 0.0001 aBTC to waBTC
+      await _abtc.transfer(waBTC.address, '10000')
       console.log('aBTC transferred to waBTC')
-
-      // await wyvUSDC.harvest()
-      // console.log('wyvUSDC harvested')
-
-      // await wyvETH.harvest()
-      // console.log('wyvETH harvested')
 
       await cofiMoney.rebase(cofi.address)
       console.log('COFI rebased')
@@ -390,10 +397,20 @@ describe('First test', function() {
       // ETHFI fee minted to fee collector
       console.log('t2 feeCollector BTCFI bal: ' + await btcfi.balanceOf(feeCollector.address))
 
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [ethfi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [btcfi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [cofi.address, ethfi.address, btcfi.address]))
+
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [ethfi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [btcfi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address, ethfi.address, btcfi.address]))
+
       // Convert back to USDC (redeem operation on FiToken contract skips approval check).
       await cofiMoney.fiToUnderlying(
         t2OwnerCOFIBal.toString(),
-        '100000000000',   // Test slippage
+        '1',   // Test slippage
         cofi.address,
         owner.address,
         owner.address
@@ -401,7 +418,7 @@ describe('First test', function() {
 
       await cofiMoney.fiToUnderlying(
         t2OwnerETHFIBal.toString(),
-        '1000000000000000000',   // Test slippage
+        '1',   // Test slippage
         ethfi.address,
         owner.address,
         owner.address
@@ -409,7 +426,7 @@ describe('First test', function() {
 
       await cofiMoney.fiToUnderlying(
         t2OwnerBTCFIBal.toString(),
-        '10000000',   // Test slippage
+        '1',   // Test slippage
         btcfi.address,
         owner.address,
         owner.address
@@ -445,6 +462,16 @@ describe('First test', function() {
       console.log('t3 feeCollector ETHFI bal: ' + await ethfi.balanceOf(feeCollector.address))
       // ETHFI fee minted to fee collector
       console.log('t3 feeCollector BTCFI bal: ' + await btcfi.balanceOf(feeCollector.address))
+
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [cofi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [ethfi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [btcfi.address]))
+      console.log('User points: ' + await cofiMoney.getPoints(owner.address, [cofi.address, ethfi.address, btcfi.address]))
+
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [ethfi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [btcfi.address]))
+      console.log('Referrer points: ' + await cofiMoney.getPoints(feeCollector.address, [cofi.address, ethfi.address, btcfi.address]))
     })
   })
 })

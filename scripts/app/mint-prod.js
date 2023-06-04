@@ -30,65 +30,75 @@ async function mintErc20() {
       wBTC
     )
 
+    const DIAMOND = '0x1B61BD8Cc32D77c6aa1EfE27eF51223b8c078e78'
+
     const cofiMoney = await ethers.getContractAt(
         'COFIMoney',
-        '0x17548051AA49B82Cc8aA15bd8cD8b92aA1595903'    // Enter contract here.
+        DIAMOND    // Enter contract here.
     )
 
-    const usdcBal = await usdc.balanceOf(owner.address)
-    const wethBal = await weth.balanceOf(owner.address)
-    const wbtcBal = await wbtc.balanceOf(owner.address)
+    // console.log(await cofiMoney.getAdminStatus('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'))
+    // console.log(await cofiMoney.getWhitelistStatus('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'))
 
-    await usdc.approve(
-      '0x17548051AA49B82Cc8aA15bd8cD8b92aA1595903',
-      usdcBal.toString()
-    )
+    // console.log(await cofiMoney.toggleUpkeep('0xB3700c1Db4b23B8D726cCeA5bBbaCFd63B524217'))
+    // console.log(await cofiMoney.toggleUpkeep('0xCc10E51c2Deb77BC7B6174C988ee6729830339a5'))
+    // console.log(await cofiMoney.toggleUpkeep('0x428dA40a2b6f007c7D5F3B83be5c5F92abef47c6'))
 
-    await weth.approve(
-      '0x17548051AA49B82Cc8aA15bd8cD8b92aA1595903',
-      wethBal.toString()
-    )
+    console.log(await cofiMoney.getUpkeepStatus('0xB3700c1Db4b23B8D726cCeA5bBbaCFd63B524217'))
+    console.log(await cofiMoney.getUpkeepStatus('0xCc10E51c2Deb77BC7B6174C988ee6729830339a5'))
+    console.log(await cofiMoney.getUpkeepStatus('0x428dA40a2b6f007c7D5F3B83be5c5F92abef47c6'))
 
-    await wbtc.approve(
-      '0x17548051AA49B82Cc8aA15bd8cD8b92aA1595903',
-      wbtcBal.toString()
-    )
 
-    const COFI = "0xA79FB378DD78C17F964f34B88c6d2D3E3c905Eb7"
-    const ETHFI = "0x830CF1F5A865EAb7Efe56Ac1C3A906D99f77e25A"
-    const BTCFI = "0x6365369f3C94924dE72e01C3d924b0f47073FAED"
+    // const usdcBal = await usdc.balanceOf(owner.address)
+    // const wethBal = await weth.balanceOf(owner.address)
+    // const wbtcBal = await wbtc.balanceOf(owner.address)
 
-    await cofiMoney.underlyingToFi(
-      '60000000',
-      '58800000',
-      COFI,
-      owner.address,
-      owner.address,
-      '0x0000000000000000000000000000000000000000'
-    )
+    // await usdc.approve(
+    //   DIAMOND, // Diamond
+    //   '20000000'
+    // )
 
-    await cofiMoney.underlyingToFi(
-      '25000000000000000',
-      '24500000000000000',
-      ETHFI,
-      owner.address,
-      owner.address,
-      '0x0000000000000000000000000000000000000000'
-    )
+    // await weth.approve(
+    //   DIAMOND,
+    //   wethBal.toString()
+    // )
 
-    await cofiMoney.underlyingToFi(
-      '173000',
-      '169540',
-      BTCFI,
-      owner.address,
-      owner.address,
-      '0x0000000000000000000000000000000000000000'
-    )
+    // await wbtc.approve(
+    //   DIAMOND,
+    //   wbtcBal.toString()
+    // )
+
+    const COFI = "0x04a951e7A7777A80B421DF2b32D0859a24b7AE85"
+    // const ETHFI = "0xEdBad3B9EC7B813CF74b11B2eCE1578494371aa4"
+    // const BTCFI = "0x0295EBB7265E71fa5A35B1aD428dC6e2E2fcB825"
+
+    // await cofiMoney.underlyingToFi(
+    //   '20000000',
+    //   '18952500000000000000',
+    //   COFI,
+    //   owner.address,
+    //   owner.address,
+    //   '0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'
+    // )
+
+    // await cofiMoney.underlyingToFi(
+    //   wethBal.toString(),
+    //   '24937500000000000',
+    //   ETHFI,
+    //   owner.address,
+    //   owner.address,
+    //   '0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'
+    // )
+
+    // await cofiMoney.underlyingToFi(
+    //   wbtcBal.toString(),
+    //   '3480000000000000',
+    //   BTCFI,
+    //   owner.address,
+    //   owner.address,
+    //   '0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'
+    // )
 }
-
-  // Dai deployed: 0x091028e40d6b4c3C5D4F462D52bAE4842A0F9cD2
-  // yvDAI deployed: 0xbCA7402CE895450857322Dd30E661aA00Ab29842
-  // COFI Dollar deployed: 0xFA2dC5b3C09a97DE541ac6D80338C58D3dbF60a6
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.

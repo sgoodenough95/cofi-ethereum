@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: agpl-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 /**
@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    @author The Stoa Corporation Ltd, Origin Protocol Inc
+    @author The Stoa Corporation Ltd., Origin Protocol Inc
     @title  Fi Token Contract
     @notice Rebasing ERC20 contract. Repurposed from OUSD.sol contract.
  */
@@ -717,7 +717,10 @@ contract FiToken is ERC20Permit, ReentrancyGuard, Ownable2Step {
      *      - E.g., minting 1,000 to = -1,000.
      */
     function getYieldEarned(address _account) external view returns (uint256) {
-        if (yieldExcl[_account] >= 0) {
+        if (yieldExcl[_account] == 0) {
+            return 0;
+        }
+        else if (yieldExcl[_account] > 0) {
             return balanceOf(_account) + yieldExcl[_account].abs();
         } else {
             return balanceOf(_account) - yieldExcl[_account].abs();

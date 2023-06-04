@@ -6,7 +6,7 @@ pragma solidity 0.8.19;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    @author cofi.money
+    @author The Stoa Corporation Ltd.
     @title  Yield Facet
     @notice Provides logic for distributing and managing yield.
  */

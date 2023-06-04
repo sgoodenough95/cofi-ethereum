@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
-import ".././interfaces/beefy/ISwap.sol";
 
 struct YieldPointsCapture {
     uint256 yield;
@@ -102,6 +101,10 @@ struct AppStorage {
 
     // Gnosis Safe contract.
     address feeCollector;
+
+    address owner;
+
+    address backupOwner;
 
     uint8 EXT_GUARD;
 

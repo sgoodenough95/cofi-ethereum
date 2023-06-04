@@ -17,9 +17,12 @@ const wETH = "0x4200000000000000000000000000000000000006"
 const OP = "0x4200000000000000000000000000000000000042"
 
 const yvUSDC = "0xaD17A225074191d5c8a37B50FdA1AE278a2EE6A2"
-const yvBTC = "0x7Edf16076e56FA4c111055fbA1fF5556b8757cFB"
 const yvETH = "0x5B977577Eb8a480f63e11FC615D6753adB8652Ae"
 const yvOP = "0x7D2382b1f8Af621229d33464340541Db362B4907"
+const aOptWBTC = "0x078f358208685046a11C85e8ad32895DED33A249"
+
+const yvUSDCStakingRewards = "0xB2c04C55979B6CA7EB10e666933DE5ED84E6876b"
+const yvETHStakingRewards = "0xE35Fec3895Dcecc7d2a91e8ae4fF3c0d43ebfFE0"
 
 /* Swap params */
 const minHarvest = "1000000000000000000" // 1 yvOP
@@ -30,7 +33,7 @@ const enabled = "1"
 
 const wethAccount = "0x9e99F56FC8550a83496b2199D126EF004c8A598c"
 const usdcAccount = "0x7F5c764cBc14f9669B88837ca1490cCa17c31607"
-const wbtcAccount = "0x68f180fcCe6836688e9084f035309E29Bf0A2095"
+const wbtcAccount = "0xc20B6e32175Cc6367b172306aE863d5B5Cd990b0"
 const opAccount = "0x3FFe8Df98a9C8e80b7E5D2bBFcd82C41168aa058"
 
 async function deploy() {
@@ -41,66 +44,111 @@ async function deploy() {
 
   // First deploy tokens
   // Deploy COFI Dollar
-  const COFI = await ethers.getContractFactory('FiToken')
-  const cofi = await COFI.deploy('COFI Dollar', 'COFI')
-  await cofi.deployed()
-  console.log('COFI Dollar deployed:', cofi.address)
+  // const COFI = await ethers.getContractFactory('FiToken')
+  // const cofi = await COFI.deploy('COFI Dollar', 'COFI')
+  // await cofi.deployed()
+  // console.log('COFI Dollar deployed:', cofi.address)
+
+  const cofi = await ethers.getContractAt(
+    'FiToken',
+    '0x04a951e7A7777A80B421DF2b32D0859a24b7AE85'
+  )
 
   // // Deploy COFI Ethereum
-  const ETHFI = await ethers.getContractFactory('FiToken')
-  const ethfi = await ETHFI.deploy('COFI Ethreum', 'ETHFI')
-  await ethfi.deployed()
-  console.log('COFI Ethereum deployed:', ethfi.address)
+  // const ETHFI = await ethers.getContractFactory('FiToken')
+  // const ethfi = await ETHFI.deploy('COFI Ethreum', 'ETHFI')
+  // await ethfi.deployed()
+  // console.log('COFI Ethereum deployed:', ethfi.address)
+
+  const ethfi = await ethers.getContractAt(
+    'FiToken',
+    '0xEdBad3B9EC7B813CF74b11B2eCE1578494371aa4'
+  )
 
   // // Deploy COFI Bitcoin
-  const BTCFI = await ethers.getContractFactory('FiToken')
-  const btcfi = await BTCFI.deploy('COFI Bitcoin', 'BTCFI')
-  await btcfi.deployed()
-  console.log('COFI Bitcoin deployed:', btcfi.address)
+  // const BTCFI = await ethers.getContractFactory('FiToken')
+  // const btcfi = await BTCFI.deploy('COFI Bitcoin', 'BTCFI')
+  // await btcfi.deployed()
+  // console.log('COFI Bitcoin deployed:', btcfi.address)
+
+  const btcfi = await ethers.getContractAt(
+    'FiToken',
+    '0x0295EBB7265E71fa5A35B1aD428dC6e2E2fcB825'
+  )
 
   // Deploy wyvUSDC
-  const WYVUSDC = await ethers.getContractFactory('YearnZapReinvestWrapper')
-  const wyvUSDC = await WYVUSDC.deploy(
-    yvUSDC,
-    yvOP,
-    USDC,
-    minHarvest,
-    slippage,
-    wait,
-    poolFee,
-    enabled
+  // const WYVUSDC = await ethers.getContractFactory('YearnZapReinvestWrapper')
+  // const wyvUSDC = await WYVUSDC.deploy(
+  //   yvUSDC,
+  //   yvOP,
+  //   yvUSDCStakingRewards,
+  //   '0x0000000000000000000000000000000000000000',
+  //   USDC,
+  //   minHarvest,
+  //   slippage,
+  //   wait,
+  //   poolFee,
+  //   enabled
+  // )
+  // await wyvUSDC.deployed()
+  // console.log('wyvUSDC deployed: ', wyvUSDC.address)
+  // console.log(await wyvUSDC.name())
+  // console.log(await wyvUSDC.symbol())
+
+  const wyvUSDC = await ethers.getContractAt(
+    'YearnZapReinvestWrapper',
+    '0xbA7471ced7D7950a699560BAdE648E2Af8863929'
   )
-  await wyvUSDC.deployed()
-  console.log('wyvUSDC deployed: ', wyvUSDC.address)
-  console.log(await wyvUSDC.name())
-  console.log(await wyvUSDC.symbol())
 
   // Deploy wyvETH
-  const WYVETH = await ethers.getContractFactory('YearnZapReinvestWrapper')
-  const wyvETH = await WYVETH.deploy(
-    yvETH,
-    yvOP,
-    wETH,
-    minHarvest,
-    slippage,
-    wait,
-    poolFee,
-    enabled
-  )
-  await wyvETH.deployed()
-  console.log('wyvUSDC deployed: ', wyvETH.address)
+  // const WYVETH = await ethers.getContractFactory('YearnZapReinvestWrapper')
+  // const wyvETH = await WYVETH.deploy(
+  //   yvETH,
+  //   yvOP,
+  //   yvETHStakingRewards,
+  //   '0x13e3Ee699D1909E989722E753853AE30b17e08c5', // basePriceFeed
+  //   wETH,
+  //   minHarvest,
+  //   slippage,
+  //   wait,
+  //   poolFee,
+  //   enabled
+  // )
+  // await wyvETH.deployed()
+  // console.log('wyvETH deployed: ', wyvETH.address)
 
-  // Deploy wyvBTC
-  const WYVBTC = await ethers.getContractFactory('YearnWrapper')
-  const wyvBTC = await WYVBTC.deploy(yvBTC)
-  await wyvBTC.deployed()
-  console.log('wyvUSDC deployed: ', wyvBTC.address)
+  const wyvETH = await ethers.getContractAt(
+    'YearnZapReinvestWrapper',
+    '0x3BfFca2D81f9d4F09CbE1e7FBE920b586e5891fA'
+  )
+
+  // Deploy waBTC
+  // const ABTC = await ethers.getContractFactory('AaveV3ERC4626Reinvest')
+  // const waBTC = await ABTC.deploy(
+  //   wBTC,
+  //   aOptWBTC,
+  //   "0x794a61358D6845594F94dc1DB02A252b5b4814aD", // lendingPool
+  //   "0x929EC64c34a17401F460460D4B9390518E5B473e", // rewardsController
+  //   owner.address
+  // )
+  // await waBTC.deployed()
+  // console.log('waBTC deployed: ', waBTC.address)
+
+  const waBTC = await ethers.getContractAt(
+    'AaveV3ERC4626Reinvest',
+    '0xc780fA0F89FeD56341669A2869ed0078d30d3DAf'
+  )
 
   // deploy DiamondCutFacet
-  const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
-  const diamondCutFacet = await DiamondCutFacet.deploy()
-  await diamondCutFacet.deployed()
-  console.log('DiamondCutFacet deployed:', diamondCutFacet.address)
+  // const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
+  // const diamondCutFacet = await DiamondCutFacet.deploy()
+  // await diamondCutFacet.deployed()
+  // console.log('DiamondCutFacet deployed:', diamondCutFacet.address)
+
+  const diamondCutFacet = await ethers.getContractAt(
+    'DiamondCutFacet',
+    '0xA8428c7879e5556fEdc36f0912Fd6803Bb9ddcf1'
+  )
 
   // deploy Diamond
   const Diamond = await ethers.getContractFactory('Diamond')
@@ -108,10 +156,20 @@ async function deploy() {
   await diamond.deployed()
   console.log('Diamond deployed:', diamond.address)
 
-  // Set Diamond address in FiToken contract(s).
+  // const diamond = await ethers.getContractAt(
+  //   'Diamond',
+  //   '0x2204c9Ad446b107FAe2BCC29F98F0Dd413EFc388'
+  // )
+
+  // Set Diamond address in FiToken contracts.
   await cofi.setDiamond(diamond.address)
   await ethfi.setDiamond(diamond.address)
   await btcfi.setDiamond(diamond.address)
+
+  // // Authorize Diamond to interact with wrappers.
+  await wyvUSDC.toggleAuthorized(diamond.address)
+  await wyvETH.toggleAuthorized(diamond.address)
+  await waBTC.toggleAuthorized(diamond.address)
 
   // deploy DiamondInit
   // DiamondInit provides a function that is called when the diamond is upgraded to initialize state variables
@@ -120,6 +178,11 @@ async function deploy() {
   const diamondInit = await DiamondInit.deploy()
   await diamondInit.deployed()
   console.log('DiamondInit deployed:', diamondInit.address)
+
+  // const diamondInit = await ethers.getContractAt(
+  //   'InitDiamond',
+  //   '0x87Cf8659222d322D2b6b6B485d997eBf4C2Cc2E7'
+  // )
 
   // deploy facets
   console.log('')
@@ -153,15 +216,17 @@ async function deploy() {
     BTCFI:  btcfi.address,
     vUSDC:  wyvUSDC.address,
     vETH:   wyvETH.address,
-    vBTC:   wyvBTC.address,
+    vBTC:   waBTC.address,
     USDC:   USDC,
     wETH:   wETH,
     wBTC:   wBTC,
     admins: [
-      "0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3",
+      owner.address,
+      "0x1FA2D59348af3B8448c7FE44b2cE25F1ee703634", // backupOwner
+      "0x0231c56e6Ee4257E1F79625c8bCEc746964801Aa", // feeCollector: Gnosis-Safe
+      "0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3", // MA
       "0x79b68a8C62AA0FEdA39d08E4c6755928aFF576C5"
-    ],
-    feeCollector: "0x79b68a8C62AA0FEdA39d08E4c6755928aFF576C5"
+    ]
   }]
 
   // upgrade diamond with facets

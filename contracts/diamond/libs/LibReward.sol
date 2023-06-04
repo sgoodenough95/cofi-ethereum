@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { AppStorage, LibAppStorage } from "./LibAppStorage.sol";
-import 'hardhat/console.sol';
 
 library LibReward {
 
@@ -38,9 +37,16 @@ library LibReward {
     ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
-        if (s.initReward != 0 && s.rewardStatus[msg.sender].initClaimed == 0) {
+        if (
+            // If there is a sign-up reward.
+            s.initReward != 0 &&
+            // If the user has not already claimed their sign-up reward.
+            s.rewardStatus[msg.sender].initClaimed == 0
+        ) {
+            // Provide user with sign-up reward.
             s.XPC[msg.sender] += s.initReward;
             emit RewardDistributed(msg.sender, s.initReward);
+            // Mark user as having claimed their sign-up reward.
             s.rewardStatus[msg.sender].initClaimed == 1;
         }
     }
@@ -54,15 +60,22 @@ library LibReward {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         if (
+            // If there is a refer reward.
             s.referReward != 0 &&
+            // If the user has not already claimed a refer reward.
             s.rewardStatus[msg.sender].referClaimed == 0 &&
+            // If the referrer is a whitelisted account.
             s.isWhitelisted[referral] == 1 &&
+            // If referrals are enabled.
             s.rewardStatus[referral].referDisabled != 1
         ) {
+            // Apply referral to user.
             s.XPC[msg.sender] += s.referReward;
             emit RewardDistributed(msg.sender, s.referReward);
+            // Provide referrer with reward.
             s.XPC[referral] += s.referReward;
             emit RewardDistributed(referral, s.referReward);
+            // Mark user as having claimed their one-time referral.
             s.rewardStatus[msg.sender].referClaimed == 1;
         }
     }

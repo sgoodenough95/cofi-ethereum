@@ -6,8 +6,8 @@ pragma solidity 0.8.19;
     █▀▀ █▀█ █▀▀ █
     █▄▄ █▄█ █▀░ █
 
-    @author The Stoa Corporation Ltd
-    @title  Supply Facet
+    @author The Stoa Corporation Ltd.
+    @title  Supply Admin Facet
     @notice Separated Admin setters and views for SupplyFacet.
  */
 

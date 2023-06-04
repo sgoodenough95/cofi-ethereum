@@ -24,7 +24,6 @@ contract InitDiamond {
         address     wETH;   // underlyingAsset [ETH]
         address     wBTC;   // underlyingAsset [BTC]
         address[]   admins;
-        address feeCollector;
     }
     
     function init(Args memory _args) external {
@@ -91,13 +90,9 @@ contract InitDiamond {
         s.pointsRate[_args.ETHFI]   = 1e9;  // 100 points/0.001 ETHFI earned.
         s.pointsRate[_args.BTCFI]   = 1e10; // 100 points/0.0001 BTCFI earned.
 
-        // Set feeCollector.
-        s.feeCollector = _args.feeCollector;
-
-        s.isAdmin[msg.sender] = 1;
-
-        s.isWhitelisted[msg.sender] = 1;
-        s.isWhitelisted[_args.feeCollector] = 1;
+        s.owner         = _args.admins[0];
+        s.backupOwner   = _args.admins[1];
+        s.feeCollector  = _args.admins[2];
 
         s.initReward = 100*10**18;  // 100 Points for initial deposit.
         s.referReward = 10*10**18;  // 10 Points each for each referral.
@@ -109,6 +104,9 @@ contract InitDiamond {
         s.buffer[_args.COFI]    = 100*10**s.decimals[_args.USDC];   // 100 USDC buffer for migrations.
         s.buffer[_args.ETHFI]   = 1*10**s.decimals[_args.wETH];     // 0.1 wETH buffer for migrations.
         s.buffer[_args.BTCFI]   = 1*10**s.decimals[_args.wBTC];     // 0.01 wBTC buffer for migrations.
+
+        s.isAdmin[msg.sender] = 1;
+        s.isWhitelisted[msg.sender] = 1;
 
         // Set admins.
         for(uint i = 1; i < _args.admins.length; ++i) {
