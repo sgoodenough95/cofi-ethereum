@@ -18,6 +18,7 @@ import { LibReward } from '../libs/LibReward.sol';
 import { LibVault } from '../libs/LibVault.sol';
 import { IERC4626 } from '.././interfaces/IERC4626.sol';
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "hardhat/console.sol";
 
 contract SupplyFacet is Modifiers {
 
@@ -91,17 +92,20 @@ contract SupplyFacet is Modifiers {
             amount
         );
 
-        uint256 assets = LibToken._toFiDecimals(
-            fiAsset,
-            LibVault._getAssets(
-                LibVault._wrap(
-                    amount,
-                    s.vault[fiAsset],
-                    depositFrom // Purely for Event emission. Wraps from Diamond.
-                ),
-                s.vault[fiAsset]
-            )
+        uint256 shares = LibVault._wrap(
+            amount,
+            s.vault[fiAsset],
+            depositFrom // Purely for Event emission. Wraps from Diamond.
         );
+        console.log('shares: %s', shares);
+
+        uint256 assets = LibVault._getAssets(shares, s.vault[fiAsset]);
+
+        console.log('assets A: ', assets);
+
+        assets = LibToken._toFiDecimals(fiAsset, assets);
+
+        console.log('assets B: ', assets);
 
         require(assets >= minAmountOut, 'SupplyFacet: Slippage exceeded');
 

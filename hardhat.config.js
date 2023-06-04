@@ -25,7 +25,7 @@ module.exports = {
   },
   networks: {
     optimism: {
-      url: `https://arbitrum-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`,
+      url: `https://optimism-mainnet.infura.io/v3/${STOA_INFURA_API_KEY}`,
       accounts: [`${STOA_PRIV_KEY}`]
     },
     arbitrumOne: {

@@ -25,6 +25,7 @@ import { PercentageMath } from "./lib/PercentageMath.sol";
 import { StableMath } from "./lib/StableMath.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "hardhat/console.sol";
 
 contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, ReentrancyGuard {
 
@@ -40,11 +41,13 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
 
     VaultAPI public yVaultReward; // yvOP
 
-    IStakingRewards public stakingRewards = IStakingRewards(0xB2c04C55979B6CA7EB10e666933DE5ED84E6876b);
+    IStakingRewards public stakingRewards;
 
     IStakingRewardsZap public stakingRewardsZap = IStakingRewardsZap(0x498d9dCBB1708e135bdc76Ef007f08CBa4477BE2);
 
-    AggregatorV3Interface public priceFeed = AggregatorV3Interface(0x0D276FC14719f9292D5C1eA2198673d1f4269246);
+    AggregatorV3Interface public rewardPriceFeed = AggregatorV3Interface(0x0D276FC14719f9292D5C1eA2198673d1f4269246);
+
+    AggregatorV3Interface public basePriceFeed;
 
     ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
@@ -68,6 +71,8 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
     constructor(
         VaultAPI _vault,
         VaultAPI _rewardVault,
+        IStakingRewards _stakingRewards,
+        AggregatorV3Interface _basePriceFeed,
         address _underlying,
         uint256 _minHarvest,
         uint256 _slippage,
@@ -85,6 +90,8 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
     {
         yVault = _vault;
         yVaultReward = _rewardVault;
+        stakingRewards = _stakingRewards;
+        basePriceFeed = _basePriceFeed;
         swapParams.minHarvest = _minHarvest;
         swapParams.slippage = _slippage;
         swapParams.wait = _wait;
@@ -169,9 +176,28 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
         emit Harvest(rewardShares, rewardAssets, deposited, yearnShares);
     }
 
-    function getLatestPrice() public view returns (int answer) {
+    /// @return answer with 8 decimals
+    function getLatestPrice() public view returns (uint256 answer) {
 
-        (, answer, , , ) = priceFeed.latestRoundData();
+        (, int _answer, , , ) = rewardPriceFeed.latestRoundData();
+
+        console.logInt(_answer);
+
+        answer = _answer.abs();
+
+        console.log('answer A: %s', answer);
+
+        if (address(basePriceFeed) != address(0)) {
+
+            (, _answer, , , ) = basePriceFeed.latestRoundData();
+
+            console.logInt(_answer);
+
+            // Scales to 18 but need to return answer in 8 decimals
+            answer = answer.divPrecisely(_answer.abs()).scaleBy(8, 18);
+
+            console.log('answer B: %s', answer);
+        }
     }
 
     function swapExactInputSingle(
@@ -185,9 +211,11 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
         IERC20(tokenIn).approve(address(swapRouter), _amountIn);
 
         // Need to divide by Chainlink answer 8 decimals after multiplying
-        uint minOut = (_amountIn.mulDivUp(getLatestPrice().abs(), 1e8))
+        uint minOut = (_amountIn.mulDivUp(getLatestPrice(), 1e8))
         // yVault always has same decimals as its underlying
             .percentMul(1e4 - swapParams.slippage).scaleBy(decimals(), yVaultReward.decimals());
+
+        console.log('minOut: %s', minOut);
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
@@ -202,6 +230,8 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
             });
 
         amountOut = swapRouter.exactInputSingle(params);
+
+        console.log('amountOut: %s', amountOut);
     }
 
     /// @dev Extremely small Uniswap trades can incur high slippage, hence important to set this
@@ -533,6 +563,7 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
             // Shares held in staking contract
             stakingRewards.balanceOf(address(this))
         );
+        console.log('local assets: %s', localAssets);
 
         return supply == 0 ? shares : shares.mulDivDown(localAssets, supply);
     }
