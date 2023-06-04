@@ -132,6 +132,10 @@ describe('First test', function() {
     await cofi.setDiamond(diamond.address)
     await ethfi.setDiamond(diamond.address)
     await btcfi.setDiamond(diamond.address)
+
+    await wyvUSDC.toggleAuthorized(diamond.address)
+    await wyvETH.toggleAuthorized(diamond.address)
+    await waBTC.toggleAuthorized(diamond.address)
       
     // deploy DiamondInit
     // DiamondInit provides a function that is called when the diamond is upgraded to initialize state variables
@@ -336,11 +340,11 @@ describe('First test', function() {
       await _abtc.transfer(waBTC.address, '1000000')
       console.log('aBTC transferred to waBTC')
 
-      await wyvUSDC.harvest()
-      console.log('wyvUSDC harvested')
+      // await wyvUSDC.harvest()
+      // console.log('wyvUSDC harvested')
 
-      await wyvETH.harvest()
-      console.log('wyvETH harvested')
+      // await wyvETH.harvest()
+      // console.log('wyvETH harvested')
 
       await cofiMoney.rebase(cofi.address)
       console.log('COFI rebased')

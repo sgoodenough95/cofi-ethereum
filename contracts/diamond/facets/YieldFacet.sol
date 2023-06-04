@@ -40,6 +40,8 @@ contract YieldFacet is Modifiers {
             return (0, 0, 0); 
         }
 
+        if (s.harvestable[s.vault[fiAsset]] == 1) LibVault._harvest(fiAsset);
+
         assets = LibToken._toFiDecimals(fiAsset, LibVault._totalValue(s.vault[fiAsset]));
 
         if (assets > currentSupply) {

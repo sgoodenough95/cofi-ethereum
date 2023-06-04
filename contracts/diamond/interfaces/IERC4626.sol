@@ -54,11 +54,9 @@ interface IERC4626 is IERC20 {
     }*/
 
     /**
-     * @dev Addition for depositing on behalf of depositor.
+     * @dev Addition for executing harvest in the context of COFI.
      */
-    function deposit_(uint256 assets, address receiver, address depositor)
-        external
-        returns (uint256 shares);
+    function harvest() external returns (uint256, uint256);
 
     function mint(uint256 shares, address receiver)
         external

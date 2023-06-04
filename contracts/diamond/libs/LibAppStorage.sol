@@ -76,6 +76,9 @@ struct AppStorage {
     // E.g., wmooHopUSDC => DerivParams.
     mapping(address => DerivParams) derivParams;
 
+    // If rebase operation should harvest vault beforehand.
+    mapping(address => uint8) harvestable;
+
     // Reward for first-time depositors. Setting to 0 deactivates it.
     uint256 initReward;
 

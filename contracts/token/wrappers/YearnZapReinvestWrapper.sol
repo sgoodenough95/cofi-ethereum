@@ -51,6 +51,8 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
 
     ISwapRouter public swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
+    mapping(address => uint8) authorized;
+
     uint256 private constant MIN_DEPOSIT = 1e3;
 
     /* Swap params */
@@ -97,6 +99,7 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
         swapParams.wait = _wait;
         swapParams.poolFee = _poolFee;
         swapParams.enabled = _enabled;
+        authorized[msg.sender] = 1;
     }
 
     function vault() external view returns (address) {
@@ -134,12 +137,14 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
                     STAKING REWARDS REINVEST LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function harvest() public returns (uint256 deposited, uint256 yearnShares) {
+    function harvest() public onlyAuthorized returns (uint256 deposited, uint256 yearnShares) {
 
         if (swapParams.enabled != 1) {
             emit HarvestIsDisabled();
             return (0, 0);
         }
+
+        console.log("Attempting harvest");
     
         stakingRewards.getReward();
 
@@ -265,6 +270,16 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
         return true;
     }
 
+    function toggleAuthorized(address account) external onlyOwner returns (bool) {
+
+        require(
+            account != owner(),
+            "YearnZapReinvestWrapper: Cannot remove authorisation of Owner"
+        );
+        authorized[account] == 0 ? authorized[account] = 1 : authorized[account] = 0;
+        return authorized[account] == 1 ? true : false;
+    }
+
     /*//////////////////////////////////////////////////////////////
                         DEPOSIT/WITHDRAWAL LOGIC
     //////////////////////////////////////////////////////////////*/
@@ -272,7 +287,7 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
     function deposit(
         uint256 assets,
         address receiver
-    ) public override nonReentrant returns (uint256 shares) {
+    ) public override onlyAuthorized nonReentrant returns (uint256 shares) {
         // Harvest to ensure depositor does not earn others rewards
         if (stakingRewards.balanceOf(address(this)) > 0) {
             harvest();
@@ -290,7 +305,7 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
     function mint(
         uint256 shares, 
         address receiver
-    ) public override nonReentrant returns (uint256 assets) {
+    ) public override onlyAuthorized nonReentrant returns (uint256 assets) {
         // Harvest to ensure depositor does not earn others rewards
         if (stakingRewards.balanceOf(address(this)) > 0) {
             harvest();
@@ -317,7 +332,7 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
         uint256 assets,
         address receiver,
         address _owner
-    ) public override nonReentrant returns (uint256 shares) {
+    ) public override onlyAuthorized nonReentrant returns (uint256 shares) {
         // Harvest to ensure withdrawer gets their rightful rewards
         if (stakingRewards.balanceOf(address(this)) > 0) {
             harvest();
@@ -340,7 +355,7 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
         uint256 shares,
         address receiver,
         address _owner
-    ) public override nonReentrant returns (uint256 assets) {
+    ) public override onlyAuthorized nonReentrant returns (uint256 assets) {
         // Harvest to ensure withdrawer gets their rightful rewards
         if (stakingRewards.balanceOf(address(this)) > 0) {
             harvest();
@@ -698,5 +713,15 @@ contract YearnZapReinvestWrapper is ERC4626, IVaultWrapper, Ownable2Step, Reentr
 
     function totalSupply() public view virtual override(ERC20, IERC20) returns (uint256) {
         return super.totalSupply();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev Add to prevent state change outside of app context
+    modifier onlyAuthorized() {
+        require(authorized[msg.sender] == 1, "YearnZapReinvestWrapper: Caller not authorized");
+        _;
     }
 }

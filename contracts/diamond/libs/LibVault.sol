@@ -36,6 +36,14 @@ library LibVault {
     /// @param  newAssets   The amount of assets post-migration.
     event VaultMigration(address indexed fiAsset, address indexed oldVault, address indexed newVault, uint256 oldAssets, uint256 newAssets);
 
+    /// @notice Emitted when a harvest operation is executed (usually immediately prior to a rebase).
+    ///
+    /// @param fiAsset  The fiAsset being harvested for.
+    /// @param vault    The actual vault where the harvest operation resides.
+    /// @param assets   The amount of assets deposited.
+    /// @param shares   The amount of shares returned from the deposit operation.
+    event Harvest(address indexed fiAsset, address indexed vault, uint256 assets, uint256 shares);
+
     /*//////////////////////////////////////////////////////////////
                                 VIEWS
     //////////////////////////////////////////////////////////////*/
@@ -112,5 +120,15 @@ library LibVault {
 
         assets = IERC4626(vault).redeem(shares, recipient, address(this));
         emit Unwrap(amount, shares, vault, assets, recipient);
+    }
+
+    function _harvest(
+        address fiAsset
+    ) internal {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+
+        (uint256 assets, uint256 shares) = IERC4626(s.vault[fiAsset]).harvest();
+        if (assets == 0 || shares == 0) return;
+        emit Harvest(fiAsset, s.vault[fiAsset], assets, shares);
     }
 }

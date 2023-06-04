@@ -58,6 +58,9 @@ contract InitDiamond {
         s.vault[_args.ETHFI]    = _args.vETH;
         s.vault[_args.BTCFI]    = _args.vBTC;
 
+        s.harvestable[s.vault[_args.COFI]]  = 1;
+        s.harvestable[s.vault[_args.ETHFI]] = 1;
+
         // Set mint enabled.
         s.mintEnabled[_args.COFI]   = 1;
         s.mintEnabled[_args.ETHFI]  = 1;

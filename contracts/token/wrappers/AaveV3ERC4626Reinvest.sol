@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/src/tokens/ERC20.sol";
-import {ERC4626} from "solmate/src/mixins/ERC4626.sol";
-import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
-
-import {IPool} from "contracts/diamond/interfaces/aave/IPool.sol";
-import {IRewardsController} from "contracts/diamond/interfaces/aave/IRewardsController.sol";
-
-import {DexSwap} from "contracts/token/utils/swapUtils.sol";
+import { ERC20 } from "solmate/src/tokens/ERC20.sol";
+import { ERC4626 } from "solmate/src/mixins/ERC4626.sol";
+import { SafeTransferLib } from "solmate/src/utils/SafeTransferLib.sol";
+import { IPool } from "contracts/diamond/interfaces/aave/IPool.sol";
+import { IRewardsController } from "contracts/diamond/interfaces/aave/IRewardsController.sol";
+import { DexSwap } from "contracts/token/utils/swapUtils.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title AaveV3ERC4626Reinvest
 /// @notice Extended implementation of yield-daddy's ERC4626 for Aave V3 with rewards reinvesting
 /// @notice Reinvests rewards accrued for higher APY
 /// @author ZeroPoint Labs
-contract AaveV3ERC4626Reinvest is ERC4626 {
+contract AaveV3ERC4626Reinvest is ERC4626, Ownable2Step, ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                         LIBRARIES USAGES
     //////////////////////////////////////////////////////////////*/
@@ -90,6 +91,8 @@ contract AaveV3ERC4626Reinvest is ERC4626 {
         address pair2;
     }
 
+    mapping(address => uint8) authorized;
+
     /*//////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -116,6 +119,9 @@ contract AaveV3ERC4626Reinvest is ERC4626 {
 
         /// TODO: tighter checks
         rewardsSet = false;
+
+        authorized[msg.sender] = 1;
+        authorized[manager] = 1;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -125,7 +131,7 @@ contract AaveV3ERC4626Reinvest is ERC4626 {
     /// @notice Get all rewards from AAVE market
     /// @dev Call before setting routes
     /// @dev Requires manual management of Routes
-    function setRewards() external returns (address[] memory tokens) {
+    function setRewards() external onlyAuthorized returns (address[] memory tokens) {
         if (msg.sender != manager) revert INVALID_ACCESS();
         tokens = rewardsController.getRewardsByAsset(address(aToken));
 
@@ -148,7 +154,7 @@ contract AaveV3ERC4626Reinvest is ERC4626 {
         address token_,
         address pair1_,
         address pair2_
-    ) external {
+    ) external onlyOwner {
         if (msg.sender != manager) revert INVALID_ACCESS();
         if (!rewardsSet) revert REWARDS_NOT_SET(); /// @dev Soft-check
 
@@ -163,7 +169,7 @@ contract AaveV3ERC4626Reinvest is ERC4626 {
 
     /// @notice Claims liquidity mining rewards from Aave and sends it to this Vault
     /// @param minAmounts_ The minimum amounts of underlying asset to receive for each reward token
-    function harvest(uint256[] memory minAmounts_) external {
+    function harvest(uint256[] memory minAmounts_) external onlyAuthorized {
         /// @dev Wrapper exists only for single aToken
         address[] memory assets = new address[](1);
         assets[0] = address(aToken);
@@ -254,15 +260,80 @@ contract AaveV3ERC4626Reinvest is ERC4626 {
         );
     }
 
+    function recoverERC20(
+        address token,
+        uint256 amount,
+        address recipient
+    ) external onlyOwner returns (bool) {
+
+        require(authorized[recipient] == 1, "AaveV3ERC4626Reinvest: Recipient not authorized");
+
+        IERC20(token).transfer(recipient, amount);
+
+        return true;
+    }
+
+    function toggleAuthorized(address account) external onlyOwner returns (bool) {
+
+        require(
+            account != owner(),
+            "AaveV3ERC4626Reinvest: Cannot remove authorisation of Owner"
+        );
+        authorized[account] == 0 ? authorized[account] = 1 : authorized[account] = 0;
+        return authorized[account] == 1 ? true : false;
+    }
+
     /*//////////////////////////////////////////////////////////////
                       ERC4626 OVERRIDES
     //////////////////////////////////////////////////////////////*/
+
+    function deposit(
+        uint256 assets,
+        address receiver
+    )   public
+        onlyAuthorized virtual override
+        returns (uint256 shares)
+    {
+        // Check for rounding error since we round down in previewDeposit.
+        require((shares = previewDeposit(assets)) != 0, "ZERO_SHARES");
+
+        // Need to transfer before minting or ERC777s could reenter.
+        asset.safeTransferFrom(msg.sender, address(this), assets);
+
+        _mint(receiver, shares);
+
+        emit Deposit(msg.sender, receiver, assets, shares);
+
+        afterDeposit(assets, shares);
+    }
+
+    function mint(
+        uint256 shares,
+        address receiver
+    )   public
+        onlyAuthorized virtual override
+        returns (uint256 assets)
+    {
+        assets = previewMint(shares); // No need to check for rounding error, previewMint rounds up.
+
+        // Need to transfer before minting or ERC777s could reenter.
+        asset.safeTransferFrom(msg.sender, address(this), assets);
+
+        _mint(receiver, shares);
+
+        emit Deposit(msg.sender, receiver, assets, shares);
+
+        afterDeposit(assets, shares);
+    }
 
     function withdraw(
         uint256 assets_,
         address receiver_,
         address owner_
-    ) public virtual override returns (uint256 shares) {
+    )   public
+        onlyAuthorized virtual override
+        returns (uint256 shares)
+    {
         shares = previewWithdraw(assets_); /// @notice No need to check for rounding error, previewWithdraw rounds up.
 
         if (msg.sender != owner_) {
@@ -287,7 +358,10 @@ contract AaveV3ERC4626Reinvest is ERC4626 {
         uint256 shares_,
         address receiver_,
         address owner_
-    ) public virtual override returns (uint256 assets) {
+    )   public
+        onlyAuthorized virtual override
+        returns (uint256 assets)
+    {
         if (msg.sender != owner_) {
             uint256 allowed = allowance[owner_][msg.sender]; /// @dev Saves gas for limited approvals.
 
@@ -477,5 +551,14 @@ contract AaveV3ERC4626Reinvest is ERC4626 {
 
     function _getSupplyCap(uint256 configData) internal pure returns (uint256) {
         return (configData & ~SUPPLY_CAP_MASK) >> SUPPLY_CAP_START_BIT_POSITION;
+    }
+
+    modifier onlyAuthorized() {
+
+        require(
+            msg.sender == owner() || msg.sender == manager || authorized[msg.sender] == 1,
+            "AaveV3ERC4626Reinvest: Only authorized"
+        );
+        _;
     }
 }
