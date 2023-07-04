@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 import { LibDiamond } from ".././core/libs/LibDiamond.sol";
 
@@ -95,6 +95,8 @@ struct AppStorage {
 
     mapping(address => uint8)   isWhitelisted;
 
+    mapping(address => uint8)   isWhitelister;
+
     mapping(address => uint8)   isAdmin;
 
     mapping(address => uint8)   isUpkeep;
@@ -158,6 +160,11 @@ contract Modifiers {
     
     modifier onlyAdmin() {
         require(s.isAdmin[msg.sender] == 1, 'Caller not Admin');
+        _;
+    }
+
+    modifier onlyWhitelister() {
+        require(s.isAdmin[msg.sender] == 1 || s.isWhitelister[msg.sender] == 1, 'Caller not Admin');
         _;
     }
 

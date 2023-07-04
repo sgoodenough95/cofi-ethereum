@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
-import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
-import {ERC20} from "solmate/src/tokens/ERC20.sol";
+import { SafeTransferLib } from "solmate/src/utils/SafeTransferLib.sol";
+import { ERC20 } from "solmate/src/tokens/ERC20.sol";
 
 interface IPair {
     function getReserves()

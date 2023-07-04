@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 import { ERC20 } from "solmate/src/tokens/ERC20.sol";
 import { ERC4626 } from "solmate/src/mixins/ERC4626.sol";

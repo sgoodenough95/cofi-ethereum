@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 /**
 
@@ -18,7 +18,7 @@ contract AccessFacet is Modifiers {
     function toggleWhitelist(
         address account
     )   external
-        onlyAdmin
+        onlyWhitelister
         returns (bool)
     {
         s.isWhitelisted[account] = s.isWhitelisted[account] == 0 ? 1 : 0;
@@ -33,7 +33,7 @@ contract AccessFacet is Modifiers {
     {
         require(
             account != s.owner || account != s.backupOwner,
-            'SupplyAdminFacet: Owners must retain admin status'
+            "AccessFacet: Owners must retain admin status"
         );
 
         s.isAdmin[account] = s.isAdmin[account] == 0 ? 1 : 0;
@@ -76,6 +76,15 @@ contract AccessFacet is Modifiers {
         returns (bool)
     {
         return s.isAdmin[account] == 1 ? true : false;
+    }
+
+    function getWhitelisterStatus(
+        address account
+    )   external
+        view
+        returns (bool)
+    {
+        return s.isWhitelister[account] == 1 ? true : false;
     }
 
     function getUpkeepStatus(

@@ -1,7 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
-// require("@nomicfoundation/hardhat-verify");
-// require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-ethers");
+require("@nomicfoundation/hardhat-foundry");
 require("hardhat-diamond-abi");
 require('dotenv').config();
 
@@ -10,7 +9,7 @@ const { API_KEY, PRIV_KEY, PRIV_KEY_1, PRIV_KEY_MM, PSCAN_KEY, STOA_INFURA_API_K
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
-    version: "0.8.19",
+    version: "0.8.20",
     settings: {
       optimizer: {
         enabled: true,
@@ -22,6 +21,7 @@ module.exports = {
   diamondAbi: {
     name: "COFIMoney",
     include: ["Facet"],
+    strict: false
   },
   networks: {
     optimisticEthereum: {

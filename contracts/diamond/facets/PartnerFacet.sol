@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 /**
 
@@ -7,7 +7,7 @@ pragma solidity 0.8.19;
     █▄▄ █▄█ █▀░ █
 
     @author The Stoa Corporation Ltd.
-    @title  Supply Facet
+    @title  Partner Facet
     @notice Custom functions to enable integration wit certain vaults.
     @dev    Functions are organised as (k, v) mappings, where the vault is the key.
             Motivation in doing so is to avoid a look-up implementation and trigger

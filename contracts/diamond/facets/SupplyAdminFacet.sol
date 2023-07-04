@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 /**
 
@@ -17,10 +17,25 @@ import { IERC4626 } from '.././interfaces/IERC4626.sol';
 contract SupplyAdminFacet is Modifiers {
 
     /*//////////////////////////////////////////////////////////////
-                        ADMIN - SETTERS
+                            ADMIN - SETTERS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice minDeposit applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
+    /// @dev    Set user-non-executable vars first such as minDeposit, mintFee, etc.
+    ///         (ref to COFI STABLECOIN PARAMS in AppStorage for full list).
+    function onboardAsset(
+        address fiAsset,
+        address underlying,
+        address vault
+    )   external
+        onlyAdmin
+        returns (bool)
+    {
+        s.underlying[fiAsset] = underlying;
+        s.vault[fiAsset] = vault;
+        return true;
+    }
+
+    /// @notice minDeposit applies to the underlyingAsset mapped to the fiAsset (e.g., USDC).
     function setMinDeposit(
         address fiAsset,
         uint256 amount
@@ -32,7 +47,7 @@ contract SupplyAdminFacet is Modifiers {
         return true;
     }
 
-    /// @notice minWithdraw applies to the underlyingAsset mapped to the fiAsset (e.g., DAI).
+    /// @notice minWithdraw applies to the underlyingAsset mapped to the fiAsset (e.g., USDC).
     function setMinWithdraw(
         address fiAsset,
         uint256 amount
@@ -96,6 +111,10 @@ contract SupplyAdminFacet is Modifiers {
         s.serviceFee[fiAsset] = amount;
         return true;
     }
+
+    /*//////////////////////////////////////////////////////////////
+                            ADMIN - GETTERS
+    //////////////////////////////////////////////////////////////*/
 
     function getMinDeposit(
         address fiAsset

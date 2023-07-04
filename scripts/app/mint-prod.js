@@ -37,16 +37,18 @@ async function mintErc20() {
         DIAMOND    // Enter contract here.
     )
 
-    // console.log(await cofiMoney.getAdminStatus('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'))
-    // console.log(await cofiMoney.getWhitelistStatus('0x01738387092E007CcB8B5a73Fac2a9BA23cf91d3'))
+    console.log(await cofiMoney.getAdminStatus('0xf2aF571Bc897D722Ba97feD5006402d7FfA9A08A'))
+    console.log(await cofiMoney.getWhitelistStatus('0xf2aF571Bc897D722Ba97feD5006402d7FfA9A08A'))
+    console.log(await cofiMoney.toggleWhitelist('0xf2aF571Bc897D722Ba97feD5006402d7FfA9A08A'))
+    console.log(await cofiMoney.getWhitelistStatus('0xf2aF571Bc897D722Ba97feD5006402d7FfA9A08A'))
 
     // console.log(await cofiMoney.toggleUpkeep('0xB3700c1Db4b23B8D726cCeA5bBbaCFd63B524217'))
     // console.log(await cofiMoney.toggleUpkeep('0xCc10E51c2Deb77BC7B6174C988ee6729830339a5'))
     // console.log(await cofiMoney.toggleUpkeep('0x428dA40a2b6f007c7D5F3B83be5c5F92abef47c6'))
 
-    console.log(await cofiMoney.getUpkeepStatus('0xB3700c1Db4b23B8D726cCeA5bBbaCFd63B524217'))
-    console.log(await cofiMoney.getUpkeepStatus('0xCc10E51c2Deb77BC7B6174C988ee6729830339a5'))
-    console.log(await cofiMoney.getUpkeepStatus('0x428dA40a2b6f007c7D5F3B83be5c5F92abef47c6'))
+    // console.log(await cofiMoney.getUpkeepStatus('0xB3700c1Db4b23B8D726cCeA5bBbaCFd63B524217'))
+    // console.log(await cofiMoney.getUpkeepStatus('0xCc10E51c2Deb77BC7B6174C988ee6729830339a5'))
+    // console.log(await cofiMoney.getUpkeepStatus('0x428dA40a2b6f007c7D5F3B83be5c5F92abef47c6'))
 
 
     // const usdcBal = await usdc.balanceOf(owner.address)

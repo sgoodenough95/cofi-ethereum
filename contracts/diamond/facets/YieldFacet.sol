@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 /**
 
@@ -391,7 +391,7 @@ contract YieldFacet is Modifiers {
     {
         require(
             s.vault[fiAsset] == address(0),
-            'RewardFacet: fiAsset must not already link with a Vault'
+            'YieldFacet: fiAsset must not already link with a Vault'
         );
         s.vault[fiAsset] = vault;
         return true;

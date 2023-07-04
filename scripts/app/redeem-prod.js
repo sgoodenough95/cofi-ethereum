@@ -34,25 +34,31 @@ async function redeemErc20() {
 
     const cofiMoney = await ethers.getContractAt(
       'COFIMoney',
-      '0x17548051AA49B82Cc8aA15bd8cD8b92aA1595903'    // Enter contract here.
+      '0x1B61BD8Cc32D77c6aa1EfE27eF51223b8c078e78'    // Enter contract here.
     )
 
-    const cofi = await ethers.getContractAt(
+    // const cofi = await ethers.getContractAt(
+    //   'FiToken',
+    //   '0xA79FB378DD78C17F964f34B88c6d2D3E3c905Eb7'
+    // )
+
+    const ethfi = await ethers.getContractAt(
       'FiToken',
-      '0xA79FB378DD78C17F964f34B88c6d2D3E3c905Eb7'
+      '0xEdBad3B9EC7B813CF74b11B2eCE1578494371aa4'
     )
 
     const usdcBal = await usdc.balanceOf(owner.address)
-    const cofiBal = await cofi.balanceOf(owner.address)
+    // const cofiBal = await cofi.balanceOf(owner.address)
+    const ethfiBal = await ethfi.balanceOf(owner.address)
 
     const COFI = "0xA79FB378DD78C17F964f34B88c6d2D3E3c905Eb7"
-    const ETHFI = "0x830CF1F5A865EAb7Efe56Ac1C3A906D99f77e25A"
+    const ETHFI = "0xEdBad3B9EC7B813CF74b11B2eCE1578494371aa4"
     const BTCFI = "0x6365369f3C94924dE72e01C3d924b0f47073FAED"
 
     await cofiMoney.fiToUnderlying(
-      cofiBal.toString(),
-      '59790150',
-      COFI,
+      ethfiBal.toString(),
+      '1',
+      ETHFI,
       owner.address,
       owner.address,
     )
